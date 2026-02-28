@@ -16,30 +16,28 @@
     <header class="header">
       <h1 class="app-title">Curhat &amp; Temukan Ayat</h1>
       <p class="app-subtitle">Biarkan firman Allah menuntunmu melalui apa yang kamu rasakan</p>
+      <p class="app-microcopy">Tempat aman untuk bercerita. Tidak ada yang akan menghakimi. Ceritakan saja.</p>
     </header>
 
     <!-- Selection View -->
     <section id="selection-view" class="view active">
 
-      <!-- Keyword Search -->
       <div class="search-section">
-        <div class="search-wrap">
-          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
+        <div class="search-textarea-wrap">
+          <textarea
             id="feeling-input"
-            type="text"
-            class="search-input"
-            placeholder="Ceritakan apa yang kamu rasakan..."
+            class="search-textarea"
+            placeholder="Apa yang sedang kamu rasakan hari ini?"
             autocomplete="off"
-          />
+            rows="4"
+          ></textarea>
           <button id="feeling-clear" class="search-clear hidden" aria-label="Hapus">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
+        <p class="search-helper">Kamu bisa menulis sebanyak yang kamu mau</p>
         <button id="feeling-submit" class="search-submit-btn hidden">Cari Ayat →</button>
         <p class="search-divider"><span>atau pilih perasaan di bawah</span></p>
       </div>
@@ -50,13 +48,17 @@
     <!-- Verses View -->
     <section id="verses-view" class="view">
       <button id="back-btn" class="back-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5M12 5l-7 7 7 7"/>
         </svg>
         Kembali
       </button>
+      <div id="user-quote" class="user-quote hidden"></div>
       <div id="verses-header" class="verses-header"></div>
       <div id="verses-grid" class="verses-grid"></div>
+      <div id="verse-actions" class="verse-actions hidden"></div>
+      <div id="verse-feedback" class="verse-feedback hidden"></div>
+      <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
     </section>
 
   </div>

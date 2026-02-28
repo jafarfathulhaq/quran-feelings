@@ -1,5 +1,10 @@
 'use strict';
 
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let currentFeeling = '';
+let currentAyat    = [];
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 let toastTimer;
@@ -8,7 +13,15 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add('visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ── Emotion Shortcuts ─────────────────────────────────────────────────────────
@@ -41,7 +54,7 @@ async function copyVerse(verse) {
 async function shareVerse(verse) {
   try {
     await navigator.share({
-      title: `${verse.ref} — Quran untuk Hati`,
+      title: `${verse.ref} — Curhat & Temukan Ayat`,
       text: `${verse.arabic}\n\n"${verse.indonesian}"\n\n— ${verse.ref}`,
     });
   } catch (err) {
@@ -95,13 +108,20 @@ function buildSkeletonCard() {
   return card;
 }
 
+// ── Loading State ─────────────────────────────────────────────────────────────
+
 function showLoading() {
+  document.getElementById('user-quote').classList.add('hidden');
+  document.getElementById('verse-actions').classList.add('hidden');
+  document.getElementById('verse-feedback').classList.add('hidden');
+
   document.getElementById('verses-header').innerHTML = `
     <div class="loading-header">
       <div class="loading-spinner"></div>
-      <p class="loading-text">Mencari ayat yang tepat untukmu…</p>
+      <p class="loading-text">Menemukan ayat untukmu<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></p>
     </div>
   `;
+
   const grid = document.getElementById('verses-grid');
   grid.innerHTML = '';
   for (let i = 0; i < 4; i++) grid.appendChild(buildSkeletonCard());
@@ -110,22 +130,87 @@ function showLoading() {
 // ── Render Verses ─────────────────────────────────────────────────────────────
 
 function renderVerses(data) {
+  currentAyat = data.ayat;
+
+  // User quote
+  const quoteEl = document.getElementById('user-quote');
+  if (currentFeeling) {
+    quoteEl.innerHTML = `
+      <p class="user-quote-label">Kamu berkata:</p>
+      <p class="user-quote-text">${escapeHtml(currentFeeling)}</p>
+    `;
+    quoteEl.classList.remove('hidden');
+  }
+
+  // Verses header
   document.getElementById('verses-header').innerHTML = `
+    <p class="vh-comfort">Semoga ayat ini bisa menemanimu hari ini</p>
     <div class="vh-tag">
       <span>${data.emotion_emoji}</span>
       <span>${data.emotion_label}</span>
     </div>
     <h2 class="vh-title">Untuk kamu yang sedang merasa ${data.emotion_label.toLowerCase()}…</h2>
-    <p class="vh-sub">Berikut ayat-ayat Al-Qur'an untukmu</p>
+    <p class="vh-sub">Ayat untukmu hari ini</p>
   `;
+
+  // Verse cards
   const grid = document.getElementById('verses-grid');
   grid.innerHTML = '';
   data.ayat.forEach((verse, i) => grid.appendChild(buildVerseCard(verse, i)));
+
+  // Action buttons
+  const actionsEl = document.getElementById('verse-actions');
+  actionsEl.innerHTML = `
+    <button class="va-primary" id="save-btn">Simpan ayat ini</button>
+    <button class="va-secondary" id="find-more-btn">Temukan ayat lain</button>
+  `;
+  actionsEl.classList.remove('hidden');
+  document.getElementById('save-btn').addEventListener('click', saveVerses);
+  document.getElementById('find-more-btn').addEventListener('click', () => switchView('selection-view'));
+
+  // Feedback
+  const feedbackEl = document.getElementById('verse-feedback');
+  feedbackEl.innerHTML = `
+    <p class="feedback-label">Bagaimana perasaanmu setelah membaca ini?</p>
+    <div class="feedback-btns">
+      <button class="feedback-btn" data-response="Alhamdulillah, semoga ketenangan itu terus menyertaimu 🤍">Lebih tenang</button>
+      <button class="feedback-btn" data-response="Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya ✓">Sama saja</button>
+      <button class="feedback-btn" data-response="Kesedihan itu manusiawi. Allah selalu mendengar. Kamu tidak sendirian 🤍">Masih sedih</button>
+    </div>
+  `;
+  feedbackEl.classList.remove('hidden');
+  feedbackEl.querySelectorAll('.feedback-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      feedbackEl.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      showToast(btn.dataset.response);
+    });
+  });
+}
+
+// ── Save Verses ───────────────────────────────────────────────────────────────
+
+function saveVerses() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('savedAyat') || '[]');
+    saved.push({
+      feeling: currentFeeling,
+      ayat: currentAyat,
+      date: new Date().toISOString(),
+    });
+    localStorage.setItem('savedAyat', JSON.stringify(saved));
+    showToast('Ayat berhasil disimpan ✓');
+  } catch {
+    showToast('Gagal menyimpan');
+  }
 }
 
 // ── Error State ───────────────────────────────────────────────────────────────
 
 function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
+  document.getElementById('user-quote').classList.add('hidden');
+  document.getElementById('verse-actions').classList.add('hidden');
+  document.getElementById('verse-feedback').classList.add('hidden');
   document.getElementById('verses-header').innerHTML = '';
   document.getElementById('verses-grid').innerHTML = `
     <div class="error-state">
@@ -140,20 +225,28 @@ function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
 
 // ── API Call ──────────────────────────────────────────────────────────────────
 
+async function callAPI(feeling) {
+  const res = await fetch('/api/get-ayat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feeling }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+  return data;
+}
+
 async function fetchAyat(feeling) {
+  currentFeeling = feeling;
   switchView('verses-view');
   showLoading();
 
   try {
-    const res = await fetch('/api/get-ayat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ feeling }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
-
+    // Minimum 1.5s loading so it never feels instant/jarring
+    const [data] = await Promise.all([
+      callAPI(feeling),
+      new Promise(r => setTimeout(r, 1500)),
+    ]);
     renderVerses(data);
   } catch (err) {
     showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
@@ -200,8 +293,9 @@ function initSearch() {
     submitBtn.classList.toggle('hidden', len < 3);
   });
 
+  // Ctrl/Cmd + Enter to submit from textarea
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') triggerSearch();
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) triggerSearch();
   });
 
   clearBtn.addEventListener('click', () => {
