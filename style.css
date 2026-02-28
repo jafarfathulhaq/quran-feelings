@@ -449,6 +449,115 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Submit Button ────────────────────────────────────── */
+.search-submit-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--green-deep);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+
+.search-submit-btn:hover  { background: var(--green-mid); }
+.search-submit-btn:active { transform: scale(0.98); }
+.search-submit-btn.hidden { display: none; }
+
+/* ── Loading Header ───────────────────────────────────── */
+.loading-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0 8px;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green-mid);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 15px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ── Skeleton Cards ───────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.sk-line,
+.sk-block {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #EAEEF2 25%, #F4F6F8 50%, #EAEEF2 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: 12px;
+}
+
+.sk-line         { height: 12px; width: 100%; }
+.sk-line.sk-short  { width: 40%; }
+.sk-line.sk-medium { width: 70%; }
+.sk-block        { height: 72px; margin: 16px 0; border-radius: 8px; }
+
+/* ── Error State ──────────────────────────────────────── */
+.error-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.error-emoji { font-size: 40px; }
+
+.error-msg {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.error-back-btn {
+  background: var(--green-deep);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.error-back-btn:hover { background: var(--green-mid); }
+
 /* ── Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/get-ayat.js": {
+      "maxDuration": 30
+    }
+  }
+}
