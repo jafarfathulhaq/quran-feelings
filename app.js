@@ -42,7 +42,7 @@ const emotions = [
 // ── Copy / Share ──────────────────────────────────────────────────────────────
 
 async function copyVerse(verse) {
-  const text = `${verse.arabic}\n\n"${verse.indonesian}"\n\n— ${verse.ref}`;
+  const text = `${verse.arabic}\n\n"${verse.translation}"\n\n— ${verse.ref}`;
   try {
     await navigator.clipboard.writeText(text);
     showToast('Ayat berhasil disalin ✓');
@@ -55,7 +55,7 @@ async function shareVerse(verse) {
   try {
     await navigator.share({
       title: `${verse.ref} — Curhat & Temukan Ayat`,
-      text: `${verse.arabic}\n\n"${verse.indonesian}"\n\n— ${verse.ref}`,
+      text: `${verse.arabic}\n\n"${verse.translation}"\n\n— ${verse.ref}`,
     });
   } catch (err) {
     if (err.name !== 'AbortError') copyVerse(verse);
@@ -79,8 +79,8 @@ function buildVerseCard(verse, index) {
       <span class="vc-ref-text">${verse.ref}</span>
     </div>
     <p class="vc-arabic">${verse.arabic}</p>
-    <p class="vc-translation">"${verse.indonesian}"</p>
-    <p class="vc-reflection">${verse.reflection}</p>
+    <p class="vc-translation">"${verse.translation}"</p>
+    <p class="vc-reflection">${verse.tafsir_summary}</p>
     <div class="vc-actions">
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
       ${navigator.share ? `<button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>` : ''}
@@ -124,7 +124,7 @@ function showLoading() {
 
   const grid = document.getElementById('verses-grid');
   grid.innerHTML = '';
-  for (let i = 0; i < 4; i++) grid.appendChild(buildSkeletonCard());
+  for (let i = 0; i < 3; i++) grid.appendChild(buildSkeletonCard());
 }
 
 // ── Render Verses ─────────────────────────────────────────────────────────────
@@ -142,14 +142,9 @@ function renderVerses(data) {
     quoteEl.classList.remove('hidden');
   }
 
-  // Verses header
+  // Verses header — uses the LLM's personalised reflection message
   document.getElementById('verses-header').innerHTML = `
-    <p class="vh-comfort">Semoga ayat ini bisa menemanimu hari ini</p>
-    <div class="vh-tag">
-      <span>${data.emotion_emoji}</span>
-      <span>${data.emotion_label}</span>
-    </div>
-    <h2 class="vh-title">Untuk kamu yang sedang merasa ${data.emotion_label.toLowerCase()}…</h2>
+    <p class="vh-reflection">${escapeHtml(data.reflection)}</p>
     <p class="vh-sub">Ayat untukmu hari ini</p>
   `;
 

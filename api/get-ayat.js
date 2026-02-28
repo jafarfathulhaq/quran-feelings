@@ -1,10 +1,90 @@
+'use strict';
+
+const fs   = require('fs');
+const path = require('path');
+
+// ── Load curated verse database (bundled at deploy time) ──────────────────────
+const VERSES = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../data/verses.json'), 'utf8')
+);
+
+// Fast lookup map: id ("31:14") → full verse object
+const VERSE_MAP = Object.fromEntries(VERSES.map(v => [v.id, v]));
+
+// Compact version sent to LLM — no Arabic/translation needed for selection
+const DB_FOR_PROMPT = VERSES.map(v => ({
+  id:             v.id,
+  surah_name:     v.surah_name,
+  verse_number:   v.verse_number,
+  themes:         v.themes,
+  tafsir_summary: v.tafsir_summary,
+}));
+
+// ── System Prompt ─────────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `Kamu adalah asisten untuk aplikasi refleksi Al-Qur'an.
+
+Tugasmu BUKAN untuk menghasilkan atau mengarang ayat Al-Qur'an.
+Tugasmu HANYA memilih ayat yang paling relevan dari database yang disediakan, berdasarkan curahan hati pengguna.
+
+ATURAN KRITIS:
+1. JANGAN pernah mengarang atau memodifikasi ayat Al-Qur'an.
+2. HANYA pilih dari database yang disediakan, menggunakan nilai "id" yang persis sama.
+3. Pilih maksimal 3 ayat. Minimal 1.
+4. Pilih 2–3 ayat yang saling melengkapi jika memungkinkan.
+
+TUJUAN:
+Bantu pengguna merefleksikan diri melalui ayat yang relevan secara emosional DAN situasional.
+Bersikap rendah hati. Jangan mengklaim berbicara atas nama Allah. Jangan memberikan fatwa agama.
+
+TUGASMU:
+
+LANGKAH 1 — Pahami keadaan pengguna
+Identifikasi:
+• Nada emosional mereka (sedih, lelah, cemas, marah, dll.)
+• Situasi kehidupan spesifik mereka (mengasuh anak, tekanan kerja, hubungan, kesehatan, rasa bersalah, dll.)
+• Apa yang paling mereka butuhkan sekarang (ketenangan, harapan, kesabaran, pengampunan, bimbingan, dll.)
+
+LANGKAH 2 — Pilih ayat yang cocok
+Prioritaskan: kecocokan situasional > kecocokan emosional > penghiburan umum
+
+Contoh:
+• Kelelahan mengasuh anak → utamakan ayat parenting + kelelahan, BUKAN hanya ayat "setelah kesulitan ada kemudahan" yang generik
+• Khawatir tentang keuangan → utamakan ayat rezeki/ketawakalan
+• Merasa bersalah → utamakan ayat tobat/pengampunan
+• Marah pada seseorang → utamakan ayat menahan amarah/memaafkan
+
+Periksa "themes" dan "tafsir_summary" setiap ayat untuk menentukan relevansinya.
+
+LANGKAH 3 — Tulis pesan refleksi
+Maksimal 80 kata. Dalam Bahasa Indonesia. Lembut, rendah hati, mendukung.
+Gunakan frasa seperti: "Semoga ayat ini bisa menemanimu", "Ayat ini mengingatkan kita", "Mungkin ayat ini relevan"
+JANGAN katakan: "Ini jawaban Allah untukmu", "Allah sedang memberitahumu", "Kamu harus..."
+Sebut situasi spesifik mereka, jangan hanya bicara tentang emosi umum.
+
+FORMAT OUTPUT — kembalikan HANYA JSON ini, tanpa teks tambahan:
+{
+  "reflection": "...",
+  "selected_ids": ["id1", "id2"]
+}
+
+selected_ids harus merupakan nilai "id" dari database (contoh: ["31:14", "46:15"]).
+Jangan pernah mengembalikan selected_ids yang kosong.
+
+CONTOH NADA:
+Baik: "Semoga ayat ini bisa menemanimu. Kelelahan dalam merawat orang yang kita cintai adalah bentuk cinta yang Allah catat dengan penuh perhatian."
+Buruk: "Ini adalah pesan Allah untukmu. Allah menyuruhmu untuk bersabar."
+
+Database ayat Al-Qur'an:
+${JSON.stringify(DB_FOR_PROMPT, null, 2)}`;
+
+// ── Handler ───────────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   const { feeling } = req.body || {};
   if (!feeling || feeling.trim().length < 2) {
@@ -12,7 +92,6 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // 1. Ask GPT-4o-mini to find relevant ayat references
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -22,88 +101,55 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          {
-            role: 'system',
-            content: `Kamu adalah seorang ulama Al-Qur'an yang bijaksana dan penuh empati. Ketika seseorang menceritakan perasaan atau situasinya, pilihlah tepat 4 ayat Al-Qur'an yang paling relevan, menyentuh hati, dan memberikan ketenangan.
-
-Kembalikan HANYA format JSON ini (tanpa teks tambahan apapun):
-{
-  "emotion_label": "<label emosi dalam Bahasa Indonesia, 1-3 kata>",
-  "emotion_emoji": "<1 emoji yang mewakili perasaan>",
-  "ayat": [
-    {
-      "surah_number": <integer nomor surah 1-114>,
-      "ayah_number": <integer nomor ayat>,
-      "surah_name": "<nama surah transliterasi latin, contoh: Al-Baqarah>",
-      "reflection": "<penjelasan mengapa ayat ini relevan dan menenangkan untuk perasaan tersebut, dalam Bahasa Indonesia, 2-3 kalimat yang tulus dan menyentuh hati>"
-    }
-  ]
-}
-
-Pastikan nomor surah dan ayat 100% akurat sesuai Al-Qur'an. Jangan mengarang nomor ayat.`,
-          },
-          {
-            role: 'user',
-            content: feeling.trim(),
-          },
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user',   content: feeling.trim() },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.6,
-        max_tokens: 1200,
+        temperature: 0.4,   // lower = more consistent, precise selection
+        max_tokens: 400,
       }),
     });
 
     if (!openaiRes.ok) {
-      const errData = await openaiRes.json();
-      throw new Error(errData.error?.message || 'OpenAI API error');
+      const err = await openaiRes.json();
+      throw new Error(err.error?.message || 'OpenAI API error');
     }
 
     const openaiData = await openaiRes.json();
     const parsed = JSON.parse(openaiData.choices[0].message.content);
 
-    if (!parsed.ayat || !Array.isArray(parsed.ayat)) {
+    if (!parsed.selected_ids || !Array.isArray(parsed.selected_ids) || parsed.selected_ids.length === 0) {
       throw new Error('Format respons tidak valid');
     }
 
-    // 2. Fetch actual Arabic text + Indonesian translation from alquran.cloud
-    const ayatWithContent = await Promise.all(
-      parsed.ayat.slice(0, 4).map(async (item) => {
-        try {
-          const quranRes = await fetch(
-            `https://api.alquran.cloud/v1/ayah/${item.surah_number}:${item.ayah_number}/editions/quran-simple,id.indonesian`
-          );
-          const quranData = await quranRes.json();
-
-          if (quranData.code !== 200 || !quranData.data || quranData.data.length < 2) {
-            throw new Error('Quran API error');
-          }
-
-          return {
-            surah_name: item.surah_name,
-            surah_number: item.surah_number,
-            ayah_number: item.ayah_number,
-            ref: `QS. ${item.surah_name} : ${item.ayah_number}`,
-            arabic: quranData.data[0].text,
-            indonesian: quranData.data[1].text,
-            reflection: item.reflection,
-          };
-        } catch (e) {
-          console.error(`Failed to fetch ${item.surah_number}:${item.ayah_number}`, e.message);
+    // Look up selected verses from our database (guaranteed accurate Arabic + translation)
+    const ayat = parsed.selected_ids
+      .slice(0, 3)
+      .map(id => {
+        const v = VERSE_MAP[id];
+        if (!v) {
+          console.warn(`LLM selected unknown id: ${id}`);
           return null;
         }
+        return {
+          id:             v.id,
+          ref:            `QS. ${v.surah_name} : ${v.verse_number}`,
+          surah_name:     v.surah_name,
+          verse_number:   v.verse_number,
+          arabic:         v.arabic,
+          translation:    v.translation,
+          tafsir_summary: v.tafsir_summary,
+        };
       })
-    );
+      .filter(Boolean);
 
-    const validAyat = ayatWithContent.filter(Boolean);
-
-    if (validAyat.length === 0) {
-      throw new Error('Gagal mengambil ayat. Silakan coba lagi.');
+    if (ayat.length === 0) {
+      throw new Error('Gagal menemukan ayat yang relevan. Silakan coba lagi.');
     }
 
     return res.status(200).json({
-      emotion_label: parsed.emotion_label,
-      emotion_emoji: parsed.emotion_emoji,
-      ayat: validAyat,
+      reflection: parsed.reflection || '',
+      ayat,
     });
 
   } catch (error) {
