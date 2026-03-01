@@ -7,6 +7,17 @@
 
 const IS_IN_APP_BROWSER = /Instagram|FBAN|FBAV|TikTok|Line\//i.test(navigator.userAgent);
 
+// ── Analytics ──────────────────────────────────────────────────────────────────
+// Fire-and-forget: never blocks UI, never throws, never logs user input text.
+
+function logEvent(eventType, properties = {}) {
+  fetch('/api/log-event', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ event_type: eventType, properties }),
+  }).catch(() => {}); // silently ignore network failures
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let currentFeeling = '';
@@ -87,6 +98,8 @@ async function generateShareImage(verse) {
 async function shareVerse(verse) {
   // In-app browsers block both navigator.share({files}) and blob URL downloads.
   // Show a clear instruction instead of silently failing.
+  logEvent('verse_shared', { surah_name: verse.surah_name });
+
   if (IS_IN_APP_BROWSER) {
     showToast('Buka di Chrome/Safari untuk berbagi gambar 🌐');
     return;
@@ -187,6 +200,7 @@ function stopCurrentAudio() {
 function playAudio(verse, btn) {
   if (activePlayBtn === btn) { stopCurrentAudio(); return; }
   stopCurrentAudio();
+  logEvent('verse_played', { surah_name: verse.surah_name });
 
   const [s, v]  = verse.id.split(':').map(Number);
   const globalN = toGlobalAyah(s, v);
@@ -230,12 +244,14 @@ function toggleSave(verse, btn) {
     btn.innerHTML = BOOKMARK_FILLED_ICON + ' Tersimpan';
     btn.classList.add('saved');
     showToast('Ayat disimpan ✓');
+    logEvent('verse_saved', { surah_name: verse.surah_name });
   } else {
     saved.splice(idx, 1);
     setSaved(saved);
     btn.innerHTML = BOOKMARK_ICON + ' Simpan';
     btn.classList.remove('saved');
     showToast('Dihapus dari simpanan');
+    logEvent('verse_unsaved', { surah_name: verse.surah_name });
   }
   updateSavedBadge();
 }
@@ -356,9 +372,9 @@ function renderVerses(data) {
   feedbackEl.innerHTML = `
     <p class="feedback-label">Bagaimana perasaanmu setelah membaca ini?</p>
     <div class="feedback-btns">
-      <button class="feedback-btn" data-response="Alhamdulillah, semoga ketenangan itu terus menyertaimu 🤍">Lebih tenang</button>
-      <button class="feedback-btn" data-response="Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya ✓">Sama saja</button>
-      <button class="feedback-btn" data-response="Kesedihan itu manusiawi. Allah selalu mendengar. Kamu tidak sendirian 🤍">Masih sedih</button>
+      <button class="feedback-btn" data-key="lebih_tenang" data-response="Alhamdulillah, semoga ketenangan itu terus menyertaimu 🤍">Lebih tenang</button>
+      <button class="feedback-btn" data-key="sama_saja"    data-response="Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya ✓">Sama saja</button>
+      <button class="feedback-btn" data-key="masih_sedih"  data-response="Kesedihan itu manusiawi. Allah selalu mendengar. Kamu tidak sendirian 🤍">Masih sedih</button>
     </div>
   `;
   feedbackEl.classList.remove('hidden');
@@ -367,6 +383,7 @@ function renderVerses(data) {
       feedbackEl.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       showToast(btn.dataset.response);
+      logEvent('mood_feedback', { response: btn.dataset.key });
     });
   });
 }
@@ -445,10 +462,14 @@ async function callAPI(feeling) {
   return data;
 }
 
-async function fetchAyat(feeling) {
+async function fetchAyat(feeling, { method = 'text', emotionId } = {}) {
   currentFeeling = feeling;
   switchView('verses-view');
   showLoading();
+
+  const startProps = { method };
+  if (emotionId) startProps.emotion_id = emotionId;
+  logEvent('search_started', startProps);
 
   try {
     // Minimum 1.5s loading so it never feels instant/jarring
@@ -457,11 +478,14 @@ async function fetchAyat(feeling) {
       new Promise(r => setTimeout(r, 1500)),
     ]);
     if (data.not_relevant) {
+      logEvent('search_completed', { outcome: 'not_relevant' });
       showNotRelevant(data.message);
     } else {
+      logEvent('search_completed', { outcome: 'success', verse_count: data.ayat?.length ?? 0 });
       renderVerses(data);
     }
   } catch (err) {
+    logEvent('search_completed', { outcome: 'error' });
     showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
   }
 }
@@ -474,6 +498,7 @@ function renderEmotionCards() {
     <button
       class="emotion-card"
       data-feeling="${e.feeling}"
+      data-emotion-id="${e.id}"
       style="--ec-color: ${e.color}; --ec-bg: ${e.bg};"
       aria-label="${e.label} — ${e.desc}"
     >
@@ -484,7 +509,9 @@ function renderEmotionCards() {
   `).join('');
 
   grid.querySelectorAll('.emotion-card').forEach(card => {
-    card.addEventListener('click', () => fetchAyat(card.dataset.feeling));
+    card.addEventListener('click', () =>
+      fetchAyat(card.dataset.feeling, { method: 'emotion_card', emotionId: card.dataset.emotionId })
+    );
   });
 }
 
