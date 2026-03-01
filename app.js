@@ -20,8 +20,9 @@ function logEvent(eventType, properties = {}) {
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let currentFeeling = '';
-let currentAyat    = [];
+let currentFeeling    = '';
+let currentAyat       = [];
+let currentSearchCtx  = { method: 'text', emotionId: null }; // populated in fetchAyat
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -372,18 +373,59 @@ function renderVerses(data) {
   feedbackEl.innerHTML = `
     <p class="feedback-label">Bagaimana perasaanmu setelah membaca ini?</p>
     <div class="feedback-btns">
-      <button class="feedback-btn" data-key="lebih_tenang" data-response="Alhamdulillah, semoga ketenangan itu terus menyertaimu 🤍">Lebih tenang</button>
-      <button class="feedback-btn" data-key="sama_saja"    data-response="Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya ✓">Sama saja</button>
-      <button class="feedback-btn" data-key="masih_sedih"  data-response="Kesedihan itu manusiawi. Allah selalu mendengar. Kamu tidak sendirian 🤍">Masih sedih</button>
+      <button class="feedback-btn" data-key="lebih_tenang">Lebih tenang</button>
+      <button class="feedback-btn" data-key="sama_saja">Sama saja</button>
+      <button class="feedback-btn" data-key="masih_sedih">Masih sedih</button>
     </div>
   `;
   feedbackEl.classList.remove('hidden');
+
+  const FEEDBACK_COPY = {
+    lebih_tenang: {
+      icon:      '🤍',
+      text:      'Alhamdulillah. Semoga ketenangan itu terus menyertaimu.',
+      actionLabel: null,
+    },
+    sama_saja: {
+      icon:      '✦',
+      text:      'Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya.',
+      actionLabel: '← Cari ayat lain',
+    },
+    masih_sedih: {
+      icon:      '🤍',
+      text:      'Kesedihan itu manusiawi. Allah selalu mendengar, dan kamu tidak sendirian.',
+      actionLabel: '← Cari ayat lain',
+    },
+  };
+
   feedbackEl.querySelectorAll('.feedback-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      feedbackEl.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      showToast(btn.dataset.response);
-      logEvent('mood_feedback', { response: btn.dataset.key });
+      const key = btn.dataset.key;
+
+      // ── Log with full context so each response is tied to specific verses ──
+      const fbProps = {
+        response:  key,
+        verse_ids: currentAyat.map(v => v.id).join(','), // e.g. "2:153,94:5"
+        method:    currentSearchCtx.method,
+      };
+      if (currentSearchCtx.emotionId) fbProps.emotion_id = currentSearchCtx.emotionId;
+      logEvent('mood_feedback', fbProps);
+
+      // ── Replace buttons with a contextual thank-you state ──
+      const { icon, text, actionLabel } = FEEDBACK_COPY[key] || FEEDBACK_COPY.sama_saja;
+      feedbackEl.innerHTML = `
+        <div class="feedback-thanks">
+          <span class="feedback-thanks-icon">${icon}</span>
+          <p class="feedback-thanks-text">${text}</p>
+          ${actionLabel
+            ? `<button class="feedback-try-again">${actionLabel}</button>`
+            : ''}
+        </div>
+      `;
+      if (actionLabel) {
+        feedbackEl.querySelector('.feedback-try-again')
+          .addEventListener('click', () => switchView('selection-view'));
+      }
     });
   });
 }
@@ -463,7 +505,8 @@ async function callAPI(feeling) {
 }
 
 async function fetchAyat(feeling, { method = 'text', emotionId } = {}) {
-  currentFeeling = feeling;
+  currentFeeling   = feeling;
+  currentSearchCtx = { method, emotionId: emotionId || null };
   switchView('verses-view');
   showLoading();
 

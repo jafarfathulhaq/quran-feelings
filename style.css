@@ -654,6 +654,52 @@ body {
   border-color: var(--green-deep);
 }
 
+/* ── Feedback thank-you state (replaces buttons after click) ── */
+.feedback-thanks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: feedbackFadeIn 0.3s ease;
+}
+
+@keyframes feedbackFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.feedback-thanks-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.feedback-thanks-text {
+  font-size: 14px;
+  color: var(--text-mid);
+  line-height: 1.65;
+  max-width: 340px;
+}
+
+.feedback-try-again {
+  margin-top: 6px;
+  padding: 8px 18px;
+  background: none;
+  border: 1.5px solid var(--green-mid);
+  border-radius: 100px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--green-mid);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.feedback-try-again:hover {
+  background: var(--green-deep);
+  border-color: var(--green-deep);
+  color: white;
+}
+
 /* ── Verse Disclaimer ─────────────────────────────────── */
 .verse-disclaimer {
   margin-top: 44px;
