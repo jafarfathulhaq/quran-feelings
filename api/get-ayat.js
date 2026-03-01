@@ -73,7 +73,43 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // ── Step 1: Embed the user's feeling ───────────────────────────────────
+    // ── Step 1: HyDE — generate a hypothetical verse description ───────────
+    // Translates colloquial user input into "verse semantic space" before
+    // embedding, so the query vector aligns better with verse vectors.
+    const hydeRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Kamu membantu mencari ayat Al-Qur\'an yang relevan. ' +
+              'Berdasarkan perasaan pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+              'tema, pesan, dan konteks ayat Al-Qur\'an yang ideal untuk situasi ini. ' +
+              'Gunakan kosakata yang mencerminkan tema-tema Quran: kesabaran, tawakal, ' +
+              'tobat, syukur, rezeki, pengampunan, kasih sayang Allah, dll. ' +
+              'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.',
+          },
+          { role: 'user', content: feeling.trim() },
+        ],
+        max_tokens:  120,
+        temperature: 0.3,
+      }),
+    });
+
+    // Fall back to raw feeling if HyDE fails (non-blocking)
+    let queryText = feeling.trim();
+    if (hydeRes.ok) {
+      const hydeData = await hydeRes.json();
+      queryText = hydeData.choices?.[0]?.message?.content?.trim() || queryText;
+    }
+
+    // ── Step 2: Embed the HyDE description ────────────────────────────────
     const embedRes = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -82,7 +118,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model:           'text-embedding-3-small',
-        input:           feeling.trim(),
+        input:           queryText,
         encoding_format: 'float',
       }),
     });
@@ -92,10 +128,10 @@ module.exports = async function handler(req, res) {
       throw new Error(err.error?.message || 'Embedding API error');
     }
 
-    const embedData     = await embedRes.json();
+    const embedData      = await embedRes.json();
     const queryEmbedding = embedData.data[0].embedding; // 1536 floats
 
-    // ── Step 2: Vector search — top 15 most similar verses ─────────────────
+    // ── Step 3: Vector search — top 20 most similar verses ─────────────────
     const supaRes = await fetch(
       `${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses`,
       {
@@ -107,7 +143,7 @@ module.exports = async function handler(req, res) {
         },
         body: JSON.stringify({
           query_embedding: queryEmbedding,
-          match_count:     15,
+          match_count:     20,
         }),
       }
     );
