@@ -89,6 +89,33 @@ Buruk: "Ini adalah pesan Allah untukmu. Allah menyuruhmu untuk bersabar."
 Daftar kandidat ayat (dipilih melalui pencarian semantik):
 {{CANDIDATES}}`;
 
+// ── HyDE Prompts ───────────────────────────────────────────────────────────────
+// Two angles attack the embedding space from different directions, increasing
+// the chance that the hybrid search surfaces the truly relevant verses.
+
+// Angle 1 — emotional: what the user feels, what comfort/peace they need.
+const HYDE_EMOTIONAL =
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan. ' +
+  'Berdasarkan curahan hati pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+  'tema EMOSIONAL dari ayat Al-Qur\'an yang ideal: apa yang dirasakan seseorang, ' +
+  'apa yang dibutuhkan secara emosional (ketenangan, harapan, penghiburan, keberanian, dll.), ' +
+  'dan pesan hati apa yang relevan untuk kondisi ini. ' +
+  'Gunakan kosakata tema Quranic: sabar, tawakal, tobat, syukur, ' +
+  'kasih sayang Allah, rahmat, ampunan, tawadhu. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
+// Angle 2 — situational: the real-life context and practical/spiritual guidance needed.
+const HYDE_SITUATIONAL =
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan. ' +
+  'Berdasarkan curahan hati pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+  'tema SITUASIONAL dari ayat Al-Qur\'an yang ideal: konteks kehidupan nyata mereka ' +
+  '(keluarga, pekerjaan, keuangan, kesehatan, hubungan, pernikahan, masa depan, dll.), ' +
+  'apa yang dibutuhkan secara praktis atau spiritual, ' +
+  'dan tema situasional apa yang harus diangkat oleh ayat tersebut. ' +
+  'Gunakan kosakata tema Quranic: rezeki, ujian, musibah, amanah, ' +
+  'ikhtiar, silaturahmi, doa, berserah diri. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
 // ── Result Cache ──────────────────────────────────────────────────────────────
 // In-memory, per container instance. Keyed on normalised feeling text.
 // A cache hit skips all three API calls (HyDE + embed + GPT selection),
@@ -190,73 +217,86 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // ── Step 1: HyDE — generate a hypothetical verse description ───────────
-    // Translates colloquial user input into "verse semantic space" before
-    // embedding, so the query vector aligns better with verse vectors.
-    const hydeRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Kamu membantu mencari ayat Al-Qur\'an yang relevan. ' +
-              'Berdasarkan perasaan pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
-              'tema, pesan, dan konteks ayat Al-Qur\'an yang ideal untuk situasi ini. ' +
-              'Gunakan kosakata yang mencerminkan tema-tema Quran: kesabaran, tawakal, ' +
-              'tobat, syukur, rezeki, pengampunan, kasih sayang Allah, dll. ' +
-              'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.',
-          },
-          { role: 'user', content: feeling.trim() },
-        ],
-        max_tokens:  120,
-        temperature: 0.3,
-      }),
-    });
+    const rawFeeling = feeling.trim();
 
-    // Fall back to raw feeling if HyDE fails (non-blocking)
-    let queryText = feeling.trim();
-    if (hydeRes.ok) {
-      const hydeData = await hydeRes.json();
-      queryText = hydeData.choices?.[0]?.message?.content?.trim() || queryText;
-    }
+    // ── Step 1: Two HyDE queries in parallel ──────────────────────────────
+    // A: Emotional angle (what the user feels / needs emotionally) and
+    //    Situational angle (real-life context / practical guidance).
+    // Running both in parallel costs the same wall-clock time as one.
+    const makeHyDE = (systemContent) =>
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model:       'gpt-4o-mini',
+          messages:    [
+            { role: 'system', content: systemContent },
+            { role: 'user',   content: rawFeeling },
+          ],
+          max_tokens:  120,
+          temperature: 0.3,
+        }),
+      });
 
-    // ── Step 2: Embed the HyDE description ────────────────────────────────
-    const embedRes = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model:           'text-embedding-3-small',
-        input:           queryText,
-        encoding_format: 'float',
-      }),
-    });
+    const [hydeRes1, hydeRes2] = await Promise.all([
+      makeHyDE(HYDE_EMOTIONAL),
+      makeHyDE(HYDE_SITUATIONAL),
+    ]);
 
-    if (!embedRes.ok) {
-      const err = await embedRes.json();
+    // Parse both, fall back to raw feeling on failure (non-blocking)
+    const parseHyDE = async (res) => {
+      if (!res.ok) return rawFeeling;
+      const d = await res.json();
+      return d.choices?.[0]?.message?.content?.trim() || rawFeeling;
+    };
+
+    const [queryEmotional, querySituational] = await Promise.all([
+      parseHyDE(hydeRes1),
+      parseHyDE(hydeRes2),
+    ]);
+
+    // ── Step 2: Embed both HyDE descriptions in parallel ──────────────────
+    const makeEmbed = (text) =>
+      fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model:           'text-embedding-3-small',
+          input:           text,
+          encoding_format: 'float',
+        }),
+      });
+
+    const [embedRes1, embedRes2] = await Promise.all([
+      makeEmbed(queryEmotional),
+      makeEmbed(querySituational),
+    ]);
+
+    if (!embedRes1.ok || !embedRes2.ok) {
+      const errRes = embedRes1.ok ? embedRes2 : embedRes1;
+      const err    = await errRes.json();
       throw new Error(err.error?.message || 'Embedding API error');
     }
 
-    const embedData      = await embedRes.json();
-    const queryEmbedding = embedData.data[0].embedding; // 1536 floats
+    const [embedData1, embedData2] = await Promise.all([
+      embedRes1.json(),
+      embedRes2.json(),
+    ]);
 
-    // ── Step 3: Hybrid search — vector + full-text (RRF) ──────────────────
-    // match_verses_hybrid fuses cosine-similarity ranking with BM25-style
-    // keyword ranking via Reciprocal Rank Fusion so that common Quranic
-    // keywords (sabar, rezeki, tobat…) in the user's input boost recall.
-    // We use the original feeling text (not the HyDE expansion) for FTS so
-    // the user's actual words drive keyword matching.
-    const supaRes = await fetch(
-      `${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses_hybrid`,
-      {
+    const embedding1 = embedData1.data[0].embedding;
+    const embedding2 = embedData2.data[0].embedding;
+
+    // ── Step 3: Hybrid search — both embeddings in parallel ───────────────
+    // C: match_count raised 30 → 50 for a larger initial pool.
+    // FTS still uses the raw feeling so the user's own keywords drive it.
+    const makeSearch = (embedding) =>
+      fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses_hybrid`, {
         method: 'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -264,38 +304,77 @@ module.exports = async function handler(req, res) {
           'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
-          query_embedding: queryEmbedding,
-          query_text:      feeling.trim(), // raw input for FTS keyword matching
-          match_count:     30,             // larger pool for diversity filtering
+          query_embedding: embedding,
+          query_text:      rawFeeling,
+          match_count:     50,   // C: was 30
         }),
-      }
-    );
+      });
 
-    if (!supaRes.ok) {
-      const err = await supaRes.json();
+    const [supaRes1, supaRes2] = await Promise.all([
+      makeSearch(embedding1),
+      makeSearch(embedding2),
+    ]);
+
+    if (!supaRes1.ok || !supaRes2.ok) {
+      const errRes = supaRes1.ok ? supaRes2 : supaRes1;
+      const err    = await errRes.json();
       throw new Error(err.message || 'Vector search error');
     }
 
-    const candidates = await supaRes.json();
+    const [results1, results2] = await Promise.all([
+      supaRes1.json(),
+      supaRes2.json(),
+    ]);
 
-    if (!Array.isArray(candidates) || candidates.length === 0) {
+    const safeR1 = Array.isArray(results1) ? results1 : [];
+    const safeR2 = Array.isArray(results2) ? results2 : [];
+
+    if (safeR1.length === 0 && safeR2.length === 0) {
       throw new Error('Tidak ada ayat yang cocok ditemukan. Silakan coba lagi.');
     }
 
-    // ── Surah diversity: keep the highest-ranked verse per surah ──────────
-    // Prevents GPT from being given (and picking) multiple verses from the
-    // same surah, which would narrow the thematic variety in the output.
-    // Candidates are already sorted by RRF score desc, so first-seen = best.
-    const seenSurahs       = new Set();
+    // ── A: Interleave-merge both result lists, deduplicate by verse ID ─────
+    // Round-robin ensures emotional and situational angles are represented
+    // equally at every rank level. A verse appearing in both lists (highly
+    // relevant from both angles) wins its slot from whichever list ranked it
+    // higher — and is never counted twice.
+    const seenIds  = new Set();
+    const candidates = [];
+    const maxLen   = Math.max(safeR1.length, safeR2.length);
+
+    for (let i = 0; i < maxLen; i++) {
+      if (i < safeR1.length && !seenIds.has(safeR1[i].id)) {
+        candidates.push(safeR1[i]);
+        seenIds.add(safeR1[i].id);
+      }
+      if (i < safeR2.length && !seenIds.has(safeR2[i].id)) {
+        candidates.push(safeR2[i]);
+        seenIds.add(safeR2[i].id);
+      }
+    }
+
+    // ── B: Surah diversity — up to 2 per surah in the candidate pool ───────
+    // Was 1-per-surah, which discarded a second relevant verse from a large
+    // surah (e.g. Al-Baqarah has 286 verses spanning many themes).
+    // Allowing 2 gives GPT more to work with while still encouraging variety.
+    // The final output still enforces 1-per-surah.
+    const surahCount      = new Map();
     const diverseCandidates = candidates.filter(v => {
-      const key = v.surah_number ?? v.surah_name; // surah_number preferred
-      if (seenSurahs.has(key)) return false;
-      seenSurahs.add(key);
+      const key   = v.surah_number ?? v.surah_name;
+      const count = surahCount.get(key) || 0;
+      if (count >= 2) return false;    // B: was >= 1
+      surahCount.set(key, count + 1);
       return true;
     });
 
-    // ── Step 4: GPT-4o-mini selects the best 1-3 from diverse candidates ──
-    const DB_FOR_PROMPT = diverseCandidates.map(v => ({
+    // Cap candidates sent to GPT to keep prompt size reasonable
+    const TOP_N        = 25;
+    const topCandidates = diverseCandidates.slice(0, TOP_N);
+
+    // ── Step 4: GPT-4o selects the best 1–3 from top candidates ──────────
+    // D: Upgraded from gpt-4o-mini — better reasoning when distinguishing
+    //    close candidates and richer, more empathetic reflection text.
+    const DB_FOR_PROMPT = topCandidates.map(v => ({
       id:             v.id,
       surah_name:     v.surah_name,
       verse_number:   v.verse_number,
@@ -315,14 +394,14 @@ module.exports = async function handler(req, res) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
+        model:           'gpt-4o',   // D: was gpt-4o-mini
+        messages:        [
           { role: 'system', content: systemPrompt },
-          { role: 'user',   content: feeling.trim() },
+          { role: 'user',   content: rawFeeling },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.4,
-        max_tokens:  400,
+        temperature:     0.3,        // slightly tighter than before (was 0.4)
+        max_tokens:      400,
       }),
     });
 
@@ -334,8 +413,7 @@ module.exports = async function handler(req, res) {
     const openaiData = await openaiRes.json();
     const parsed     = JSON.parse(openaiData.choices[0].message.content);
 
-    // ── Relevance gate ────────────────────────────────────────────────────────
-    // GPT signals irrelevant input (math, factual queries, gibberish, etc.)
+    // ── Relevance gate ─────────────────────────────────────────────────────
     if (parsed.relevant === false) {
       const notRelevantPayload = {
         not_relevant: true,
@@ -351,11 +429,9 @@ module.exports = async function handler(req, res) {
     }
 
     // ── Step 5: Look up selected verses (no extra DB call) ─────────────────
-    // Build map from the diverse candidates GPT was given
-    const VERSE_MAP = Object.fromEntries(diverseCandidates.map(v => [v.id, v]));
+    const VERSE_MAP = Object.fromEntries(topCandidates.map(v => [v.id, v]));
 
-    // Final surah-diversity guard: even if GPT somehow picks two verses from
-    // the same surah (shouldn't happen given diverse input), drop the duplicate.
+    // Final 1-per-surah guard on the output (even if GPT somehow slips one in)
     const seenFinalSurahs = new Set();
     const ayat = parsed.selected_ids
       .slice(0, 3)
