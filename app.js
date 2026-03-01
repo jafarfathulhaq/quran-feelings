@@ -1,5 +1,12 @@
 'use strict';
 
+// ── In-App Browser Detection ───────────────────────────────────────────────────
+// Instagram, Facebook, TikTok, and LINE ship their own WebView that blocks
+// navigator.share({files}) and blob URL downloads — the two mechanisms the
+// share-as-image feature depends on. Detect early so we can warn the user.
+
+const IS_IN_APP_BROWSER = /Instagram|FBAN|FBAV|TikTok|Line\//i.test(navigator.userAgent);
+
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let currentFeeling = '';
@@ -14,6 +21,40 @@ function showToast(message) {
   toast.classList.add('visible');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+function showIABBanner() {
+  if (sessionStorage.getItem('iab-dismissed')) return;
+
+  const banner = document.createElement('div');
+  banner.id        = 'iab-banner';
+  banner.className = 'iab-banner';
+  banner.innerHTML = `
+    <span class="iab-msg">
+      📱 Kamu membuka ini di browser Instagram.
+      Untuk fitur <strong>Bagikan gambar</strong>, buka di Chrome atau Safari.
+    </span>
+    <div class="iab-actions">
+      <button class="iab-copy-btn">Salin Link</button>
+      <button class="iab-dismiss-btn" aria-label="Tutup">✕</button>
+    </div>
+  `;
+
+  banner.querySelector('.iab-copy-btn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      showToast('Link disalin ✓ — tempel di Chrome atau Safari');
+    } catch {
+      showToast('Salin link ini: ' + location.href);
+    }
+  });
+
+  banner.querySelector('.iab-dismiss-btn').addEventListener('click', () => {
+    banner.classList.add('iab-banner--hidden');
+    sessionStorage.setItem('iab-dismissed', '1');
+  });
+
+  document.body.insertBefore(banner, document.body.firstChild);
 }
 
 function escapeHtml(str) {
@@ -78,6 +119,13 @@ async function generateShareImage(verse) {
 }
 
 async function shareVerse(verse) {
+  // In-app browsers block both navigator.share({files}) and blob URL downloads.
+  // Show a clear instruction instead of silently failing.
+  if (IS_IN_APP_BROWSER) {
+    showToast('Buka di Chrome/Safari untuk berbagi gambar 🌐');
+    return;
+  }
+
   showToast('Membuat gambar...');
 
   let blob = null;
@@ -528,3 +576,4 @@ document.getElementById('saved-nav-btn').addEventListener('click',  () => {
 renderEmotionCards();
 initSearch();
 updateSavedBadge();
+if (IS_IN_APP_BROWSER) showIABBanner();

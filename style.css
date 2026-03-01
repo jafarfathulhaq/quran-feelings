@@ -863,6 +863,58 @@ body {
   text-align: center;
 }
 
+/* ── In-App Browser Banner ────────────────────────────── */
+.iab-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #FFF8E6;
+  border-bottom: 1.5px solid #F0D080;
+  padding: 10px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #5C4A00;
+  line-height: 1.4;
+  transition: opacity 0.3s, max-height 0.3s;
+  overflow: hidden;
+  max-height: 120px;
+}
+.iab-banner--hidden {
+  opacity: 0;
+  max-height: 0;
+  padding: 0;
+  border: none;
+}
+.iab-msg { flex: 1; min-width: 0; }
+.iab-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.iab-copy-btn {
+  background: #1A3D2B;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iab-copy-btn:active { opacity: 0.8; }
+.iab-dismiss-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #8A7000;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
 /* ── Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
