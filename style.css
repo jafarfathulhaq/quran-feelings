@@ -40,25 +40,8 @@ body {
 /* ── Header ───────────────────────────────────────────── */
 .header {
   text-align: center;
-  padding: 52px 24px 40px;
+  padding: 56px 0 44px;
   position: relative;
-  background: linear-gradient(135deg, #0C2416 0%, #1A3D2B 50%, #2D6A4F 100%);
-  border-radius: var(--radius);
-  margin-bottom: 44px;
-  overflow: hidden;
-}
-
-/* Subtle decorative ring inside the header */
-.header::before {
-  content: '';
-  position: absolute;
-  top: -80px;
-  right: -80px;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  border: 1px solid rgba(201, 168, 76, 0.12);
-  pointer-events: none;
 }
 
 .header::after {
@@ -67,14 +50,14 @@ body {
   width: 40px;
   height: 2px;
   background: var(--gold);
-  margin: 20px auto 0;
+  margin: 22px auto 0;
   border-radius: 2px;
 }
 
 .app-title {
   font-size: clamp(24px, 5vw, 36px);
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--green-deep);
   letter-spacing: -0.5px;
   line-height: 1.2;
 }
@@ -82,7 +65,7 @@ body {
 .app-subtitle {
   margin-top: 10px;
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--text-muted);
   font-weight: 400;
   line-height: 1.65;
 }
@@ -90,12 +73,12 @@ body {
 /* ── Saved Nav Button (header bookmark icon) ──────────── */
 .saved-nav-btn {
   position: absolute;
-  top: 18px;
+  top: 20px;
   right: 0;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  background: none;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 7px 10px;
   display: flex;
@@ -105,9 +88,9 @@ body {
 }
 
 .saved-nav-btn:hover {
-  color: var(--gold);
-  border-color: rgba(201, 168, 76, 0.55);
-  background: rgba(201, 168, 76, 0.10);
+  color: var(--green-deep);
+  border-color: var(--green-mid);
+  background: rgba(27, 67, 50, 0.04);
 }
 
 .saved-badge {
