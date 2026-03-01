@@ -520,32 +520,63 @@ body {
   margin-bottom: 16px;
 }
 
+/* ── Tafsir Lengkap Button ────────────────────────────── */
+.vc-tafsir-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  background: rgba(45, 106, 79, 0.06);
+  border: 1.5px solid var(--green-mid);
+  border-radius: 8px;
+  color: var(--green-mid);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-radius 0.15s;
+  gap: 8px;
+  text-align: left;
+}
+.vc-tafsir-btn:hover {
+  background: rgba(45, 106, 79, 0.12);
+  color: var(--green-deep);
+}
+.vc-tafsir-btn.open {
+  background: rgba(45, 106, 79, 0.10);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.vc-tafsir-btn-arrow {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 /* ── Tafsir Kemenag Panel ─────────────────────────────── */
 .vc-tafsir-kemenag {
-  margin-top: 4px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  background: rgba(45, 106, 79, 0.04);
+  border: 1.5px solid var(--green-mid);
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding: 14px 14px 12px;
 }
-
 .vc-tafsir-kemenag.hidden { display: none; }
-
-.vc-tafsir-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 14px 0 12px;
-}
 
 .vc-tafsir-kemenag-label {
   font-size: 10.5px;
   font-style: italic;
-  color: var(--text-muted);
-  opacity: 0.6;
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--green-mid);
+  margin-bottom: 10px;
 }
-
 .vc-tafsir-kemenag-text {
   font-size: 12.5px;
-  line-height: 1.8;
-  color: var(--text-muted);
+  line-height: 1.85;
+  color: var(--text-mid);
   white-space: pre-wrap;
 }
 

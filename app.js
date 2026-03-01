@@ -289,8 +289,11 @@ function buildVerseCard(verse, index) {
     <p class="vc-translation">"${verse.translation}"</p>
     ${verse.tafsir_summary ? `<p class="vc-reflection">${verse.tafsir_summary}</p><p class="vc-tafsir-source">Tafsir: M. Quraish Shihab</p>` : ''}
     ${verse.tafsir_kemenag ? `
+      <button class="vc-tafsir-btn">
+        <span>${EXPAND_ICON} Tafsir Lengkap oleh Kemenag</span>
+        <span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>
+      </button>
       <div class="vc-tafsir-kemenag hidden">
-        <div class="vc-tafsir-divider"></div>
         <p class="vc-tafsir-kemenag-label">Tafsir Kemenag RI</p>
         <p class="vc-tafsir-kemenag-text">${escapeHtml(verse.tafsir_kemenag)}</p>
       </div>
@@ -299,7 +302,6 @@ function buildVerseCard(verse, index) {
       <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
       <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
-      ${verse.tafsir_kemenag ? `<button class="vc-btn vc-tafsir-btn">${EXPAND_ICON} Tafsir Lengkap</button>` : ''}
       <button class="vc-btn vc-share-btn">${SHARE_ICON} Share to Your Social</button>
     </div>
   `;
@@ -312,13 +314,14 @@ function buildVerseCard(verse, index) {
   const tafsirBtn = card.querySelector('.vc-tafsir-btn');
   if (tafsirBtn) {
     tafsirBtn.addEventListener('click', () => {
-      const panel = card.querySelector('.vc-tafsir-kemenag');
-      const open  = !panel.classList.contains('hidden');
-      panel.classList.toggle('hidden', open);
-      tafsirBtn.innerHTML = open
-        ? `${EXPAND_ICON} Tafsir Lengkap`
-        : `${COLLAPSE_ICON} Sembunyikan`;
-      logEvent('tafsir_expanded', { surah_name: verse.surah_name, open: !open });
+      const panel   = card.querySelector('.vc-tafsir-kemenag');
+      const isOpen  = !panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', isOpen);
+      tafsirBtn.classList.toggle('open', !isOpen);
+      tafsirBtn.innerHTML = isOpen
+        ? `<span>${EXPAND_ICON} Tafsir Lengkap oleh Kemenag</span><span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>`
+        : `<span>${COLLAPSE_ICON} Sembunyikan Tafsir</span><span class="vc-tafsir-btn-arrow">${COLLAPSE_ICON}</span>`;
+      logEvent('tafsir_expanded', { surah_name: verse.surah_name, open: !isOpen });
     });
   }
 
