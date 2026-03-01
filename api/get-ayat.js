@@ -57,6 +57,39 @@ Buruk: "Ini adalah pesan Allah untukmu. Allah menyuruhmu untuk bersabar."
 Daftar kandidat ayat (dipilih melalui pencarian semantik):
 {{CANDIDATES}}`;
 
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// In-memory, per container instance. Vercel may spin up multiple containers,
+// so this is not globally distributed — but it stops loops, rapid hammering,
+// and accidental abuse from a single session. For global protection, upgrade
+// to Upstash Redis + @upstash/ratelimit.
+
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_MAX       = 20;              // requests per IP per window
+const MAX_INPUT_LEN  = 600;            // max characters in user input
+
+const rateLimitStore = new Map();       // ip → { count, resetAt }
+let   cleanupCounter = 0;
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+
+  // Periodically evict expired entries to prevent unbounded memory growth
+  if (++cleanupCounter % 200 === 0) {
+    for (const [k, v] of rateLimitStore) {
+      if (now > v.resetAt) rateLimitStore.delete(k);
+    }
+  }
+
+  const entry = rateLimitStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true; // first request in window → allowed
+  }
+  if (entry.count >= RATE_MAX) return false; // over limit → blocked
+  entry.count++;
+  return true;
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
@@ -67,9 +100,21 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  // ── Rate limit check ────────────────────────────────────────────────────────
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.socket?.remoteAddress
+    || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Terlalu banyak permintaan. Silakan coba lagi dalam satu jam.' });
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
   const { feeling } = req.body || {};
   if (!feeling || feeling.trim().length < 2) {
     return res.status(400).json({ error: 'Ceritakan apa yang kamu rasakan.' });
+  }
+  if (feeling.length > MAX_INPUT_LEN) {
+    return res.status(400).json({ error: `Input terlalu panjang (maks ${MAX_INPUT_LEN} karakter).` });
   }
 
   try {
