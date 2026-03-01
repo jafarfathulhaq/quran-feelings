@@ -89,6 +89,36 @@ Buruk: "Ini adalah pesan Allah untukmu. Allah menyuruhmu untuk bersabar."
 Daftar kandidat ayat (dipilih melalui pencarian semantik):
 {{CANDIDATES}}`;
 
+// ── Result Cache ──────────────────────────────────────────────────────────────
+// In-memory, per container instance. Keyed on normalised feeling text.
+// A cache hit skips all three API calls (HyDE + embed + GPT selection),
+// which is especially valuable for emotion-card searches (fixed strings that
+// many users trigger repeatedly: "sedih", "cemas", "bersyukur", etc.).
+//
+// TTL: 24 h — results are stable over that window.
+// Max: 500 entries — at ~2 KB each that is ~1 MB RAM, well within limits.
+// Eviction: FIFO (delete the oldest key when the map is full).
+
+const RESULT_CACHE_MAX = 500;
+const RESULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+const resultCache = new Map(); // normalised_feeling → { payload, expiresAt }
+
+function getCached(key) {
+  const entry = resultCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { resultCache.delete(key); return null; }
+  return entry.payload;
+}
+
+function setCached(key, payload) {
+  if (resultCache.size >= RESULT_CACHE_MAX) {
+    // FIFO eviction: delete the first (oldest) key
+    resultCache.delete(resultCache.keys().next().value);
+  }
+  resultCache.set(key, { payload, expiresAt: Date.now() + RESULT_CACHE_TTL });
+}
+
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
 // In-memory, per container instance. Vercel may spin up multiple containers,
 // so this is not globally distributed — but it stops loops, rapid hammering,
@@ -147,6 +177,16 @@ module.exports = async function handler(req, res) {
   }
   if (feeling.length > MAX_INPUT_LEN) {
     return res.status(400).json({ error: `Input terlalu panjang (maks ${MAX_INPUT_LEN} karakter).` });
+  }
+
+  // ── Result cache check ───────────────────────────────────────────────────────
+  // Normalise: trim + collapse whitespace + lower-case.
+  // A hit skips HyDE, embed, vector search, AND the GPT selection call.
+  const cacheKey = feeling.trim().replace(/\s+/g, ' ').toLowerCase();
+  const cached   = getCached(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.status(200).json(cached);
   }
 
   try {
@@ -297,11 +337,13 @@ module.exports = async function handler(req, res) {
     // ── Relevance gate ────────────────────────────────────────────────────────
     // GPT signals irrelevant input (math, factual queries, gibberish, etc.)
     if (parsed.relevant === false) {
-      return res.status(200).json({
+      const notRelevantPayload = {
         not_relevant: true,
         message: parsed.message ||
           'Sepertinya itu bukan curahan hati. Coba ceritakan apa yang sedang kamu rasakan atau hadapi hari ini.',
-      });
+      };
+      setCached(cacheKey, notRelevantPayload);
+      return res.status(200).json(notRelevantPayload);
     }
 
     if (!parsed.selected_ids || !Array.isArray(parsed.selected_ids) || parsed.selected_ids.length === 0) {
@@ -345,10 +387,9 @@ module.exports = async function handler(req, res) {
       throw new Error('Gagal menemukan ayat yang relevan. Silakan coba lagi.');
     }
 
-    return res.status(200).json({
-      reflection: parsed.reflection || '',
-      ayat,
-    });
+    const successPayload = { reflection: parsed.reflection || '', ayat };
+    setCached(cacheKey, successPayload);
+    return res.status(200).json(successPayload);
 
   } catch (error) {
     console.error('Handler error:', error.message);
