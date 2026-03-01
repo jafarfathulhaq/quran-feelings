@@ -23,6 +23,7 @@ function logEvent(eventType, properties = {}) {
 let currentFeeling    = '';
 let currentAyat       = [];
 let currentSearchCtx  = { method: 'text', emotionId: null }; // populated in fetchAyat
+let typewriterActive  = false; // set false to abort an in-progress typewriter
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -300,75 +301,99 @@ function buildVerseCard(verse, index) {
   return card;
 }
 
-// ── Skeleton Loader ───────────────────────────────────────────────────────────
-
-function buildSkeletonCard() {
-  const card = document.createElement('div');
-  card.className = 'verse-card skeleton-card';
-  card.innerHTML = `
-    <div class="sk-line sk-short"></div>
-    <div class="sk-block sk-arabic-block"></div>
-    <div class="sk-line"></div>
-    <div class="sk-line sk-medium"></div>
-    <div class="sk-line sk-short"></div>
-  `;
-  return card;
-}
-
 // ── Loading State ─────────────────────────────────────────────────────────────
+// Shows the user's feeling as a right-side chat bubble immediately,
+// then a left-side typing indicator while the API call is in flight.
 
 function showLoading() {
-  document.getElementById('user-quote').classList.add('hidden');
+  typewriterActive = false;
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
+  document.getElementById('verses-grid').innerHTML = '';
 
-  document.getElementById('verses-header').innerHTML = `
-    <div class="loading-header">
-      <div class="loading-spinner"></div>
-      <p class="loading-text">Menemukan ayat untukmu<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></p>
+  const thread = document.getElementById('chat-thread');
+  thread.innerHTML = `
+    ${currentFeeling ? `
+      <div class="chat-bubble chat-bubble--user">
+        <p class="cb-text">${escapeHtml(currentFeeling)}</p>
+      </div>
+    ` : ''}
+    <div class="chat-bubble chat-bubble--app chat-bubble--typing" id="typing-indicator">
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
     </div>
   `;
-
-  const grid = document.getElementById('verses-grid');
-  grid.innerHTML = '';
-  for (let i = 0; i < 3; i++) grid.appendChild(buildSkeletonCard());
 }
 
 // ── Render Verses ─────────────────────────────────────────────────────────────
+// Sequence: typewrite reflection → stagger verse cards in → reveal feedback
 
 function renderVerses(data) {
   currentAyat = data.ayat;
 
-  // User quote
-  const quoteEl = document.getElementById('user-quote');
-  if (currentFeeling) {
-    quoteEl.innerHTML = `
-      <p class="user-quote-label">Kamu berkata:</p>
-      <p class="user-quote-text">${escapeHtml(currentFeeling)}</p>
-    `;
-    quoteEl.classList.remove('hidden');
+  // ── A: Replace typing indicator with the app reflection bubble ──────────────
+  const thread    = document.getElementById('chat-thread');
+  const typingEl  = document.getElementById('typing-indicator');
+  if (typingEl) typingEl.remove();
+
+  const appBubble = document.createElement('div');
+  appBubble.className = 'chat-bubble chat-bubble--app chat-bubble--typing-active';
+  const textEl = document.createElement('p');
+  textEl.className = 'cb-text';
+  appBubble.appendChild(textEl);
+  thread.appendChild(appBubble);
+
+  // ── B: Typewriter — reveal reflection text 2 chars per 18 ms ────────────────
+  const reflection = data.reflection || '';
+  typewriterActive = true;
+  let pos = 0;
+
+  function tick() {
+    if (!typewriterActive) return; // aborted (user navigated away)
+    pos = Math.min(pos + 2, reflection.length);
+    textEl.textContent = reflection.slice(0, pos);
+    if (pos < reflection.length) {
+      setTimeout(tick, 18);
+    } else {
+      appBubble.classList.remove('chat-bubble--typing-active'); // remove cursor
+      typewriterActive = false;
+      onTypingDone();
+    }
   }
 
-  // Verses header — uses the LLM's personalised reflection message
-  document.getElementById('verses-header').innerHTML = `
-    <p class="vh-reflection">${escapeHtml(data.reflection)}</p>
-    <p class="vh-sub">Ayat untukmu hari ini</p>
-  `;
+  if (reflection) tick(); else onTypingDone();
 
-  // Verse cards
-  const grid = document.getElementById('verses-grid');
-  grid.innerHTML = '';
-  data.ayat.forEach((verse, i) => grid.appendChild(buildVerseCard(verse, i)));
+  // ── C: After typing — stagger verse cards in, then reveal actions ────────────
+  function onTypingDone() {
+    const grid = document.getElementById('verses-grid');
+    grid.innerHTML = '';
 
-  // Action buttons
-  const actionsEl = document.getElementById('verse-actions');
-  actionsEl.innerHTML = `
-    <button class="va-secondary" id="find-more-btn">Temukan ayat lain</button>
-  `;
-  actionsEl.classList.remove('hidden');
-  document.getElementById('find-more-btn').addEventListener('click', () => switchView('selection-view'));
+    data.ayat.forEach((verse, i) => {
+      const card = buildVerseCard(verse, i);
+      grid.appendChild(card);
+      // Delay class add so the opacity-0 starting state renders first
+      setTimeout(() => card.classList.add('card-visible'), i * 220 + 80);
+    });
 
-  // Feedback
+    const afterCards = data.ayat.length * 220 + 300;
+    setTimeout(() => {
+      const actionsEl = document.getElementById('verse-actions');
+      actionsEl.innerHTML = `
+        <button class="va-secondary" id="find-more-btn">Temukan ayat lain</button>
+      `;
+      actionsEl.classList.remove('hidden');
+      document.getElementById('find-more-btn')
+        .addEventListener('click', () => switchView('selection-view'));
+
+      renderFeedback();
+    }, afterCards);
+  }
+}
+
+// ── Feedback Section ──────────────────────────────────────────────────────────
+
+function renderFeedback() {
   const feedbackEl = document.getElementById('verse-feedback');
   feedbackEl.innerHTML = `
     <p class="feedback-label">Bagaimana perasaanmu setelah membaca ini?</p>
@@ -382,18 +407,18 @@ function renderVerses(data) {
 
   const FEEDBACK_COPY = {
     lebih_tenang: {
-      icon:      '🤍',
-      text:      'Alhamdulillah. Semoga ketenangan itu terus menyertaimu.',
+      icon:        '🤍',
+      text:        'Alhamdulillah. Semoga ketenangan itu terus menyertaimu.',
       actionLabel: null,
     },
     sama_saja: {
-      icon:      '✦',
-      text:      'Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya.',
+      icon:        '✦',
+      text:        'Tidak apa-apa. Kamu sudah melangkah dengan membaca. Pelan-pelan ya.',
       actionLabel: '← Cari ayat lain',
     },
     masih_sedih: {
-      icon:      '🤍',
-      text:      'Kesedihan itu manusiawi. Allah selalu mendengar, dan kamu tidak sendirian.',
+      icon:        '🤍',
+      text:        'Kesedihan itu manusiawi. Allah selalu mendengar, dan kamu tidak sendirian.',
       actionLabel: '← Cari ayat lain',
     },
   };
@@ -402,24 +427,20 @@ function renderVerses(data) {
     btn.addEventListener('click', () => {
       const key = btn.dataset.key;
 
-      // ── Log with full context so each response is tied to specific verses ──
       const fbProps = {
         response:  key,
-        verse_ids: currentAyat.map(v => v.id).join(','), // e.g. "2:153,94:5"
+        verse_ids: currentAyat.map(v => v.id).join(','),
         method:    currentSearchCtx.method,
       };
       if (currentSearchCtx.emotionId) fbProps.emotion_id = currentSearchCtx.emotionId;
       logEvent('mood_feedback', fbProps);
 
-      // ── Replace buttons with a contextual thank-you state ──
       const { icon, text, actionLabel } = FEEDBACK_COPY[key] || FEEDBACK_COPY.sama_saja;
       feedbackEl.innerHTML = `
         <div class="feedback-thanks">
           <span class="feedback-thanks-icon">${icon}</span>
           <p class="feedback-thanks-text">${text}</p>
-          ${actionLabel
-            ? `<button class="feedback-try-again">${actionLabel}</button>`
-            : ''}
+          ${actionLabel ? `<button class="feedback-try-again">${actionLabel}</button>` : ''}
         </div>
       `;
       if (actionLabel) {
@@ -453,42 +474,50 @@ function renderSavedView() {
     return;
   }
 
-  // Newest first
-  [...saved].reverse().forEach((verse, i) => grid.appendChild(buildVerseCard(verse, i)));
+  // Newest first — add card-visible immediately so no fade-in animation
+  [...saved].reverse().forEach((verse, i) => {
+    const card = buildVerseCard(verse, i);
+    card.classList.add('card-visible');
+    grid.appendChild(card);
+  });
 }
 
-// ── Error State ───────────────────────────────────────────────────────────────
+// ── Error / Not-relevant States ───────────────────────────────────────────────
+// Both render as an app chat bubble with a small action button inside.
 
-function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
-  document.getElementById('user-quote').classList.add('hidden');
+function showAppBubble(text, btnLabel, btnAction) {
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
-  document.getElementById('verses-header').innerHTML = '';
-  document.getElementById('verses-grid').innerHTML = `
-    <div class="error-state">
-      <span class="error-emoji">😔</span>
-      <p class="error-msg">${message}</p>
-      <button class="error-back-btn">← Coba Lagi</button>
-    </div>
+  document.getElementById('verses-grid').innerHTML = '';
+
+  const thread   = document.getElementById('chat-thread');
+  const typingEl = document.getElementById('typing-indicator');
+  if (typingEl) typingEl.remove();
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble chat-bubble--app';
+  bubble.innerHTML = `
+    <p class="cb-text">${text}</p>
+    <button class="cb-back-btn">${btnLabel}</button>
   `;
-  document.querySelector('.error-back-btn')
-    ?.addEventListener('click', () => switchView('selection-view'));
+  thread.appendChild(bubble);
+  bubble.querySelector('.cb-back-btn').addEventListener('click', btnAction);
+}
+
+function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
+  showAppBubble(
+    `😔 ${escapeHtml(message)}`,
+    '← Coba Lagi',
+    () => switchView('selection-view'),
+  );
 }
 
 function showNotRelevant(message) {
-  document.getElementById('user-quote').classList.add('hidden');
-  document.getElementById('verse-actions').classList.add('hidden');
-  document.getElementById('verse-feedback').classList.add('hidden');
-  document.getElementById('verses-header').innerHTML = '';
-  document.getElementById('verses-grid').innerHTML = `
-    <div class="error-state">
-      <span class="error-emoji">🤔</span>
-      <p class="error-msg">${escapeHtml(message)}</p>
-      <button class="error-back-btn">← Ceritakan perasaanmu</button>
-    </div>
-  `;
-  document.querySelector('.error-back-btn')
-    ?.addEventListener('click', () => switchView('selection-view'));
+  showAppBubble(
+    `🤔 ${escapeHtml(message)}`,
+    '← Ceritakan perasaanmu',
+    () => switchView('selection-view'),
+  );
 }
 
 // ── API Call ──────────────────────────────────────────────────────────────────
@@ -594,7 +623,10 @@ function initSearch() {
 // ── View Switch ───────────────────────────────────────────────────────────────
 
 function switchView(targetId) {
-  if (targetId !== 'verses-view') stopCurrentAudio();
+  if (targetId !== 'verses-view') {
+    stopCurrentAudio();
+    typewriterActive = false; // abort any running typewriter
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(targetId).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
