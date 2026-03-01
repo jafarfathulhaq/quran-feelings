@@ -791,6 +791,78 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Share Card (off-screen, captured by html2canvas) ─── */
+/* Fixed off-screen — must NOT use display:none or visibility:hidden */
+.share-card {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  width: 540px;
+  background: #1A3D2B;
+  padding: 56px 48px 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  pointer-events: none;
+  /* html2canvas captures this exactly as rendered */
+}
+
+.sc-brand {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(201, 168, 76, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.sc-arabic {
+  font-family: 'Amiri', serif;
+  font-size: 34px;
+  line-height: 2.1;
+  direction: rtl;
+  text-align: center;
+  color: #FFFFFF;
+  width: 100%;
+}
+
+.sc-divider {
+  width: 48px;
+  height: 2px;
+  background: #C9A84C;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.sc-translation {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.85;
+  color: rgba(255, 255, 255, 0.82);
+  font-style: italic;
+  text-align: center;
+}
+
+.sc-ref {
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #C9A84C;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.sc-url {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
 /* ── Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

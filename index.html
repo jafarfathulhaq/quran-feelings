@@ -81,9 +81,20 @@
 
   </div>
 
+  <!-- Share Card (off-screen — captured by html2canvas for image sharing) -->
+  <div id="share-card" class="share-card" aria-hidden="true">
+    <p class="sc-brand">✦ Curhat &amp; Temukan Ayat ✦</p>
+    <p id="sc-arabic"      class="sc-arabic"></p>
+    <div class="sc-divider"></div>
+    <p id="sc-translation" class="sc-translation"></p>
+    <p id="sc-ref"         class="sc-ref"></p>
+    <p id="sc-url"         class="sc-url"></p>
+  </div>
+
   <!-- Toast notification -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>

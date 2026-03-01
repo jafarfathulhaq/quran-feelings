@@ -51,12 +51,77 @@ async function copyVerse(verse) {
   }
 }
 
+// ── Share as Image ─────────────────────────────────────────────────────────────
+
+async function generateShareImage(verse) {
+  // Populate the off-screen share card
+  document.getElementById('sc-arabic').textContent      = verse.arabic;
+  document.getElementById('sc-translation').textContent = `"${verse.translation}"`;
+  document.getElementById('sc-ref').textContent         = verse.ref;
+  document.getElementById('sc-url').textContent         = window.location.hostname;
+
+  // Ensure fonts are fully loaded before capturing
+  await document.fonts.load('400 34px Amiri');
+  await document.fonts.ready;
+
+  const card = document.getElementById('share-card');
+  const canvas = await html2canvas(card, {
+    scale:           2,       // 2x → 1080px output for retina/high-DPI
+    useCORS:         true,
+    backgroundColor: '#1A3D2B',
+    logging:         false,
+  });
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+  );
+}
+
 async function shareVerse(verse) {
+  showToast('Membuat gambar...');
+
+  let blob = null;
   try {
-    await navigator.share({
-      title: `${verse.ref} — Curhat & Temukan Ayat`,
-      text: `${verse.arabic}\n\n"${verse.translation}"\n\n— ${verse.ref}`,
-    });
+    blob = await generateShareImage(verse);
+  } catch (imgErr) {
+    console.warn('Image generation failed, falling back to text:', imgErr);
+  }
+
+  if (blob) {
+    const safeName = verse.ref.replace(/[^a-zA-Z0-9]/g, '-');
+    const file     = new File([blob], `${safeName}.png`, { type: 'image/png' });
+
+    // 1. Best: share image file (Android Chrome, iOS Safari 15+)
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ title: verse.ref, files: [file] });
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return; // user cancelled
+      }
+    }
+
+    // 2. Fallback: download the PNG
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = `${safeName}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Gambar tersimpan ✓');
+    return;
+  }
+
+  // 3. Last resort: text share → copy
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: verse.ref,
+        text:  `${verse.arabic}\n\n"${verse.translation}"\n\n— ${verse.ref}`,
+      });
+    } else {
+      copyVerse(verse);
+    }
   } catch (err) {
     if (err.name !== 'AbortError') copyVerse(verse);
   }
@@ -193,16 +258,14 @@ function buildVerseCard(verse, index) {
       <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
       <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
-      ${navigator.share ? `<button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>` : ''}
+      <button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>
     </div>
   `;
 
-  card.querySelector('.vc-audio-btn').addEventListener('click', e => playAudio(verse, e.currentTarget));
-  card.querySelector('.vc-save-btn').addEventListener('click',  e => toggleSave(verse, e.currentTarget));
-  card.querySelector('.vc-copy-btn').addEventListener('click',  () => copyVerse(verse));
-  if (navigator.share) {
-    card.querySelector('.vc-share-btn').addEventListener('click', () => shareVerse(verse));
-  }
+  card.querySelector('.vc-audio-btn').addEventListener('click',  e => playAudio(verse, e.currentTarget));
+  card.querySelector('.vc-save-btn').addEventListener('click',   e => toggleSave(verse, e.currentTarget));
+  card.querySelector('.vc-copy-btn').addEventListener('click',   () => copyVerse(verse));
+  card.querySelector('.vc-share-btn').addEventListener('click',  () => shareVerse(verse));
   return card;
 }
 
