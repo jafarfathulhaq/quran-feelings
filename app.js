@@ -632,6 +632,62 @@ function switchView(targetId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ── Verse of the Day ──────────────────────────────────────────────────────────
+
+async function initVOTD() {
+  const section = document.getElementById('votd-section');
+  if (!section) return;
+
+  // Show a subtle placeholder while loading
+  section.innerHTML = '<div class="votd-skeleton"></div>';
+
+  try {
+    const res = await fetch('/api/verse-of-day');
+    if (!res.ok) throw new Error('unavailable');
+    const verse = await res.json();
+    renderVOTD(verse, section);
+  } catch {
+    section.remove(); // silently hide when offline or endpoint missing
+  }
+}
+
+function renderVOTD(verse, container) {
+  const today   = new Date();
+  const dateStr = today.toLocaleDateString('id-ID', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  // Local curated verses use surah_name + verse_number; API verses have ref
+  const ref     = verse.ref || `QS. ${verse.surah_name}: ${verse.verse_number}`;
+  const saved   = isVerseSaved(verse.id);
+  const bmkHtml = saved
+    ? `${BOOKMARK_FILLED_ICON} Tersimpan`
+    : `${BOOKMARK_ICON} Simpan`;
+
+  container.innerHTML = `
+    <div class="votd-card">
+      <div class="votd-header">
+        <span class="votd-label">✦ Ayat Hari Ini</span>
+        <span class="votd-date">${dateStr}</span>
+      </div>
+      <p class="votd-arabic">${verse.arabic}</p>
+      <p class="votd-translation">"${verse.translation}"</p>
+      <p class="votd-ref">${ref}</p>
+      <div class="votd-actions">
+        <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
+        <button class="vc-btn votd-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
+      </div>
+    </div>
+  `;
+
+  container.querySelector('.votd-audio-btn').addEventListener('click',
+    e => playAudio(verse, e.currentTarget)
+  );
+  container.querySelector('.votd-save-btn').addEventListener('click',
+    e => toggleSave(verse, e.currentTarget)
+  );
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 document.getElementById('back-btn').addEventListener('click',       () => switchView('selection-view'));
@@ -644,3 +700,11 @@ document.getElementById('saved-nav-btn').addEventListener('click',  () => {
 renderEmotionCards();
 initSearch();
 updateSavedBadge();
+initVOTD();
+
+// ── Service Worker ─────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
