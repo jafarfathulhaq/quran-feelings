@@ -428,12 +428,14 @@ module.exports = async function handler(req, res) {
       throw new Error('Format respons tidak valid');
     }
 
-    // ── Step 5: Look up selected verses (no extra DB call) ─────────────────
+    // ── Step 5: Look up selected verses + fetch tafsir_kemenag ────────────────
+    // tafsir_kemenag is not returned by the search RPC (too large for 50
+    // candidates). We fetch it here for only the 1-3 selected verses.
     const VERSE_MAP = Object.fromEntries(topCandidates.map(v => [v.id, v]));
 
     // Final 1-per-surah guard on the output (even if GPT somehow slips one in)
     const seenFinalSurahs = new Set();
-    const ayat = parsed.selected_ids
+    const selectedBase = parsed.selected_ids
       .slice(0, 3)
       .map(id => {
         const v = VERSE_MAP[id];
@@ -441,15 +443,7 @@ module.exports = async function handler(req, res) {
           console.warn(`LLM selected id not in candidates: ${id}`);
           return null;
         }
-        return {
-          id:             v.id,
-          ref:            `QS. ${v.surah_name} : ${v.verse_number}`,
-          surah_name:     v.surah_name,
-          verse_number:   v.verse_number,
-          arabic:         v.arabic,
-          translation:    v.translation,
-          tafsir_summary: v.tafsir_summary || null,
-        };
+        return v;
       })
       .filter(Boolean)
       .filter(v => {
@@ -458,6 +452,37 @@ module.exports = async function handler(req, res) {
         seenFinalSurahs.add(key);
         return true;
       });
+
+    // Fetch tafsir_kemenag for selected verse ids in one REST call
+    let kemenagMap = {};
+    if (selectedBase.length > 0) {
+      const ids = selectedBase.map(v => v.id).join(',');
+      const kRes = await fetch(
+        `${process.env.SUPABASE_URL}/rest/v1/quran_verses` +
+        `?select=id,tafsir_kemenag&id=in.(${encodeURIComponent(ids)})`,
+        {
+          headers: {
+            'apikey':        process.env.SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          },
+        }
+      );
+      if (kRes.ok) {
+        const kRows = await kRes.json();
+        kemenagMap = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
+      }
+    }
+
+    const ayat = selectedBase.map(v => ({
+      id:               v.id,
+      ref:              `QS. ${v.surah_name} : ${v.verse_number}`,
+      surah_name:       v.surah_name,
+      verse_number:     v.verse_number,
+      arabic:           v.arabic,
+      translation:      v.translation,
+      tafsir_summary:   v.tafsir_summary   || null,
+      tafsir_kemenag:   kemenagMap[v.id]   || null,
+    }));
 
     if (ayat.length === 0) {
       throw new Error('Gagal menemukan ayat yang relevan. Silakan coba lagi.');

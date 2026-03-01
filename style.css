@@ -520,6 +520,35 @@ body {
   margin-bottom: 16px;
 }
 
+/* ── Tafsir Kemenag Panel ─────────────────────────────── */
+.vc-tafsir-kemenag {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.vc-tafsir-kemenag.hidden { display: none; }
+
+.vc-tafsir-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0 12px;
+}
+
+.vc-tafsir-kemenag-label {
+  font-size: 10.5px;
+  font-style: italic;
+  color: var(--text-muted);
+  opacity: 0.6;
+  margin-bottom: 8px;
+}
+
+.vc-tafsir-kemenag-text {
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+
 /* ── Verse Copy/Share Buttons ─────────────────────────── */
 .vc-actions {
   display: flex;

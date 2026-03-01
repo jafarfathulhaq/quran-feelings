@@ -159,6 +159,8 @@ async function shareVerse(verse) {
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const COPY_ICON           = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const EXPAND_ICON         = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+const COLLAPSE_ICON       = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`;
 const SHARE_ICON          = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
 const PLAY_ICON           = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
 const PAUSE_ICON          = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
@@ -286,10 +288,18 @@ function buildVerseCard(verse, index) {
     <p class="vc-arabic">${verse.arabic}</p>
     <p class="vc-translation">"${verse.translation}"</p>
     ${verse.tafsir_summary ? `<p class="vc-reflection">${verse.tafsir_summary}</p><p class="vc-tafsir-source">Tafsir: M. Quraish Shihab</p>` : ''}
+    ${verse.tafsir_kemenag ? `
+      <div class="vc-tafsir-kemenag hidden">
+        <div class="vc-tafsir-divider"></div>
+        <p class="vc-tafsir-kemenag-label">Tafsir Kemenag RI</p>
+        <p class="vc-tafsir-kemenag-text">${escapeHtml(verse.tafsir_kemenag)}</p>
+      </div>
+    ` : ''}
     <div class="vc-actions">
       <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
       <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
+      ${verse.tafsir_kemenag ? `<button class="vc-btn vc-tafsir-btn">${EXPAND_ICON} Tafsir Lengkap</button>` : ''}
       <button class="vc-btn vc-share-btn">${SHARE_ICON} Share to Your Social</button>
     </div>
   `;
@@ -298,6 +308,20 @@ function buildVerseCard(verse, index) {
   card.querySelector('.vc-save-btn').addEventListener('click',   e => toggleSave(verse, e.currentTarget));
   card.querySelector('.vc-copy-btn').addEventListener('click',   () => copyVerse(verse));
   card.querySelector('.vc-share-btn').addEventListener('click',  () => shareVerse(verse));
+
+  const tafsirBtn = card.querySelector('.vc-tafsir-btn');
+  if (tafsirBtn) {
+    tafsirBtn.addEventListener('click', () => {
+      const panel = card.querySelector('.vc-tafsir-kemenag');
+      const open  = !panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', open);
+      tafsirBtn.innerHTML = open
+        ? `${EXPAND_ICON} Tafsir Lengkap`
+        : `${COLLAPSE_ICON} Sembunyikan`;
+      logEvent('tafsir_expanded', { surah_name: verse.surah_name, open: !open });
+    });
+  }
+
   return card;
 }
 

@@ -73,7 +73,7 @@ def fetch_all_verses():
     while True:
         url = (
             f"{SUPABASE_URL}/rest/v1/quran_verses"
-            f"?select=id,translation,tafsir_summary"
+            f"?select=id,translation,tafsir_summary,tafsir_kemenag"
             f"&order=id"
             f"&offset={offset}&limit={FETCH_BATCH}"
         )
@@ -93,10 +93,18 @@ def fetch_all_verses():
 # ── Phase 2: Build richer embed text ─────────────────────────────────────────
 
 def build_embed_text(v):
-    """translation + tafsir for a richer, context-aware vector."""
+    """translation + tafsir_summary + tafsir_kemenag excerpt for richer vectors.
+
+    Using first 600 chars of Kemenag tafsir captures core thematic context
+    (who the verse addresses, what situation it responds to) without diluting
+    the embedding with excessive length. Combined with translation (~100 chars)
+    and tafsir_summary (~200 chars), total input stays well under 8k tokens.
+    """
     text = v["translation"] or ""
     if v.get("tafsir_summary"):
         text += " " + v["tafsir_summary"]
+    if v.get("tafsir_kemenag"):
+        text += " " + v["tafsir_kemenag"][:600]
     return text.strip()
 
 # ── Phase 3: Embed in batches ─────────────────────────────────────────────────
