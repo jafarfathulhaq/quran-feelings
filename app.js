@@ -402,6 +402,22 @@ function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
     ?.addEventListener('click', () => switchView('selection-view'));
 }
 
+function showNotRelevant(message) {
+  document.getElementById('user-quote').classList.add('hidden');
+  document.getElementById('verse-actions').classList.add('hidden');
+  document.getElementById('verse-feedback').classList.add('hidden');
+  document.getElementById('verses-header').innerHTML = '';
+  document.getElementById('verses-grid').innerHTML = `
+    <div class="error-state">
+      <span class="error-emoji">🤔</span>
+      <p class="error-msg">${escapeHtml(message)}</p>
+      <button class="error-back-btn">← Ceritakan perasaanmu</button>
+    </div>
+  `;
+  document.querySelector('.error-back-btn')
+    ?.addEventListener('click', () => switchView('selection-view'));
+}
+
 // ── API Call ──────────────────────────────────────────────────────────────────
 
 async function callAPI(feeling) {
@@ -426,7 +442,11 @@ async function fetchAyat(feeling) {
       callAPI(feeling),
       new Promise(r => setTimeout(r, 1500)),
     ]);
-    renderVerses(data);
+    if (data.not_relevant) {
+      showNotRelevant(data.message);
+    } else {
+      renderVerses(data);
+    }
   } catch (err) {
     showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
   }
