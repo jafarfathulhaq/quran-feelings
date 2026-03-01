@@ -23,40 +23,6 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
 }
 
-function showIABBanner() {
-  if (sessionStorage.getItem('iab-dismissed')) return;
-
-  const banner = document.createElement('div');
-  banner.id        = 'iab-banner';
-  banner.className = 'iab-banner';
-  banner.innerHTML = `
-    <span class="iab-msg">
-      📱 Kamu membuka ini di browser Instagram.
-      Untuk fitur <strong>Bagikan gambar</strong>, buka di Chrome atau Safari.
-    </span>
-    <div class="iab-actions">
-      <button class="iab-copy-btn">Salin Link</button>
-      <button class="iab-dismiss-btn" aria-label="Tutup">✕</button>
-    </div>
-  `;
-
-  banner.querySelector('.iab-copy-btn').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      showToast('Link disalin ✓ — tempel di Chrome atau Safari');
-    } catch {
-      showToast('Salin link ini: ' + location.href);
-    }
-  });
-
-  banner.querySelector('.iab-dismiss-btn').addEventListener('click', () => {
-    banner.classList.add('iab-banner--hidden');
-    sessionStorage.setItem('iab-dismissed', '1');
-  });
-
-  document.body.insertBefore(banner, document.body.firstChild);
-}
-
 function escapeHtml(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -306,7 +272,7 @@ function buildVerseCard(verse, index) {
       <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
       <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
-      <button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>
+      <button class="vc-btn vc-share-btn">${SHARE_ICON} Share to Your Social</button>
     </div>
   `;
 
@@ -576,4 +542,3 @@ document.getElementById('saved-nav-btn').addEventListener('click',  () => {
 renderEmotionCards();
 initSearch();
 updateSavedBadge();
-if (IS_IN_APP_BROWSER) showIABBanner();
