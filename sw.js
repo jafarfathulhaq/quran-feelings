@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME    = 'ayat-v1';
+const CACHE_NAME    = 'ayat-v2';
 const STATIC_ASSETS = [
   '/',
   '/style.css',
