@@ -386,6 +386,13 @@ body {
   border: 1px solid rgba(232, 228, 223, 0.7);
   transition: transform 0.18s, box-shadow 0.18s;
   animation: fadeUp 0.45s ease both;
+  /* Prevent grid blowout: card must not grow beyond its column */
+  min-width: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .verse-card { padding: 20px; }
 }
 
 .verse-card:nth-child(1) { animation-delay: 0.05s; }
@@ -463,6 +470,7 @@ body {
 /* ── Verse Copy/Share Buttons ─────────────────────────── */
 .vc-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
