@@ -41,6 +41,7 @@ body {
 .header {
   text-align: center;
   padding: 56px 0 44px;
+  position: relative;
 }
 
 .header::after {
@@ -68,6 +69,46 @@ body {
   font-weight: 400;
   line-height: 1.65;
 }
+
+/* ── Saved Nav Button (header bookmark icon) ──────────── */
+.saved-nav-btn {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.saved-nav-btn:hover {
+  color: var(--green-deep);
+  border-color: var(--green-mid);
+  background: rgba(27, 67, 50, 0.04);
+}
+
+.saved-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 100px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.saved-badge.hidden { display: none; }
 
 .app-microcopy {
   margin-top: 8px;
@@ -450,6 +491,63 @@ body {
 }
 
 .vc-btn:active { transform: scale(0.96); }
+
+/* Audio button — playing state */
+.vc-btn.playing {
+  color: var(--green-deep);
+  border-color: var(--green-mid);
+  background: rgba(27, 67, 50, 0.08);
+}
+
+/* Bookmark button — saved state */
+.vc-btn.saved {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.vc-btn.saved:hover {
+  color: #a07a20;
+  border-color: #a07a20;
+  background: rgba(201, 168, 76, 0.15);
+}
+
+/* ── Saved View ────────────────────────────────────────── */
+.saved-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.saved-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green-deep);
+  letter-spacing: -0.3px;
+}
+
+.saved-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.saved-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.saved-empty-icon { font-size: 36px; }
+
+.saved-empty-msg {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
 
 /* ── Verse Action Buttons (Simpan / Temukan) ──────────── */
 .verse-actions {

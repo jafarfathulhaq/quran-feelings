@@ -16,6 +16,10 @@
     <header class="header">
       <h1 class="app-title">Curhat &amp; Temukan Ayat</h1>
       <p class="app-subtitle">Biarkan firman Allah menuntunmu melalui apa yang kamu rasakan</p>
+      <button id="saved-nav-btn" class="saved-nav-btn" aria-label="Ayat tersimpan">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span id="saved-badge" class="saved-badge hidden">0</span>
+      </button>
     </header>
 
     <!-- Selection View -->
@@ -58,6 +62,21 @@
       <div id="verse-actions" class="verse-actions hidden"></div>
       <div id="verse-feedback" class="verse-feedback hidden"></div>
       <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
+    </section>
+
+    <!-- Saved View -->
+    <section id="saved-view" class="view">
+      <button id="saved-back-btn" class="back-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Kembali
+      </button>
+      <div class="saved-header">
+        <h2 class="saved-title">Ayat Tersimpan</h2>
+        <p class="saved-subtitle" id="saved-subtitle"></p>
+      </div>
+      <div id="saved-grid" class="verses-grid"></div>
     </section>
 
   </div>

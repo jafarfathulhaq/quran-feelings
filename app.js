@@ -64,15 +64,123 @@ async function shareVerse(verse) {
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
-const COPY_ICON  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-const SHARE_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
+const COPY_ICON           = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const SHARE_ICON          = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
+const PLAY_ICON           = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+const PAUSE_ICON          = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+const BOOKMARK_ICON       = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+const BOOKMARK_FILLED_ICON= `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+
+// ── Audio ──────────────────────────────────────────────────────────────────────
+// CDN: https://cdn.islamic.network/quran/audio/128/ar.alafasy/{global_ayah}.mp3
+// Global ayah number = cumulative verse count before the surah + verse number.
+
+const SURAH_VERSE_COUNTS = [
+  7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,
+  112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,
+  59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,
+  52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,
+  21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6,
+];
+
+// SURAH_STARTS[i] = global ayah number of the first verse of surah (i+1)
+const SURAH_STARTS = SURAH_VERSE_COUNTS.reduce((acc, _, i) => {
+  acc.push(i === 0 ? 0 : acc[i - 1] + SURAH_VERSE_COUNTS[i - 1]);
+  return acc;
+}, []);
+
+function toGlobalAyah(surahNum, verseNum) {
+  return SURAH_STARTS[surahNum - 1] + verseNum;
+}
+
+let activeAudio   = null;
+let activePlayBtn = null;
+
+function stopCurrentAudio() {
+  if (activeAudio)   { activeAudio.pause(); activeAudio = null; }
+  if (activePlayBtn) {
+    activePlayBtn.innerHTML = PLAY_ICON + ' Putar';
+    activePlayBtn.classList.remove('playing');
+    activePlayBtn = null;
+  }
+}
+
+function playAudio(verse, btn) {
+  if (activePlayBtn === btn) { stopCurrentAudio(); return; }
+  stopCurrentAudio();
+
+  const [s, v]  = verse.id.split(':').map(Number);
+  const globalN = toGlobalAyah(s, v);
+  const audio   = new Audio(
+    `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalN}.mp3`
+  );
+
+  activeAudio   = audio;
+  activePlayBtn = btn;
+  btn.innerHTML = PAUSE_ICON + ' Jeda';
+  btn.classList.add('playing');
+
+  audio.play().catch(() => {
+    showToast('Gagal memuat audio. Coba lagi.');
+    stopCurrentAudio();
+  });
+  audio.addEventListener('ended', stopCurrentAudio);
+}
+
+// ── Saved Verses ──────────────────────────────────────────────────────────────
+
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem('savedVerses') || '[]'); }
+  catch { return []; }
+}
+
+function setSaved(arr) {
+  localStorage.setItem('savedVerses', JSON.stringify(arr));
+}
+
+function isVerseSaved(id) {
+  return getSaved().some(v => v.id === id);
+}
+
+function toggleSave(verse, btn) {
+  const saved = getSaved();
+  const idx   = saved.findIndex(v => v.id === verse.id);
+  if (idx === -1) {
+    saved.push(verse);
+    setSaved(saved);
+    btn.innerHTML = BOOKMARK_FILLED_ICON + ' Tersimpan';
+    btn.classList.add('saved');
+    showToast('Ayat disimpan ✓');
+  } else {
+    saved.splice(idx, 1);
+    setSaved(saved);
+    btn.innerHTML = BOOKMARK_ICON + ' Simpan';
+    btn.classList.remove('saved');
+    showToast('Dihapus dari simpanan');
+  }
+  updateSavedBadge();
+}
+
+function updateSavedBadge() {
+  const count = getSaved().length;
+  const badge = document.getElementById('saved-badge');
+  if (!badge) return;
+  badge.textContent = count;
+  badge.classList.toggle('hidden', count === 0);
+}
 
 // ── Verse Card ────────────────────────────────────────────────────────────────
 
 function buildVerseCard(verse, index) {
-  const card = document.createElement('article');
+  const card    = document.createElement('article');
   card.className = 'verse-card';
   card.style.animationDelay = `${index * 0.08}s`;
+
+  const saved   = isVerseSaved(verse.id);
+  const bmkHtml = saved
+    ? `${BOOKMARK_FILLED_ICON} Tersimpan`
+    : `${BOOKMARK_ICON} Simpan`;
+
   card.innerHTML = `
     <div class="vc-ref">
       <span class="vc-ref-dot"></span>
@@ -82,11 +190,16 @@ function buildVerseCard(verse, index) {
     <p class="vc-translation">"${verse.translation}"</p>
     ${verse.tafsir_summary ? `<p class="vc-reflection">${verse.tafsir_summary}</p><p class="vc-tafsir-source">Tafsir: M. Quraish Shihab</p>` : ''}
     <div class="vc-actions">
+      <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
+      <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
       ${navigator.share ? `<button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>` : ''}
     </div>
   `;
-  card.querySelector('.vc-copy-btn').addEventListener('click', () => copyVerse(verse));
+
+  card.querySelector('.vc-audio-btn').addEventListener('click', e => playAudio(verse, e.currentTarget));
+  card.querySelector('.vc-save-btn').addEventListener('click',  e => toggleSave(verse, e.currentTarget));
+  card.querySelector('.vc-copy-btn').addEventListener('click',  () => copyVerse(verse));
   if (navigator.share) {
     card.querySelector('.vc-share-btn').addEventListener('click', () => shareVerse(verse));
   }
@@ -156,11 +269,9 @@ function renderVerses(data) {
   // Action buttons
   const actionsEl = document.getElementById('verse-actions');
   actionsEl.innerHTML = `
-    <button class="va-primary" id="save-btn">Simpan ayat ini</button>
     <button class="va-secondary" id="find-more-btn">Temukan ayat lain</button>
   `;
   actionsEl.classList.remove('hidden');
-  document.getElementById('save-btn').addEventListener('click', saveVerses);
   document.getElementById('find-more-btn').addEventListener('click', () => switchView('selection-view'));
 
   // Feedback
@@ -183,21 +294,31 @@ function renderVerses(data) {
   });
 }
 
-// ── Save Verses ───────────────────────────────────────────────────────────────
+// ── Saved View Renderer ───────────────────────────────────────────────────────
 
-function saveVerses() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('savedAyat') || '[]');
-    saved.push({
-      feeling: currentFeeling,
-      ayat: currentAyat,
-      date: new Date().toISOString(),
-    });
-    localStorage.setItem('savedAyat', JSON.stringify(saved));
-    showToast('Ayat berhasil disimpan ✓');
-  } catch {
-    showToast('Gagal menyimpan');
+function renderSavedView() {
+  const saved    = getSaved();
+  const subtitle = document.getElementById('saved-subtitle');
+  const grid     = document.getElementById('saved-grid');
+
+  subtitle.textContent = saved.length === 0
+    ? ''
+    : `${saved.length} ayat tersimpan`;
+
+  grid.innerHTML = '';
+
+  if (saved.length === 0) {
+    grid.innerHTML = `
+      <div class="saved-empty">
+        <span class="saved-empty-icon">🔖</span>
+        <p class="saved-empty-msg">Belum ada ayat yang tersimpan.<br>Tekan ikon bookmark pada kartu ayat untuk menyimpannya.</p>
+      </div>
+    `;
+    return;
   }
+
+  // Newest first
+  [...saved].reverse().forEach((verse, i) => grid.appendChild(buildVerseCard(verse, i)));
 }
 
 // ── Error State ───────────────────────────────────────────────────────────────
@@ -306,6 +427,7 @@ function initSearch() {
 // ── View Switch ───────────────────────────────────────────────────────────────
 
 function switchView(targetId) {
+  if (targetId !== 'verses-view') stopCurrentAudio();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(targetId).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -313,6 +435,13 @@ function switchView(targetId) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-document.getElementById('back-btn').addEventListener('click', () => switchView('selection-view'));
+document.getElementById('back-btn').addEventListener('click',       () => switchView('selection-view'));
+document.getElementById('saved-back-btn').addEventListener('click', () => switchView('selection-view'));
+document.getElementById('saved-nav-btn').addEventListener('click',  () => {
+  renderSavedView();
+  switchView('saved-view');
+});
+
 renderEmotionCards();
 initSearch();
+updateSavedBadge();
