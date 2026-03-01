@@ -176,9 +176,14 @@ module.exports = async function handler(req, res) {
     const embedData      = await embedRes.json();
     const queryEmbedding = embedData.data[0].embedding; // 1536 floats
 
-    // ── Step 3: Vector search — top 20 most similar verses ─────────────────
+    // ── Step 3: Hybrid search — vector + full-text (RRF) ──────────────────
+    // match_verses_hybrid fuses cosine-similarity ranking with BM25-style
+    // keyword ranking via Reciprocal Rank Fusion so that common Quranic
+    // keywords (sabar, rezeki, tobat…) in the user's input boost recall.
+    // We use the original feeling text (not the HyDE expansion) for FTS so
+    // the user's actual words drive keyword matching.
     const supaRes = await fetch(
-      `${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses`,
+      `${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses_hybrid`,
       {
         method: 'POST',
         headers: {
@@ -188,7 +193,8 @@ module.exports = async function handler(req, res) {
         },
         body: JSON.stringify({
           query_embedding: queryEmbedding,
-          match_count:     20,
+          query_text:      feeling.trim(), // raw input for FTS keyword matching
+          match_count:     30,             // larger pool for diversity filtering
         }),
       }
     );
@@ -204,8 +210,20 @@ module.exports = async function handler(req, res) {
       throw new Error('Tidak ada ayat yang cocok ditemukan. Silakan coba lagi.');
     }
 
-    // ── Step 3: GPT-4o-mini selects the best 1-3 from the 15 candidates ────
-    const DB_FOR_PROMPT = candidates.map(v => ({
+    // ── Surah diversity: keep the highest-ranked verse per surah ──────────
+    // Prevents GPT from being given (and picking) multiple verses from the
+    // same surah, which would narrow the thematic variety in the output.
+    // Candidates are already sorted by RRF score desc, so first-seen = best.
+    const seenSurahs       = new Set();
+    const diverseCandidates = candidates.filter(v => {
+      const key = v.surah_number ?? v.surah_name; // surah_number preferred
+      if (seenSurahs.has(key)) return false;
+      seenSurahs.add(key);
+      return true;
+    });
+
+    // ── Step 4: GPT-4o-mini selects the best 1-3 from diverse candidates ──
+    const DB_FOR_PROMPT = diverseCandidates.map(v => ({
       id:             v.id,
       surah_name:     v.surah_name,
       verse_number:   v.verse_number,
@@ -248,9 +266,13 @@ module.exports = async function handler(req, res) {
       throw new Error('Format respons tidak valid');
     }
 
-    // ── Step 4: Look up selected verses from the candidates (no extra DB call)
-    const VERSE_MAP = Object.fromEntries(candidates.map(v => [v.id, v]));
+    // ── Step 5: Look up selected verses (no extra DB call) ─────────────────
+    // Build map from the diverse candidates GPT was given
+    const VERSE_MAP = Object.fromEntries(diverseCandidates.map(v => [v.id, v]));
 
+    // Final surah-diversity guard: even if GPT somehow picks two verses from
+    // the same surah (shouldn't happen given diverse input), drop the duplicate.
+    const seenFinalSurahs = new Set();
     const ayat = parsed.selected_ids
       .slice(0, 3)
       .map(id => {
@@ -269,7 +291,13 @@ module.exports = async function handler(req, res) {
           tafsir_summary: v.tafsir_summary || null,
         };
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter(v => {
+        const key = v.surah_name;
+        if (seenFinalSurahs.has(key)) return false;
+        seenFinalSurahs.add(key);
+        return true;
+      });
 
     if (ayat.length === 0) {
       throw new Error('Gagal menemukan ayat yang relevan. Silakan coba lagi.');
