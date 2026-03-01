@@ -80,7 +80,7 @@ function buildVerseCard(verse, index) {
     </div>
     <p class="vc-arabic">${verse.arabic}</p>
     <p class="vc-translation">"${verse.translation}"</p>
-    ${verse.tafsir_summary ? `<p class="vc-reflection">${verse.tafsir_summary}</p>` : ''}
+    ${verse.tafsir_summary ? `<p class="vc-reflection">${verse.tafsir_summary}</p><p class="vc-tafsir-source">Tafsir: M. Quraish Shihab</p>` : ''}
     <div class="vc-actions">
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
       ${navigator.share ? `<button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>` : ''}
