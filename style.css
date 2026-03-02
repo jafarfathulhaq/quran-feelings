@@ -799,6 +799,23 @@ body {
 }
 .vc-read-more-btn:hover { color: var(--night-2); }
 
+/* ── Asbabun Nuzul Panel ────────────────────────────────── */
+.vc-asbab-toggle {
+  margin-top: 0;
+}
+.vc-asbab-panel {
+  margin-bottom: 14px;
+  border: 1.5px solid var(--teal-dark);
+  border-top: none;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  overflow: hidden;
+}
+.vc-asbab-panel.hidden { display: none; }
+.vc-asbab-body {
+  padding: 14px 14px 12px;
+}
+
 /* ── Verse Action Row ─────────────────────────────────── */
 .vc-actions {
   display: flex;

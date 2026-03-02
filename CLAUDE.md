@@ -34,6 +34,10 @@ data/verses.json    — curated verses for Verse of the Day feature
 supabase/migrations/
   001_quran_verses.sql   — quran_verses table + pgvector column
   002_hybrid_search.sql  — match_verses_hybrid RPC (vector + full-text hybrid search)
+  003_asbabun_nuzul.sql  — adds asbabun_nuzul + asbabun_nuzul_id columns
+scripts/
+  seed_asbabun_nuzul.py      — fetches English asbabun nuzul from spa5k/tafsir_api (Al-Wahidi)
+  translate_asbabun_nuzul.py  — translates to Indonesian via OpenAI Batch API
 vercel.json         — sets maxDuration: 30s for get-ayat.js
 ```
 
@@ -69,7 +73,8 @@ Fire-and-forget from `app.js`. **Never logs user text.** Each event includes `se
 
 Valid event types:
 `search_started`, `search_completed`, `search_cached`, `mood_feedback`,
-`verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`
+`verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
+`asbabun_nuzul_opened`
 
 To query analytics:
 ```sql

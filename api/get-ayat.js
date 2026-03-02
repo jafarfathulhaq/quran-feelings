@@ -588,15 +588,17 @@ module.exports = async function handler(req, res) {
         return true;
       });
 
-    // Fetch tafsir fields for selected verse ids in one REST call
-    let kemenagMap   = {};
-    let ibnuKathirMap   = {};
-    let ibnuKathirIdMap = {};
+    // Fetch tafsir + asbabun nuzul fields for selected verse ids in one REST call
+    let kemenagMap       = {};
+    let ibnuKathirMap    = {};
+    let ibnuKathirIdMap  = {};
+    let asbabunNuzulMap    = {};
+    let asbabunNuzulIdMap  = {};
     if (selectedBase.length > 0) {
       const ids = selectedBase.map(v => v.id).join(',');
       const kRes = await fetch(
         `${process.env.SUPABASE_URL}/rest/v1/quran_verses` +
-        `?select=id,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id&id=in.(${encodeURIComponent(ids)})`,
+        `?select=id,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id&id=in.(${encodeURIComponent(ids)})`,
         {
           headers: {
             'apikey':        process.env.SUPABASE_ANON_KEY,
@@ -606,9 +608,11 @@ module.exports = async function handler(req, res) {
       );
       if (kRes.ok) {
         const kRows = await kRes.json();
-        kemenagMap      = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
-        ibnuKathirMap   = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir]));
-        ibnuKathirIdMap = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir_id]));
+        kemenagMap        = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
+        ibnuKathirMap     = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir]));
+        ibnuKathirIdMap   = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir_id]));
+        asbabunNuzulMap   = Object.fromEntries(kRows.map(r => [r.id, r.asbabun_nuzul]));
+        asbabunNuzulIdMap = Object.fromEntries(kRows.map(r => [r.id, r.asbabun_nuzul_id]));
       }
     }
 
@@ -626,6 +630,8 @@ module.exports = async function handler(req, res) {
       tafsir_kemenag:        kemenagMap[v.id]            || null,
       tafsir_ibnu_kathir:    ibnuKathirMap[v.id]         || null,
       tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]       || null,
+      asbabun_nuzul:         asbabunNuzulMap[v.id]       || null,
+      asbabun_nuzul_id:      asbabunNuzulIdMap[v.id]     || null,
     }));
 
     if (ayat.length === 0) {

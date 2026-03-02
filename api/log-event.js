@@ -19,6 +19,7 @@ const VALID_EVENTS = new Set([
   'verse_played',
   'tafsir_opened',
   'tafsir_tab',
+  'asbabun_nuzul_opened',
 ]);
 
 module.exports = async function handler(req, res) {

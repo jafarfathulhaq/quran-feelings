@@ -383,6 +383,31 @@ function buildVerseCard(verse, index) {
     </div>
   ` : '';
 
+  // ── Build asbabun nuzul section (only if data exists) ───────────────────
+  const asbabText = verse.asbabun_nuzul_id || verse.asbabun_nuzul;
+  const asbabIsId = !!verse.asbabun_nuzul_id;
+  const asbabHtml = asbabText ? (() => {
+    const long    = asbabText.length > 400;
+    const content = asbabIsId
+      ? `<div class="vc-tafsir-md">${renderMarkdown(asbabText)}</div>`
+      : `<p class="vc-tafsir-text">${escapeHtml(asbabText)}</p>`;
+    return `
+    <button class="vc-tafsir-btn vc-asbab-toggle">
+      <span>${EXPAND_ICON} Kenapa Ayat Ini Diturunkan?</span>
+      <span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>
+    </button>
+    <div class="vc-asbab-panel hidden">
+      <div class="vc-asbab-body">
+        <div class="vc-tafsir-text-wrap${long ? '' : ' expanded'}">
+          ${content}
+        </div>
+        ${long ? `<button class="vc-read-more-btn">${EXPAND_ICON} Baca Selengkapnya</button>` : ''}
+        <p class="vc-tafsir-note">${asbabIsId ? 'Asbabun Nuzul · Al-Wahidi · Bahasa Indonesia' : 'Asbabun Nuzul · Al-Wahidi · English'}</p>
+      </div>
+    </div>
+  `;
+  })() : '';
+
   const resonanceHtml = verse.resonance
     ? `<div class="vc-resonance">${escapeHtml(verse.resonance)}</div>`
     : '';
@@ -402,6 +427,7 @@ function buildVerseCard(verse, index) {
       <p class="vc-translation">"${verse.translation}"</p>
       ${resonanceHtml}
       ${tafsirHtml}
+      ${asbabHtml}
       <div class="vc-actions">
         <button class="vc-btn vc-audio-btn">${PLAY_ICON} Dengarkan</button>
         <button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>
@@ -440,6 +466,33 @@ function buildVerseCard(verse, index) {
 
     // ── Baca Selengkapnya expand ───────────────────────────────────────────
     card.querySelectorAll('.vc-read-more-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wrap     = btn.previousElementSibling;
+        const expanded = wrap.classList.toggle('expanded');
+        btn.innerHTML  = expanded
+          ? `${COLLAPSE_ICON} Sembunyikan`
+          : `${EXPAND_ICON} Baca Selengkapnya`;
+      });
+    });
+  }
+
+  // ── Asbabun Nuzul accordion toggle ───────────────────────────────────────
+  const asbabToggle = card.querySelector('.vc-asbab-toggle');
+  if (asbabToggle) {
+    const asbabPanel = card.querySelector('.vc-asbab-panel');
+
+    asbabToggle.addEventListener('click', () => {
+      const isOpen = !asbabPanel.classList.contains('hidden');
+      asbabPanel.classList.toggle('hidden', isOpen);
+      asbabToggle.classList.toggle('open', !isOpen);
+      asbabToggle.innerHTML = isOpen
+        ? `<span>${EXPAND_ICON} Kenapa Ayat Ini Diturunkan?</span><span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>`
+        : `<span>${COLLAPSE_ICON} Tutup Asbabun Nuzul</span><span class="vc-tafsir-btn-arrow">${COLLAPSE_ICON}</span>`;
+      logEvent('asbabun_nuzul_opened', { surah_name: verse.surah_name, open: !isOpen });
+    });
+
+    // ── Baca Selengkapnya for asbabun nuzul ──────────────────────────────
+    asbabPanel.querySelectorAll('.vc-read-more-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const wrap     = btn.previousElementSibling;
         const expanded = wrap.classList.toggle('expanded');
