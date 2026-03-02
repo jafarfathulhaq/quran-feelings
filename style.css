@@ -299,41 +299,52 @@ body {
 .search-divider::before { left: 0; }
 .search-divider::after  { right: 0; }
 
-/* ── Emotion Grid ─────────────────────────────────────── */
+/* ── Emotion Carousel ─────────────────────────────────── */
 .emotion-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
   gap: 10px;
-  margin-bottom: 36px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Break out of home-content's 20px side padding for full-bleed */
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  padding: 8px 20px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: 16px;
+  cursor: grab;
 }
-
-@media (min-width: 420px) {
-  .emotion-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-}
-
-@media (min-width: 560px) {
-  .emotion-grid { grid-template-columns: repeat(4, 1fr); }
-}
+.emotion-grid::-webkit-scrollbar { display: none; }
+.emotion-grid.is-dragging { cursor: grabbing; scroll-behavior: auto; }
 
 /* ── Emotion Card ─────────────────────────────────────── */
 .emotion-card {
-  background: var(--card-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 18px 12px 16px;
+  flex-shrink: 0;
+  width: 92px;
+  min-height: 114px;
+  scroll-snap-align: start;
+  background: color-mix(in srgb, var(--ec-accent, #94A3B8) 9%, white);
+  border: 1.5px solid color-mix(in srgb, var(--ec-accent, #94A3B8) 20%, #E2E8F0);
+  border-radius: var(--radius);
+  padding: 14px 8px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
-  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
   text-align: center;
   font-family: 'Inter', sans-serif;
   position: relative;
   overflow: hidden;
+  transform-origin: center;
+  will-change: transform, opacity;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
 }
 
-/* Colour accent bar at the top */
+/* Accent bar on top */
 .emotion-card::before {
   content: '';
   position: absolute;
@@ -341,21 +352,17 @@ body {
   height: 3px;
   background: var(--ec-accent, var(--border));
   border-radius: 2px 2px 0 0;
-  transition: height 0.2s;
 }
 
 .emotion-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px rgba(10,15,30,0.10);
-  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(10,15,30,0.13);
+  border-color: var(--ec-accent);
 }
+.emotion-card:active { opacity: 0.75 !important; }
 
-.emotion-card:hover::before { height: 4px; }
-.emotion-card:active { transform: translateY(-1px); }
-
-.ec-emoji  { font-size: 24px; line-height: 1; }
-.ec-label  { font-weight: 700; font-size: 12px; color: var(--text-dark); }
-.ec-desc   { font-size: 10px; color: var(--text-muted); line-height: 1.4; }
+.ec-emoji  { font-size: 26px; line-height: 1; }
+.ec-label  { font-weight: 700; font-size: 11.5px; color: var(--text-dark); }
+.ec-desc   { font-size: 9.5px; color: var(--text-muted); line-height: 1.4; }
 
 /* ════════════════════════════════════════════════════════
    VERSES VIEW — Results Header + Cards
