@@ -704,6 +704,7 @@ async function callAPI(feeling) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+  if (res.headers.get('X-Cache') === 'HIT') logEvent('search_cached');
   return data;
 }
 

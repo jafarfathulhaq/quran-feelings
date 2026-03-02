@@ -11,11 +11,14 @@
 const VALID_EVENTS = new Set([
   'search_started',
   'search_completed',
+  'search_cached',
   'mood_feedback',
   'verse_saved',
   'verse_unsaved',
   'verse_shared',
   'verse_played',
+  'tafsir_opened',
+  'tafsir_tab',
 ]);
 
 module.exports = async function handler(req, res) {
