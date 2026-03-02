@@ -181,7 +181,7 @@ body {
 
 /* ── Floating Input Card ──────────────────────────────── */
 .input-card {
-  margin: -32px 20px 0;
+  margin: 16px 16px 0;
   background: white;
   border-radius: var(--radius);
   padding: 20px;
@@ -394,9 +394,7 @@ body {
 /* ── Results Content ──────────────────────────────────── */
 .results-content {
   padding: 0 16px 60px;
-  margin-top: -20px;
-  position: relative;
-  z-index: 1;
+  margin-top: 16px;
 }
 
 /* ── Back Button ──────────────────────────────────────── */
