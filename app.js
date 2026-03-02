@@ -314,12 +314,12 @@ function buildVerseCard(verse, index) {
     <p class="vc-arabic">${verse.arabic}</p>
     <p class="vc-translation">"${verse.translation}"</p>
     ${tafsirHtml}
+    <button class="vc-share-cta vc-share-btn">${SHARE_ICON} Share Ayat ke Socmed / WA</button>
     <div class="vc-actions">
       <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
       <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
     </div>
-    <button class="vc-share-cta vc-share-btn">${SHARE_ICON} Share Gambar Ayat ke Socmed / WA</button>
   `;
 
   card.querySelector('.vc-audio-btn').addEventListener('click',  e => playAudio(verse, e.currentTarget));
