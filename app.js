@@ -156,6 +156,47 @@ async function shareVerse(verse) {
   }
 }
 
+// ── Markdown renderer (for Ibnu Kathir ID — translated + formatted) ───────────
+function renderMarkdown(md) {
+  const lines  = md.split('\n');
+  const out    = [];
+  let para     = [];
+  let inQuote  = false;
+
+  const inline = t => t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+
+  function flushPara() {
+    if (para.length) { out.push(`<p>${para.join('<br>')}</p>`); para = []; }
+  }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (/^## /.test(line)) {
+      flushPara(); inQuote = false;
+      out.push(`<h2>${inline(line.slice(3))}</h2>`);
+    } else if (/^### /.test(line)) {
+      flushPara(); inQuote = false;
+      out.push(`<h3>${inline(line.slice(4))}</h3>`);
+    } else if (/^> /.test(line)) {
+      flushPara();
+      if (!inQuote) { out.push('<blockquote>'); inQuote = true; }
+      out.push(`<p>${inline(line.slice(2))}</p>`);
+    } else if (line === '') {
+      flushPara();
+      if (inQuote) { out.push('</blockquote>'); inQuote = false; }
+    } else {
+      if (inQuote) { out.push('</blockquote>'); inQuote = false; }
+      para.push(inline(line));
+    }
+  }
+  flushPara();
+  if (inQuote) out.push('</blockquote>');
+  return out.join('\n');
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const COPY_ICON           = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
@@ -284,7 +325,16 @@ function buildVerseCard(verse, index) {
   const tafsirTabs = [];
   if (verse.tafsir_summary)     tafsirTabs.push({ id: 'quraish', label: 'Quraish Shihab', text: verse.tafsir_summary,     note: 'Tafsir M. Quraish Shihab' });
   if (verse.tafsir_kemenag)     tafsirTabs.push({ id: 'kemenag', label: 'Kemenag RI',     text: verse.tafsir_kemenag,     note: 'Tafsir Kemenag RI' });
-  if (verse.tafsir_ibnu_kathir) tafsirTabs.push({ id: 'ik',      label: 'Ibnu Kathir',   text: verse.tafsir_ibnu_kathir,  note: 'Ibnu Kathir · English' });
+  if (verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir) {
+    const ikIsId = !!verse.tafsir_ibnu_kathir_id;
+    tafsirTabs.push({
+      id:         'ik',
+      label:      'Ibnu Kathir',
+      text:       verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir,
+      note:       ikIsId ? 'Ibnu Kathir · Bahasa Indonesia' : 'Ibnu Kathir · English',
+      isMarkdown: ikIsId,
+    });
+  }
 
   const tafsirHtml = tafsirTabs.length > 0 ? `
     <button class="vc-tafsir-btn vc-tafsir-toggle">
@@ -298,11 +348,14 @@ function buildVerseCard(verse, index) {
         ).join('')}
       </div>
       ${tafsirTabs.map((t, i) => {
-        const long = t.text.length > 400;
+        const long    = t.text.length > 400;
+        const content = t.isMarkdown
+          ? `<div class="vc-tafsir-md">${renderMarkdown(t.text)}</div>`
+          : `<p class="vc-tafsir-text">${escapeHtml(t.text)}</p>`;
         return `
         <div class="vc-tab-content${i === 0 ? '' : ' hidden'}" data-content="${t.id}">
           <div class="vc-tafsir-text-wrap${long ? '' : ' expanded'}">
-            <p class="vc-tafsir-text">${escapeHtml(t.text)}</p>
+            ${content}
           </div>
           ${long ? `<button class="vc-read-more-btn">${EXPAND_ICON} Baca Selengkapnya</button>` : ''}
           <p class="vc-tafsir-note">${t.note}</p>

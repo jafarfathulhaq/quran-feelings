@@ -453,14 +453,15 @@ module.exports = async function handler(req, res) {
         return true;
       });
 
-    // Fetch tafsir_kemenag + tafsir_ibnu_kathir for selected verse ids in one REST call
-    let kemenagMap = {};
-    let ibnuKathirMap = {};
+    // Fetch tafsir fields for selected verse ids in one REST call
+    let kemenagMap   = {};
+    let ibnuKathirMap   = {};
+    let ibnuKathirIdMap = {};
     if (selectedBase.length > 0) {
       const ids = selectedBase.map(v => v.id).join(',');
       const kRes = await fetch(
         `${process.env.SUPABASE_URL}/rest/v1/quran_verses` +
-        `?select=id,tafsir_kemenag,tafsir_ibnu_kathir&id=in.(${encodeURIComponent(ids)})`,
+        `?select=id,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id&id=in.(${encodeURIComponent(ids)})`,
         {
           headers: {
             'apikey':        process.env.SUPABASE_ANON_KEY,
@@ -470,21 +471,23 @@ module.exports = async function handler(req, res) {
       );
       if (kRes.ok) {
         const kRows = await kRes.json();
-        kemenagMap    = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
-        ibnuKathirMap = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir]));
+        kemenagMap      = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
+        ibnuKathirMap   = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir]));
+        ibnuKathirIdMap = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir_id]));
       }
     }
 
     const ayat = selectedBase.map(v => ({
-      id:                 v.id,
-      ref:                `QS. ${v.surah_name} : ${v.verse_number}`,
-      surah_name:         v.surah_name,
-      verse_number:       v.verse_number,
-      arabic:             v.arabic,
-      translation:        v.translation,
-      tafsir_summary:     v.tafsir_summary       || null,
-      tafsir_kemenag:     kemenagMap[v.id]        || null,
-      tafsir_ibnu_kathir: ibnuKathirMap[v.id]     || null,
+      id:                    v.id,
+      ref:                   `QS. ${v.surah_name} : ${v.verse_number}`,
+      surah_name:            v.surah_name,
+      verse_number:          v.verse_number,
+      arabic:                v.arabic,
+      translation:           v.translation,
+      tafsir_summary:        v.tafsir_summary          || null,
+      tafsir_kemenag:        kemenagMap[v.id]           || null,
+      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]        || null,
+      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]      || null,
     }));
 
     if (ayat.length === 0) {
