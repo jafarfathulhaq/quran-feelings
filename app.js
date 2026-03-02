@@ -289,13 +289,23 @@ function buildVerseCard(verse, index) {
     <p class="vc-translation">"${verse.translation}"</p>
     ${verse.tafsir_summary ? `<p class="vc-reflection">${verse.tafsir_summary}</p><p class="vc-tafsir-source">Tafsir: M. Quraish Shihab</p>` : ''}
     ${verse.tafsir_kemenag ? `
-      <button class="vc-tafsir-btn">
+      <button class="vc-tafsir-btn vc-tafsir-kemenag-btn">
         <span>${EXPAND_ICON} Tafsir Lengkap oleh Kemenag</span>
         <span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>
       </button>
       <div class="vc-tafsir-kemenag hidden">
         <p class="vc-tafsir-kemenag-label">Tafsir Kemenag RI</p>
         <p class="vc-tafsir-kemenag-text">${escapeHtml(verse.tafsir_kemenag)}</p>
+      </div>
+    ` : ''}
+    ${verse.tafsir_ibnu_kathir ? `
+      <button class="vc-tafsir-btn vc-tafsir-ik-btn">
+        <span>${EXPAND_ICON} Tafsir Ibnu Kathir</span>
+        <span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>
+      </button>
+      <div class="vc-tafsir-ik hidden">
+        <p class="vc-tafsir-kemenag-label">Ibnu Kathir · English</p>
+        <p class="vc-tafsir-kemenag-text">${escapeHtml(verse.tafsir_ibnu_kathir)}</p>
       </div>
     ` : ''}
     <div class="vc-actions">
@@ -311,17 +321,33 @@ function buildVerseCard(verse, index) {
   card.querySelector('.vc-copy-btn').addEventListener('click',   () => copyVerse(verse));
   card.querySelector('.vc-share-btn').addEventListener('click',  () => shareVerse(verse));
 
-  const tafsirBtn = card.querySelector('.vc-tafsir-btn');
-  if (tafsirBtn) {
-    tafsirBtn.addEventListener('click', () => {
-      const panel   = card.querySelector('.vc-tafsir-kemenag');
-      const isOpen  = !panel.classList.contains('hidden');
+  // Kemenag accordion
+  const kemenagBtn = card.querySelector('.vc-tafsir-kemenag-btn');
+  if (kemenagBtn) {
+    kemenagBtn.addEventListener('click', () => {
+      const panel  = card.querySelector('.vc-tafsir-kemenag');
+      const isOpen = !panel.classList.contains('hidden');
       panel.classList.toggle('hidden', isOpen);
-      tafsirBtn.classList.toggle('open', !isOpen);
-      tafsirBtn.innerHTML = isOpen
+      kemenagBtn.classList.toggle('open', !isOpen);
+      kemenagBtn.innerHTML = isOpen
         ? `<span>${EXPAND_ICON} Tafsir Lengkap oleh Kemenag</span><span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>`
-        : `<span>${COLLAPSE_ICON} Sembunyikan Tafsir</span><span class="vc-tafsir-btn-arrow">${COLLAPSE_ICON}</span>`;
-      logEvent('tafsir_expanded', { surah_name: verse.surah_name, open: !isOpen });
+        : `<span>${COLLAPSE_ICON} Sembunyikan Tafsir Kemenag</span><span class="vc-tafsir-btn-arrow">${COLLAPSE_ICON}</span>`;
+      logEvent('tafsir_kemenag_expanded', { surah_name: verse.surah_name, open: !isOpen });
+    });
+  }
+
+  // Ibnu Kathir accordion
+  const ikBtn = card.querySelector('.vc-tafsir-ik-btn');
+  if (ikBtn) {
+    ikBtn.addEventListener('click', () => {
+      const panel  = card.querySelector('.vc-tafsir-ik');
+      const isOpen = !panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', isOpen);
+      ikBtn.classList.toggle('open', !isOpen);
+      ikBtn.innerHTML = isOpen
+        ? `<span>${EXPAND_ICON} Tafsir Ibnu Kathir</span><span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>`
+        : `<span>${COLLAPSE_ICON} Sembunyikan Ibnu Kathir</span><span class="vc-tafsir-btn-arrow">${COLLAPSE_ICON}</span>`;
+      logEvent('tafsir_ik_expanded', { surah_name: verse.surah_name, open: !isOpen });
     });
   }
 
