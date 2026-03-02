@@ -55,7 +55,12 @@ body {
 ════════════════════════════════════════════════════════ */
 
 /* ── Hero Header ──────────────────────────────────────── */
-.header { /* container only */ }
+.header {
+  margin: 12px 16px 0;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(10,15,30,0.20);
+}
 
 .hero {
   background: linear-gradient(160deg,
@@ -67,7 +72,6 @@ body {
   );
   padding: 20px 24px 52px;
   position: relative;
-  overflow: hidden;
 }
 
 /* Decorative glow rings */
@@ -129,14 +133,9 @@ body {
   max-width: 380px;
 }
 
-/* Wave bottom of hero */
+/* Wave bottom of hero — replaced by card border-radius */
 .hero-wave {
-  display: block;
-  width: 100%;
-  height: 40px;
-  background: var(--bg);
-  clip-path: ellipse(60% 100% at 50% 100%);
-  margin-top: -1px;
+  display: none;
 }
 
 /* ── Saved Nav Button (glassmorphism on dark) ─────────── */
@@ -369,9 +368,12 @@ body {
     #0F2044 55%,
     #0A5C7A 100%
   );
-  padding: 20px 20px 40px;
+  padding: 20px 20px 48px;
   position: relative;
   overflow: hidden;
+  margin: 12px 16px 0;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(10,15,30,0.20);
 }
 
 .results-header::before {
@@ -384,19 +386,17 @@ body {
   pointer-events: none;
 }
 
-/* Wave bottom of results header */
+/* Wave bottom of results header — replaced by card border-radius */
 .results-wave {
-  display: block;
-  background: var(--bg);
-  height: 32px;
-  clip-path: ellipse(60% 100% at 50% 100%);
-  margin-top: -1px;
+  display: none;
 }
 
 /* ── Results Content ──────────────────────────────────── */
 .results-content {
   padding: 0 16px 60px;
-  margin-top: -12px;
+  margin-top: -20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Back Button ──────────────────────────────────────── */
