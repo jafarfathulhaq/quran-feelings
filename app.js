@@ -318,8 +318,8 @@ function buildVerseCard(verse, index) {
       <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
       <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
-      <button class="vc-btn vc-share-btn">${SHARE_ICON} Share to Your Social</button>
     </div>
+    <button class="vc-share-cta vc-share-btn">${SHARE_ICON} Share Gambar Ayat ke Socmed / WA</button>
   `;
 
   card.querySelector('.vc-audio-btn').addEventListener('click',  e => playAudio(verse, e.currentTarget));
