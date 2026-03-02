@@ -387,10 +387,10 @@ module.exports = async function handler(req, res) {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          // TODO: switch to 'text-embedding-3-large' (dimensions: 1536) after
-          // reembed.py is re-run with the same model — query and stored vectors
-          // must match or cosine similarity returns meaningless results.
-          model:           'text-embedding-3-small',
+          // text-embedding-3-large at dimensions:1536 — reembed.py was run with
+          // the same model so stored vectors and query vectors are in sync.
+          model:           'text-embedding-3-large',
+          dimensions:      1536,
           input:           text,
           encoding_format: 'float',
         }),
