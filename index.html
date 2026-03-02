@@ -31,7 +31,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#1A3D2B" />
+  <meta name="theme-color" content="#0A0F1E" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -39,29 +39,35 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <!-- Vercel Web Analytics — privacy-friendly, no cookies, no fingerprinting -->
-  <!-- Enable in Vercel Dashboard → Project → Analytics tab first -->
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
   <div class="app">
 
-    <!-- Header -->
-    <header class="header">
-      <h1 class="app-title">Curhat &amp; Temukan Ayat</h1>
-      <p class="app-subtitle">Biarkan firman Allah menuntunmu melalui apa yang kamu rasakan</p>
-      <button id="saved-nav-btn" class="saved-nav-btn" aria-label="Ayat tersimpan">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        <span id="saved-badge" class="saved-badge hidden">0</span>
-      </button>
-    </header>
-
-    <!-- Selection View -->
+    <!-- ── Selection View ─────────────────────────────── -->
     <section id="selection-view" class="view active">
 
-      <div class="search-section">
+      <!-- Hero Header -->
+      <header class="header">
+        <div class="hero">
+          <div class="hero-nav">
+            <button id="saved-nav-btn" class="saved-nav-btn" aria-label="Ayat tersimpan">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <span id="saved-badge" class="saved-badge hidden">0</span>
+            </button>
+          </div>
+          <p class="hero-ornament">✦ &nbsp;CURHAT &amp; TEMUKAN AYAT&nbsp; ✦</p>
+          <h1 class="hero-title">Biarkan firman<br/><span>Allah menuntunmu</span></h1>
+          <p class="hero-subtitle">Tulis apa yang kamu rasakan — sedih, cemas, bersyukur, atau apapun itu — dan temukan ayat Al-Qur'an yang relevan untukmu.</p>
+        </div>
+        <div class="hero-wave"></div>
+      </header>
+
+      <!-- Floating Input Card -->
+      <div class="input-card">
         <div class="search-textarea-wrap">
           <textarea
             id="feeling-input"
@@ -76,46 +82,60 @@
             </svg>
           </button>
         </div>
-        <p class="search-helper">Kami tidak menyimpan curhatmu. Apa yang kamu tulis tetap bersifat pribadi.</p>
-        <button id="feeling-submit" class="search-submit-btn hidden">Cari Ayat →</button>
-        <p class="search-divider"><span>atau pilih perasaan di bawah</span></p>
+        <p class="search-helper">Kami tidak menyimpan curhatmu. Apa yang kamu tulis tetap pribadi.</p>
+        <button id="feeling-submit" class="search-submit-btn hidden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Cari Ayat
+        </button>
       </div>
 
-      <div id="emotion-grid" class="emotion-grid"></div>
-
-      <!-- Verse of the Day (populated by JS on load) -->
-      <div id="votd-section" class="votd-section"></div>
+      <!-- Emotion Grid + Verse of the Day -->
+      <div class="home-content">
+        <p class="search-divider"><span>atau pilih perasaanmu</span></p>
+        <div id="emotion-grid" class="emotion-grid"></div>
+        <div id="votd-section" class="votd-section"></div>
+      </div>
 
     </section>
 
-    <!-- Verses View -->
+    <!-- ── Verses View ─────────────────────────────────── -->
     <section id="verses-view" class="view">
-      <button id="back-btn" class="back-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-        Kembali
-      </button>
-      <div id="chat-thread" class="chat-thread"></div>
-      <div id="verses-grid" class="verses-grid"></div>
-      <div id="verse-actions" class="verse-actions hidden"></div>
-      <div id="verse-feedback" class="verse-feedback hidden"></div>
-      <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
+
+      <!-- Dark gradient header with chat bubbles -->
+      <div class="results-header">
+        <button id="back-btn" class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Kembali
+        </button>
+        <div id="chat-thread" class="chat-thread"></div>
+      </div>
+      <div class="results-wave"></div>
+
+      <!-- Cards + feedback -->
+      <div class="results-content">
+        <div id="verses-grid" class="verses-grid"></div>
+        <div id="verse-actions" class="verse-actions hidden"></div>
+        <div id="verse-feedback" class="verse-feedback hidden"></div>
+        <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
+      </div>
+
     </section>
 
-    <!-- Saved View -->
+    <!-- ── Saved View ──────────────────────────────────── -->
     <section id="saved-view" class="view">
-      <button id="saved-back-btn" class="back-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-        Kembali
-      </button>
       <div class="saved-header">
+        <button id="saved-back-btn" class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Kembali
+        </button>
         <h2 class="saved-title">Ayat Tersimpan</h2>
         <p class="saved-subtitle" id="saved-subtitle"></p>
       </div>
-      <div id="saved-grid" class="verses-grid"></div>
+      <div id="saved-grid" class="verses-grid saved-grid"></div>
     </section>
 
   </div>

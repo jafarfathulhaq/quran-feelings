@@ -47,16 +47,16 @@ function escapeHtml(str) {
 // ── Emotion Shortcuts ─────────────────────────────────────────────────────────
 
 const emotions = [
-  { id: 'sad',      label: 'Sedih',       emoji: '🌧️', desc: 'Merasa sedih atau patah hati',       color: '#4A7FA5', bg: '#EBF4FF', feeling: 'Aku merasa sangat sedih dan patah hati' },
-  { id: 'anxious',  label: 'Cemas',       emoji: '😰', desc: 'Merasa khawatir atau takut',          color: '#7B68B0', bg: '#F3F0FF', feeling: 'Aku merasa sangat cemas dan khawatir tentang masa depan' },
-  { id: 'hopeless', label: 'Putus Asa',   emoji: '🌑', desc: 'Merasa putus asa atau tanpa harapan', color: '#5A6A8A', bg: '#EEF2FF', feeling: 'Aku merasa putus asa dan sudah tidak ada harapan lagi' },
-  { id: 'grateful', label: 'Bersyukur',   emoji: '✨', desc: 'Merasa bersyukur dan beruntung',      color: '#B8860B', bg: '#FFFBEB', feeling: 'Aku merasa sangat bersyukur dan ingin mengungkapkan rasa terima kasih kepada Allah' },
-  { id: 'angry',    label: 'Marah',       emoji: '🌋', desc: 'Merasa frustrasi atau marah',         color: '#C0392B', bg: '#FEF2F2', feeling: 'Aku merasa sangat marah dan frustrasi, sulit mengendalikan emosi' },
-  { id: 'lonely',   label: 'Kesepian',    emoji: '🌙', desc: 'Merasa kesepian atau sendirian',      color: '#2E86AB', bg: '#EBF5FB', feeling: 'Aku merasa sangat kesepian dan sendirian, tidak ada yang memahami aku' },
-  { id: 'lost',     label: 'Kebingungan', emoji: '🧭', desc: 'Merasa bingung atau kehilangan arah', color: '#6B8E23', bg: '#F0F7E6', feeling: 'Aku merasa bingung dan kehilangan arah tujuan hidup' },
-  { id: 'stressed', label: 'Stres',       emoji: '⚡', desc: 'Merasa tertekan atau kelelahan',      color: '#D4620A', bg: '#FFF4ED', feeling: 'Aku merasa sangat stres dan kelelahan, beban hidup terasa terlalu berat' },
-  { id: 'guilty',   label: 'Bersalah',    emoji: '🍂', desc: 'Merasa bersalah atau menyesal',       color: '#8B6914', bg: '#FDFBF0', feeling: 'Aku merasa sangat bersalah dan menyesal atas perbuatanku, ingin bertobat' },
-  { id: 'envious',  label: 'Iri Hati',    emoji: '🌿', desc: 'Merasa iri atau membandingkan diri',  color: '#2D7A4F', bg: '#EDFAF4', feeling: 'Aku merasa iri hati melihat orang lain, sulit bersyukur dengan apa yang aku miliki' },
+  { id: 'sad',      label: 'Sedih',       emoji: '🌧️', desc: 'Merasa sedih atau patah hati',       accent: '#6B8DD6', feeling: 'Aku merasa sangat sedih dan patah hati' },
+  { id: 'anxious',  label: 'Cemas',       emoji: '😰', desc: 'Merasa khawatir atau takut',          accent: '#F6AD55', feeling: 'Aku merasa sangat cemas dan khawatir tentang masa depan' },
+  { id: 'hopeless', label: 'Putus Asa',   emoji: '🌑', desc: 'Merasa putus asa atau tanpa harapan', accent: '#FC8181', feeling: 'Aku merasa putus asa dan sudah tidak ada harapan lagi' },
+  { id: 'grateful', label: 'Bersyukur',   emoji: '✨', desc: 'Merasa bersyukur dan beruntung',      accent: '#68D391', feeling: 'Aku merasa sangat bersyukur dan ingin mengungkapkan rasa terima kasih kepada Allah' },
+  { id: 'angry',    label: 'Marah',       emoji: '🌋', desc: 'Merasa frustrasi atau marah',         accent: '#FC8181', feeling: 'Aku merasa sangat marah dan frustrasi, sulit mengendalikan emosi' },
+  { id: 'lonely',   label: 'Kesepian',    emoji: '🌙', desc: 'Merasa kesepian atau sendirian',      accent: '#B794F4', feeling: 'Aku merasa sangat kesepian dan sendirian, tidak ada yang memahami aku' },
+  { id: 'lost',     label: 'Kebingungan', emoji: '🧭', desc: 'Merasa bingung atau kehilangan arah', accent: '#63B3ED', feeling: 'Aku merasa bingung dan kehilangan arah tujuan hidup' },
+  { id: 'stressed', label: 'Stres',       emoji: '⚡', desc: 'Merasa tertekan atau kelelahan',      accent: '#F6AD55', feeling: 'Aku merasa sangat stres dan kelelahan, beban hidup terasa terlalu berat' },
+  { id: 'guilty',   label: 'Bersalah',    emoji: '🍂', desc: 'Merasa bersalah atau menyesal',       accent: '#C9A84C', feeling: 'Aku merasa sangat bersalah dan menyesal atas perbuatanku, ingin bertobat' },
+  { id: 'envious',  label: 'Iri Hati',    emoji: '🌿', desc: 'Merasa iri atau membandingkan diri',  accent: '#68D391', feeling: 'Aku merasa iri hati melihat orang lain, sulit bersyukur dengan apa yang aku miliki' },
 ];
 
 // ── Copy / Share ──────────────────────────────────────────────────────────────
@@ -236,7 +236,7 @@ let activePlayBtn = null;
 function stopCurrentAudio() {
   if (activeAudio)   { activeAudio.pause(); activeAudio = null; }
   if (activePlayBtn) {
-    activePlayBtn.innerHTML = PLAY_ICON + ' Putar';
+    activePlayBtn.innerHTML = PLAY_ICON + ' Dengarkan';
     activePlayBtn.classList.remove('playing');
     activePlayBtn = null;
   }
@@ -257,6 +257,7 @@ function playAudio(verse, btn) {
   activePlayBtn = btn;
   btn.innerHTML = PAUSE_ICON + ' Jeda';
   btn.classList.add('playing');
+
 
   audio.play().catch(() => {
     showToast('Gagal memuat audio. Coba lagi.');
@@ -365,29 +366,34 @@ function buildVerseCard(verse, index) {
   ` : '';
 
   const resonanceHtml = verse.resonance
-    ? `<p class="vc-resonance">${escapeHtml(verse.resonance)}</p>`
+    ? `<div class="vc-resonance">${escapeHtml(verse.resonance)}</div>`
     : '';
 
+  // Surah number for the circle badge
+  const surahNum = verse.surah_number || verse.id.split(':')[0];
+
   card.innerHTML = `
-    <div class="vc-ref">
-      <span class="vc-ref-dot"></span>
-      <span class="vc-ref-text">${verse.ref}</span>
+    <div class="vc-arabic-section">
+      <div class="vc-ref-row">
+        <span class="vc-ref-label">${verse.ref}</span>
+        <span class="vc-surah-number">${surahNum}</span>
+      </div>
+      <p class="vc-arabic-text">${verse.arabic}</p>
     </div>
-    <p class="vc-arabic">${verse.arabic}</p>
-    <p class="vc-translation">"${verse.translation}"</p>
-    ${resonanceHtml}
-    ${tafsirHtml}
-    <button class="vc-share-cta vc-share-btn">${SHARE_ICON} Share Ayat ke Socmed / WA</button>
-    <div class="vc-actions">
-      <button class="vc-btn vc-audio-btn">${PLAY_ICON} Putar</button>
-      <button class="vc-btn vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
-      <button class="vc-btn vc-copy-btn">${COPY_ICON} Salin</button>
+    <div class="vc-content">
+      <p class="vc-translation">"${verse.translation}"</p>
+      ${resonanceHtml}
+      ${tafsirHtml}
+      <div class="vc-actions">
+        <button class="vc-btn vc-audio-btn">${PLAY_ICON} Dengarkan</button>
+        <button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>
+        <button class="vc-btn vc-btn--save vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
+      </div>
     </div>
   `;
 
   card.querySelector('.vc-audio-btn').addEventListener('click',  e => playAudio(verse, e.currentTarget));
   card.querySelector('.vc-save-btn').addEventListener('click',   e => toggleSave(verse, e.currentTarget));
-  card.querySelector('.vc-copy-btn').addEventListener('click',   () => copyVerse(verse));
   card.querySelector('.vc-share-btn').addEventListener('click',  () => shareVerse(verse));
 
   // ── Tafsir accordion toggle ──────────────────────────────────────────────
@@ -701,7 +707,7 @@ function renderEmotionCards() {
       class="emotion-card"
       data-feeling="${e.feeling}"
       data-emotion-id="${e.id}"
-      style="--ec-color: ${e.color}; --ec-bg: ${e.bg};"
+      style="--ec-accent: ${e.accent};"
       aria-label="${e.label} — ${e.desc}"
     >
       <span class="ec-emoji">${e.emoji}</span>
