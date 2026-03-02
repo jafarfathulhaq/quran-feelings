@@ -1,9 +1,10 @@
-# CLAUDE.md — quran-feelings
+# CLAUDE.md — TemuQuran
 
 ## Project overview
-**Curhat & Temukan Ayat** — a privacy-first web app with two modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations. No user text is ever stored.
+**TemuQuran** (formerly Curhat & Temukan Ayat) — a privacy-first web app with two modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations. No user text is ever stored.
 
-- **Live URL**: https://quran-feelings.vercel.app
+- **Live URL**: https://temuquran.com (custom domain on Vercel, DNS via Namecheap)
+- **Legacy URL**: https://quran-feelings.vercel.app (redirects to temuquran.com)
 - **Deploy**: `git push origin main` → auto-deploys on Vercel (no build step)
 - **Preview**: Use the live Vercel URL in Chrome. `preview_start` won't work — macOS sandbox blocks serving from `~/Documents`.
 

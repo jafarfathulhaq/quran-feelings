@@ -1,11 +1,11 @@
 {
-  "name": "Curhat & Temukan Ayat",
-  "short_name": "Temukan Ayat",
+  "name": "TemuQuran — Temukan Ayat Al-Qur'an",
+  "short_name": "TemuQuran",
   "description": "Tulis apa yang kamu rasakan dan temukan ayat Al-Qur'an yang relevan untukmu.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAF8F5",
-  "theme_color": "#1A3D2B",
+  "background_color": "#F0F4F8",
+  "theme_color": "#0A0F1E",
   "lang": "id",
   "dir": "ltr",
   "icons": [
