@@ -25,6 +25,42 @@ let currentAyat       = [];
 let currentSearchCtx  = { method: 'text', emotionId: null }; // populated in fetchAyat
 let typewriterActive  = false; // set false to abort an in-progress typewriter
 
+// ── Loading Steps ─────────────────────────────────────────────────────────────
+
+const LOADING_STEPS = [
+  'Memahami perasaanmu...',
+  'Menelusuri Al-Qur\'an...',
+  'Mencocokkan ayat yang relevan...',
+  'Menyiapkan refleksi untukmu...',
+];
+
+let _loadingStepTimer = null;
+
+function startLoadingSteps() {
+  const el = document.getElementById('loading-step-text');
+  if (!el) return;
+  let i = 0;
+  el.textContent = LOADING_STEPS[0];
+  el.classList.remove('ls-fade');
+  void el.offsetWidth; // force reflow to restart animation
+  el.classList.add('ls-fade');
+
+  _loadingStepTimer = setInterval(() => {
+    i = (i + 1) % LOADING_STEPS.length;
+    el.classList.remove('ls-fade');
+    void el.offsetWidth;
+    el.textContent = LOADING_STEPS[i];
+    el.classList.add('ls-fade');
+  }, 1800);
+}
+
+function stopLoadingSteps() {
+  if (_loadingStepTimer) {
+    clearInterval(_loadingStepTimer);
+    _loadingStepTimer = null;
+  }
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 let toastTimer;
@@ -443,6 +479,7 @@ function buildVerseCard(verse, index) {
 
 function showLoading() {
   typewriterActive = false;
+  stopLoadingSteps();
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
   document.getElementById('verses-grid').innerHTML = '';
@@ -455,11 +492,10 @@ function showLoading() {
       </div>
     ` : ''}
     <div class="chat-bubble chat-bubble--app chat-bubble--typing" id="typing-indicator">
-      <span class="typing-dot"></span>
-      <span class="typing-dot"></span>
-      <span class="typing-dot"></span>
+      <span class="ls-step-text" id="loading-step-text"></span>
     </div>
   `;
+  startLoadingSteps();
 }
 
 // ── Render Verses ─────────────────────────────────────────────────────────────
@@ -469,6 +505,7 @@ function renderVerses(data) {
   currentAyat = data.ayat;
 
   // ── A: Replace typing indicator with the app reflection bubble ──────────────
+  stopLoadingSteps();
   const thread    = document.getElementById('chat-thread');
   const typingEl  = document.getElementById('typing-indicator');
   if (typingEl) typingEl.remove();
@@ -480,17 +517,17 @@ function renderVerses(data) {
   appBubble.appendChild(textEl);
   thread.appendChild(appBubble);
 
-  // ── B: Typewriter — reveal reflection text 2 chars per 18 ms ────────────────
+  // ── B: Typewriter — reveal reflection text 3 chars per 15 ms ────────────────
   const reflection = data.reflection || '';
   typewriterActive = true;
   let pos = 0;
 
   function tick() {
     if (!typewriterActive) return; // aborted (user navigated away)
-    pos = Math.min(pos + 2, reflection.length);
+    pos = Math.min(pos + 3, reflection.length);
     textEl.textContent = reflection.slice(0, pos);
     if (pos < reflection.length) {
-      setTimeout(tick, 18);
+      setTimeout(tick, 15);
     } else {
       appBubble.classList.remove('chat-bubble--typing-active'); // remove cursor
       typewriterActive = false;
@@ -509,10 +546,10 @@ function renderVerses(data) {
       const card = buildVerseCard(verse, i);
       grid.appendChild(card);
       // Delay class add so the opacity-0 starting state renders first
-      setTimeout(() => card.classList.add('card-visible'), i * 220 + 80);
+      setTimeout(() => card.classList.add('card-visible'), i * 150 + 60);
     });
 
-    const afterCards = data.ayat.length * 220 + 300;
+    const afterCards = data.ayat.length * 150 + 250;
     setTimeout(() => {
       const actionsEl = document.getElementById('verse-actions');
       actionsEl.innerHTML = `
@@ -622,6 +659,7 @@ function renderSavedView() {
 // Both render as an app chat bubble with a small action button inside.
 
 function showAppBubble(text, btnLabel, btnAction) {
+  stopLoadingSteps();
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
   document.getElementById('verses-grid').innerHTML = '';
@@ -680,11 +718,7 @@ async function fetchAyat(feeling, { method = 'text', emotionId } = {}) {
   logEvent('search_started', startProps);
 
   try {
-    // Minimum 1.5s loading so it never feels instant/jarring
-    const [data] = await Promise.all([
-      callAPI(feeling),
-      new Promise(r => setTimeout(r, 1500)),
-    ]);
+    const data = await callAPI(feeling);
     if (data.not_relevant) {
       logEvent('search_completed', { outcome: 'not_relevant' });
       showNotRelevant(data.message);
@@ -693,6 +727,7 @@ async function fetchAyat(feeling, { method = 'text', emotionId } = {}) {
       renderVerses(data);
     }
   } catch (err) {
+    stopLoadingSteps();
     logEvent('search_completed', { outcome: 'error' });
     showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
   }
