@@ -38,6 +38,9 @@ let currentAyat       = [];
 let currentSearchCtx  = { method: 'text', emotionId: null }; // populated in fetchAyat
 let typewriterActive  = false; // set false to abort an in-progress typewriter
 let currentMode       = null;  // 'curhat' or 'panduan'
+let expandedCardId    = null;  // panduan card ID currently expanded, or null
+let currentCardIndex  = 0;     // carousel active slide index
+let totalVerseCards   = 0;     // total slides (intro + verses)
 
 // ── Loading Steps ─────────────────────────────────────────────────────────────
 
@@ -132,6 +135,113 @@ const panduanPresets = [
   { id: 'akhlak',      label: 'Bergaul dengan Baik',        emoji: '🤝',     query: 'Saya ingin panduan berakhlak baik dan menjaga hubungan dengan sesama' },
   { id: 'akhirat',     label: 'Mengingat Akhirat',          emoji: '🌙',     query: 'Saya ingin merenungkan kehidupan akhirat dan mempersiapkan diri' },
 ];
+
+// ── Sub-Questions for Panduan Presets ─────────────────────────────────────────
+// Keyed by hyphenated card ID to match panduanPresets.
+// PRD's 'bergaul' maps to existing 'akhlak' preset ID.
+
+const PANDUAN_SUB_QUESTIONS = {
+  'ibadah': [
+    "Bagaimana menjaga konsistensi sholat lima waktu?",
+    "Apa keutamaan sholat tahajjud dan qiyamul lail?",
+    "Bagaimana cara khusyu' dalam beribadah?",
+    "Apa panduan puasa sunnah dalam Al-Qur'an?",
+    "Bagaimana keutamaan membaca Al-Qur'an setiap hari?",
+    "Apa yang Allah firmankan tentang orang yang lalai dalam ibadah?",
+    "Bagaimana menjaga ibadah tetap semangat saat sibuk?",
+    "Apa panduan Al-Qur'an tentang bersedekah dan zakat?",
+  ],
+  'dekat-allah': [
+    "Bagaimana cara merasakan kehadiran Allah dalam keseharian?",
+    "Doa apa yang diajarkan Al-Qur'an saat merasa jauh dari Allah?",
+    "Bagaimana menjaga istiqomah dalam berdzikir?",
+    "Apa yang Allah firmankan tentang orang yang berserah diri?",
+    "Bagaimana cara bertawakal dengan benar?",
+    "Apa makna cinta Allah kepada hamba-Nya?",
+    "Bagaimana cara bersyukur yang diajarkan Al-Qur'an?",
+    "Apa yang terjadi ketika hamba memanggil Allah?",
+  ],
+  'taubat': [
+    "Saya terus mengulangi dosa yang sama, bagaimana caranya berhenti?",
+    "Apakah Allah masih menerima taubat saya?",
+    "Bagaimana cara bertaubat yang benar menurut Al-Qur'an?",
+    "Saya merasa sudah terlalu banyak dosa untuk diampuni",
+    "Bagaimana menghapus rasa bersalah setelah bertaubat?",
+    "Apa yang Allah janjikan bagi orang yang bertaubat dengan sungguh-sungguh?",
+    "Bagaimana cara menebus kesalahan kepada orang lain?",
+    "Apakah dosa besar masih bisa diampuni?",
+  ],
+  'hati-niat': [
+    "Bagaimana menjaga keikhlasan dalam beramal?",
+    "Saya sering riya' dalam beribadah, bagaimana mengatasinya?",
+    "Apa yang Al-Qur'an katakan tentang penyakit hati?",
+    "Bagaimana cara membersihkan hati dari dengki dan iri?",
+    "Bagaimana mengontrol amarah menurut Al-Qur'an?",
+    "Apa panduan Al-Qur'an tentang sifat sombong dan takabur?",
+    "Bagaimana menjaga niat tetap lurus saat dipuji orang?",
+    "Apa yang Al-Qur'an ajarkan tentang sabar dan menahan diri?",
+  ],
+  'halal-haram': [
+    "Bagaimana hukum riba dan bunga bank dalam Islam?",
+    "Apa panduan Al-Qur'an tentang makanan dan minuman halal?",
+    "Bagaimana hukum bermuamalah dengan non-Muslim?",
+    "Apa batasan aurat dan berpakaian menurut Al-Qur'an?",
+    "Bagaimana hukum jual beli dan perdagangan dalam Islam?",
+    "Apa panduan Al-Qur'an tentang sumpah dan janji?",
+    "Bagaimana hukum memakan harta anak yatim?",
+    "Apa yang Al-Qur'an katakan tentang minuman keras dan judi?",
+  ],
+  'rezeki': [
+    "Bagaimana panduan Al-Qur'an tentang sedekah dan infaq?",
+    "Apa yang Allah janjikan tentang rezeki bagi orang beriman?",
+    "Bagaimana hukum zakat dan kepada siapa harus diberikan?",
+    "Saya khawatir soal keuangan, apa panduan Al-Qur'an?",
+    "Bagaimana sikap Islam terhadap kemiskinan dan kekayaan?",
+    "Apa panduan Al-Qur'an tentang utang piutang?",
+    "Bagaimana cara mencari nafkah yang halal dan berkah?",
+    "Apa yang Al-Qur'an katakan tentang menimbun harta?",
+  ],
+  'keluarga': [
+    "Bagaimana cara mendidik anak menurut Al-Qur'an?",
+    "Apa hak dan kewajiban suami istri dalam Islam?",
+    "Bagaimana berbakti kepada orang tua yang sudah lanjut usia?",
+    "Bagaimana menghadapi konflik dalam rumah tangga?",
+    "Apa panduan Al-Qur'an tentang menjaga silaturahmi?",
+    "Bagaimana hukum dan etika perceraian dalam Islam?",
+    "Apa tanggung jawab orang tua terhadap anak dalam Al-Qur'an?",
+    "Bagaimana menjaga keharmonisan dengan keluarga besar?",
+  ],
+  'pernikahan': [
+    "Apa kriteria memilih pasangan menurut Al-Qur'an?",
+    "Bagaimana mawaddah wa rahmah dalam pernikahan?",
+    "Apa hak dan tanggung jawab dalam pernikahan Islam?",
+    "Bagaimana panduan Al-Qur'an tentang mahar dan walimah?",
+    "Apa adab pergaulan sebelum menikah menurut Islam?",
+    "Bagaimana mempersiapkan diri secara spiritual untuk menikah?",
+    "Apa yang Al-Qur'an ajarkan tentang sakinah dalam rumah tangga?",
+    "Bagaimana panduan Al-Qur'an tentang menikah beda suku atau budaya?",
+  ],
+  'akhlak': [
+    "Bagaimana adab bertetangga dalam Islam?",
+    "Apa panduan Al-Qur'an tentang memaafkan orang lain?",
+    "Bagaimana menghadapi orang yang menyakiti kita?",
+    "Apa yang Al-Qur'an ajarkan tentang menjaga lisan?",
+    "Bagaimana etika berbisnis dan bekerja dengan orang lain?",
+    "Apa panduan Al-Qur'an tentang tolong-menolong?",
+    "Bagaimana menghadapi ghibah dan fitnah?",
+    "Apa yang Al-Qur'an katakan tentang persatuan dan persaudaraan?",
+  ],
+  'akhirat': [
+    "Apa yang Al-Qur'an ceritakan tentang hari kiamat?",
+    "Bagaimana gambaran surga dalam Al-Qur'an?",
+    "Apa amalan yang berat di timbangan akhirat?",
+    "Bagaimana cara mempersiapkan diri menghadapi kematian?",
+    "Apa yang terjadi di alam kubur menurut Al-Qur'an?",
+    "Bagaimana gambaran neraka sebagai peringatan?",
+    "Apa yang Al-Qur'an katakan tentang syafaat di hari akhir?",
+    "Bagaimana mengingat akhirat tanpa melupakan kehidupan dunia?",
+  ],
+};
 
 // ── Copy / Share ──────────────────────────────────────────────────────────────
 
@@ -360,7 +470,6 @@ function playAudio(verse, btn) {
 function buildVerseCard(verse, index) {
   const card    = document.createElement('article');
   card.className = 'verse-card';
-  card.style.animationDelay = `${index * 0.08}s`;
 
   // ── Build tafsir tabs (only include tabs that have content) ──────────────
   const tafsirTabs = [];
@@ -539,19 +648,24 @@ function showLoading() {
   stopLoadingSteps();
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
-  document.getElementById('verses-grid').innerHTML = '';
 
-  const thread = document.getElementById('chat-thread');
-  thread.innerHTML = `
-    ${currentFeeling ? `
-      <div class="chat-bubble chat-bubble--user">
-        <p class="cb-text">${escapeHtml(currentFeeling)}</p>
+  // Reset carousel state
+  currentCardIndex = 0;
+  totalVerseCards  = 0;
+
+  const carousel = document.getElementById('verses-carousel');
+  carousel.innerHTML = `
+    <div class="verse-slide">
+      <div class="verse-slide-loading">
+        <div class="loading-spinner"></div>
+        <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
       </div>
-    ` : ''}
-    <div class="chat-bubble chat-bubble--app chat-bubble--typing" id="typing-indicator">
-      <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
     </div>
   `;
+
+  document.getElementById('verses-dots').innerHTML = '';
+  document.getElementById('verse-counter-text').textContent = '';
+
   startLoadingSteps();
 }
 
@@ -560,70 +674,150 @@ function showLoading() {
 
 function renderVerses(data) {
   currentAyat = data.ayat;
-
-  // ── A: Replace typing indicator with the app reflection bubble ──────────────
   stopLoadingSteps();
-  const thread    = document.getElementById('chat-thread');
-  const typingEl  = document.getElementById('typing-indicator');
-  if (typingEl) typingEl.remove();
 
-  const appBubble = document.createElement('div');
-  appBubble.className = 'chat-bubble chat-bubble--app chat-bubble--typing-active';
-  const textEl = document.createElement('p');
-  textEl.className = 'cb-text';
-  appBubble.appendChild(textEl);
-  thread.appendChild(appBubble);
+  const carousel = document.getElementById('verses-carousel');
+  carousel.innerHTML = '';
 
-  // ── B: Typewriter — reveal reflection/explanation text 3 chars per 15 ms ────
+  // ── Carousel state ──────────────────────────────────────────────────────────
+  totalVerseCards  = data.ayat.length + 1; // intro + verse slides
+  currentCardIndex = 0;
+
+  // ── A: Build intro slide ────────────────────────────────────────────────────
+  const introSlide = document.createElement('div');
+  introSlide.className = 'verse-slide';
+  const introLabel = currentMode === 'panduan' ? 'Penjelasan' : 'Refleksi';
+  const introEmoji = currentMode === 'panduan' ? '📖' : '🤲';
+  introSlide.innerHTML = `
+    <div class="verse-slide-intro">
+      <span class="intro-emoji">${introEmoji}</span>
+      <span class="intro-label">${introLabel}</span>
+      <p class="intro-text typing" id="intro-typewriter"></p>
+    </div>
+  `;
+  carousel.appendChild(introSlide);
+
+  // ── B: Build verse slides ───────────────────────────────────────────────────
+  data.ayat.forEach((verse, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'verse-slide';
+    const card = buildVerseCard(verse, i);
+    card.classList.add('card-visible'); // no entrance animation in carousel
+    slide.appendChild(card);
+    carousel.appendChild(slide);
+  });
+
+  // ── C: Pagination dots ──────────────────────────────────────────────────────
+  renderDots();
+  updateCounter();
+
+  // ── D: Typewriter on intro text ─────────────────────────────────────────────
   const reflection = data.explanation || data.reflection || '';
+  const introTextEl = document.getElementById('intro-typewriter');
   typewriterActive = true;
   let pos = 0;
 
   function tick() {
-    if (!typewriterActive) return; // aborted (user navigated away)
+    if (!typewriterActive) return;
     pos = Math.min(pos + 3, reflection.length);
-    textEl.textContent = reflection.slice(0, pos);
+    introTextEl.textContent = reflection.slice(0, pos);
     if (pos < reflection.length) {
       setTimeout(tick, 15);
     } else {
-      appBubble.classList.remove('chat-bubble--typing-active'); // remove cursor
+      introTextEl.classList.remove('typing');
       typewriterActive = false;
-      onTypingDone();
+      // Add swipe hint
+      const hint = document.createElement('p');
+      hint.className = 'intro-swipe-hint';
+      hint.textContent = 'Geser untuk mulai →';
+      introTextEl.parentElement.appendChild(hint);
     }
   }
 
-  if (reflection) tick(); else onTypingDone();
-
-  // ── C: After typing — stagger verse cards in, then reveal actions ────────────
-  function onTypingDone() {
-    const grid = document.getElementById('verses-grid');
-    grid.innerHTML = '';
-
-    data.ayat.forEach((verse, i) => {
-      const card = buildVerseCard(verse, i);
-      grid.appendChild(card);
-      // Delay class add so the opacity-0 starting state renders first
-      setTimeout(() => card.classList.add('card-visible'), i * 150 + 60);
-    });
-
-    const afterCards = data.ayat.length * 150 + 250;
-    setTimeout(() => {
-      const actionsEl = document.getElementById('verse-actions');
-      const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
-      const moreLabel  = currentMode === 'panduan' ? 'Topik lain' : 'Perasaan lain';
-      actionsEl.innerHTML = `
-        <button class="va-refresh" id="refresh-btn">↺ Coba ayat lain</button>
-        <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
-      `;
-      actionsEl.classList.remove('hidden');
-      document.getElementById('refresh-btn')
-        .addEventListener('click', () => fetchAyat(currentFeeling, { ...currentSearchCtx, refresh: true }));
-      document.getElementById('find-more-btn')
-        .addEventListener('click', () => switchView(parentView));
-
-      renderFeedback();
-    }, afterCards);
+  if (reflection) tick(); else {
+    introTextEl.classList.remove('typing');
+    typewriterActive = false;
   }
+
+  // ── E: Scroll listener for carousel ─────────────────────────────────────────
+  carousel.addEventListener('scroll', onCarouselScroll, { passive: true });
+
+  // ── F: Hide actions/feedback until last card ────────────────────────────────
+  document.getElementById('verse-actions').classList.add('hidden');
+  document.getElementById('verse-feedback').classList.add('hidden');
+}
+
+// ── Carousel Helpers ──────────────────────────────────────────────────────────
+
+function onCarouselScroll() {
+  const carousel   = document.getElementById('verses-carousel');
+  const slideWidth = carousel.offsetWidth;
+  if (slideWidth === 0) return;
+  const newIndex = Math.round(carousel.scrollLeft / slideWidth);
+  if (newIndex === currentCardIndex) return;
+
+  currentCardIndex = newIndex;
+  updateCounter();
+  updateDots();
+
+  // Auto-pause audio when swiping away
+  stopCurrentAudio();
+
+  logEvent('verse_swiped', { slide_index: newIndex, total: totalVerseCards });
+
+  // Show actions + feedback when reaching last card
+  if (newIndex === totalVerseCards - 1) {
+    showVerseActions();
+  }
+}
+
+function showVerseActions() {
+  const actionsEl  = document.getElementById('verse-actions');
+  if (!actionsEl.classList.contains('hidden')) return; // already shown
+
+  const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
+  const moreLabel  = currentMode === 'panduan' ? 'Topik lain' : 'Perasaan lain';
+  actionsEl.innerHTML = `
+    <button class="va-refresh" id="refresh-btn">↺ Coba ayat lain</button>
+    <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
+  `;
+  actionsEl.classList.remove('hidden');
+  document.getElementById('refresh-btn')
+    .addEventListener('click', () => fetchAyat(currentFeeling, { ...currentSearchCtx, refresh: true }));
+  document.getElementById('find-more-btn')
+    .addEventListener('click', () => switchView(parentView));
+
+  renderFeedback();
+}
+
+function updateCounter() {
+  const el = document.getElementById('verse-counter-text');
+  if (currentCardIndex === 0) {
+    el.textContent = currentMode === 'panduan' ? 'Penjelasan' : 'Refleksi';
+  } else {
+    el.textContent = `${currentCardIndex} / ${totalVerseCards - 1}`;
+  }
+
+  // Disable arrows at edges
+  const prevBtn = document.getElementById('verse-prev');
+  const nextBtn = document.getElementById('verse-next');
+  if (prevBtn) prevBtn.disabled = currentCardIndex === 0;
+  if (nextBtn) nextBtn.disabled = currentCardIndex === totalVerseCards - 1;
+}
+
+function renderDots() {
+  const dotsEl = document.getElementById('verses-dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < totalVerseCards; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'verse-dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(dot);
+  }
+}
+
+function updateDots() {
+  const dots = document.querySelectorAll('#verses-dots .verse-dot');
+  dots.forEach((d, i) => d.classList.toggle('active', i === currentCardIndex));
 }
 
 // ── Feedback Section ──────────────────────────────────────────────────────────
@@ -693,20 +887,19 @@ function showAppBubble(text, btnLabel, btnAction) {
   stopLoadingSteps();
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
-  document.getElementById('verses-grid').innerHTML = '';
 
-  const thread   = document.getElementById('chat-thread');
-  const typingEl = document.getElementById('typing-indicator');
-  if (typingEl) typingEl.remove();
-
-  const bubble = document.createElement('div');
-  bubble.className = 'chat-bubble chat-bubble--app';
-  bubble.innerHTML = `
-    <p class="cb-text">${text}</p>
-    <button class="cb-back-btn">${btnLabel}</button>
+  const carousel = document.getElementById('verses-carousel');
+  carousel.innerHTML = `
+    <div class="verse-slide">
+      <div class="verse-slide-intro">
+        <p class="intro-text" style="margin-bottom:20px;">${text}</p>
+        <button class="back-btn-light" id="error-back-btn">${btnLabel}</button>
+      </div>
+    </div>
   `;
-  thread.appendChild(bubble);
-  bubble.querySelector('.cb-back-btn').addEventListener('click', btnAction);
+  document.getElementById('verses-dots').innerHTML = '';
+  document.getElementById('verse-counter-text').textContent = '';
+  carousel.querySelector('#error-back-btn').addEventListener('click', btnAction);
 }
 
 function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
@@ -862,9 +1055,7 @@ function renderPanduanCards() {
   `).join('');
 
   grid.querySelectorAll('.emotion-card').forEach(card => {
-    card.addEventListener('click', () =>
-      fetchAyat(card.dataset.query, { method: 'panduan_card', emotionId: card.dataset.presetId })
-    );
+    card.addEventListener('click', () => expandPanduanCard(card.dataset.presetId));
   });
 
   initPanduanCarouselEffect();
@@ -1086,18 +1277,164 @@ function initLandingCarousel() {
   }, { passive: true });
 }
 
+// ── Sub-Questions Drill-Down ─────────────────────────────────────────────────
+
+const BACK_ARROW_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>`;
+const CHEVRON_RIGHT_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;
+
+function expandPanduanCard(cardId) {
+  expandedCardId = cardId;
+
+  const preset = panduanPresets.find(p => p.id === cardId);
+  if (!preset) return;
+
+  const subQuestions = PANDUAN_SUB_QUESTIONS[cardId] || [];
+
+  const container = document.getElementById('panduan-expanded');
+  container.innerHTML = `
+    <div class="panduan-expanded-inner">
+      <button class="panduan-expanded-back" id="expanded-back-btn">
+        ${BACK_ARROW_SVG} Kembali
+      </button>
+      <div class="panduan-expanded-header">
+        <span class="panduan-expanded-emoji">${preset.emoji}</span>
+        <h2 class="panduan-expanded-title">${preset.label}</h2>
+        <p class="panduan-expanded-desc">${escapeHtml(preset.query)}</p>
+      </div>
+      <div class="sub-questions-list">
+        ${subQuestions.map((q, i) => `
+          <button class="sub-question-row" data-index="${i}" data-card-id="${cardId}">
+            <span>${escapeHtml(q)}</span>
+            <span class="sub-question-arrow">${CHEVRON_RIGHT_SVG}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="tulis-sendiri-section" id="tulis-sendiri-section">
+        <button class="tulis-sendiri-row" id="tulis-sendiri-btn">
+          <span>✏️</span>
+          <span>Tulis sendiri...</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Show expanded, animate in
+  container.classList.remove('hidden', 'slide-down');
+  container.classList.add('slide-up');
+
+  // Wire sub-question taps
+  container.querySelectorAll('.sub-question-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const qIndex = parseInt(row.dataset.index, 10);
+      const qText  = subQuestions[qIndex];
+      selectSubQuestion(qText, cardId, qIndex);
+    });
+  });
+
+  // Wire back button
+  container.querySelector('#expanded-back-btn').addEventListener('click', collapsePanduanCard);
+
+  // Wire "Tulis sendiri"
+  container.querySelector('#tulis-sendiri-btn').addEventListener('click', () => showTulisSendiri(cardId));
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  logEvent('card_expanded', { card_id: cardId, mode: 'panduan' });
+}
+
+function collapsePanduanCard() {
+  const container = document.getElementById('panduan-expanded');
+  container.classList.remove('slide-up');
+  container.classList.add('slide-down');
+
+  container.addEventListener('animationend', function handler() {
+    container.removeEventListener('animationend', handler);
+    container.classList.add('hidden');
+    container.classList.remove('slide-down');
+    container.innerHTML = '';
+    expandedCardId = null;
+  });
+}
+
+function selectSubQuestion(questionText, cardId, index) {
+  logEvent('sub_question_selected', { card_id: cardId, question_index: index, mode: 'panduan' });
+  fetchAyat(questionText, { method: 'panduan_sub_question', emotionId: cardId });
+}
+
+function showTulisSendiri(cardId) {
+  logEvent('tulis_sendiri_opened', { card_id: cardId, mode: 'panduan' });
+
+  const section = document.getElementById('tulis-sendiri-section');
+  section.innerHTML = `
+    <div class="tulis-sendiri-form">
+      <textarea id="tulis-sendiri-input" placeholder="Tulis pertanyaanmu di sini..." rows="3"></textarea>
+      <button class="tulis-sendiri-submit" id="tulis-sendiri-submit" disabled>Cari Panduan</button>
+    </div>
+  `;
+
+  const input  = document.getElementById('tulis-sendiri-input');
+  const submit = document.getElementById('tulis-sendiri-submit');
+
+  input.focus();
+
+  // Scroll so textarea is visible
+  setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+
+  input.addEventListener('input', () => {
+    submit.disabled = input.value.trim().length < 3;
+  });
+
+  const doSubmit = () => {
+    const val = input.value.trim();
+    if (val.length >= 3) fetchAyat(val, { method: 'panduan_tulis_sendiri', emotionId: cardId });
+  };
+
+  submit.addEventListener('click', doSubmit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doSubmit();
+  });
+}
+
+// ── Verse Carousel Arrow Navigation ──────────────────────────────────────────
+
+function scrollCarouselTo(index) {
+  const carousel = document.getElementById('verses-carousel');
+  const slideWidth = carousel.offsetWidth;
+  carousel.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-// Verses-view back button → return to mode parent
-document.getElementById('back-btn').addEventListener('click', () =>
-  switchView(currentMode === 'panduan' ? 'panduan-view' : 'selection-view')
-);
+// Verses-view back button → return to mode parent (or expanded card)
+document.getElementById('back-btn').addEventListener('click', () => {
+  if (currentMode === 'panduan' && expandedCardId) {
+    // Go back to panduan-view and re-expand the card
+    const cardToExpand = expandedCardId;
+    switchView('panduan-view');
+    setTimeout(() => expandPanduanCard(cardToExpand), 50);
+  } else {
+    switchView(currentMode === 'panduan' ? 'panduan-view' : 'selection-view');
+  }
+});
 
 // Curhat back → landing
 document.getElementById('curhat-back-btn').addEventListener('click', () => switchView('landing-view'));
 
-// Panduan back → landing
-document.getElementById('panduan-back-btn').addEventListener('click', () => switchView('landing-view'));
+// Panduan back → landing (or collapse expanded card)
+document.getElementById('panduan-back-btn').addEventListener('click', () => {
+  if (expandedCardId) {
+    collapsePanduanCard();
+  } else {
+    switchView('landing-view');
+  }
+});
+
+// Verse carousel arrow buttons
+document.getElementById('verse-prev').addEventListener('click', () => {
+  if (currentCardIndex > 0) scrollCarouselTo(currentCardIndex - 1);
+});
+document.getElementById('verse-next').addEventListener('click', () => {
+  if (currentCardIndex < totalVerseCards - 1) scrollCarouselTo(currentCardIndex + 1);
+});
 
 initLandingCarousel();
 renderEmotionCards();

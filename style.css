@@ -193,6 +193,190 @@ body {
   border-color: var(--teal-dark);
 }
 
+/* ── Panduan Expanded View (sub-questions) ─────────── */
+.panduan-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.panduan-expanded.hidden { display: none; }
+.panduan-expanded.slide-up   { animation: slideUpFadeIn  0.3s ease both; }
+.panduan-expanded.slide-down { animation: slideDownFadeOut 0.25s ease both; }
+
+@keyframes slideUpFadeIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDownFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(40px); }
+}
+
+.panduan-expanded-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px 20px 60px;
+}
+
+.panduan-expanded-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 7px 16px;
+  margin-bottom: 24px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.panduan-expanded-back:hover {
+  color: var(--text-dark);
+  border-color: var(--text-muted);
+  background: rgba(0,0,0,0.03);
+}
+
+.panduan-expanded-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.panduan-expanded-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 10px;
+}
+.panduan-expanded-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.panduan-expanded-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.sub-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sub-question-row {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1.55;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sub-question-row:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+  color: var(--teal-dark);
+}
+.sub-question-row:active {
+  transform: scale(0.98);
+}
+.sub-question-arrow {
+  flex-shrink: 0;
+  color: var(--text-soft);
+  transition: color 0.15s;
+}
+.sub-question-row:hover .sub-question-arrow {
+  color: var(--teal-dark);
+}
+
+.tulis-sendiri-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.tulis-sendiri-row {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tulis-sendiri-row:hover {
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+  background: #EDF7F6;
+}
+
+.tulis-sendiri-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tulis-sendiri-form textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 14px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text-dark);
+  background: #F8FAFC;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  resize: vertical;
+  line-height: 1.75;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tulis-sendiri-form textarea:focus {
+  border-color: var(--teal-dark);
+  box-shadow: 0 0 0 3px rgba(10,92,122,0.10);
+}
+.tulis-sendiri-form textarea::placeholder { color: var(--text-soft); }
+.tulis-sendiri-submit {
+  align-self: flex-end;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, var(--night-3), var(--teal-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  box-shadow: 0 4px 16px rgba(10,92,122,0.30);
+}
+.tulis-sendiri-submit:hover { opacity: 0.88; }
+.tulis-sendiri-submit:disabled { opacity: 0.5; cursor: default; }
+
 /* ── Per-verse Relevance (panduan mode) ──────────────── */
 .vc-relevance {
   font-size: 12.5px;
@@ -655,11 +839,174 @@ body {
    VERSE CARDS — Split dark/light design
 ════════════════════════════════════════════════════════ */
 
-/* ── Verses Grid ──────────────────────────────────────── */
+/* ── Verses Grid (legacy, kept for error states) ─────── */
 .verses-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+}
+
+/* ── Verses Header (light sticky) ────────────────────── */
+.verses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 10px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+
+.verse-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verse-counter-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+  min-width: 72px;
+  text-align: center;
+}
+
+.verse-counter-arrow {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.verse-counter-arrow:hover {
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+  background: rgba(10,92,122,0.05);
+}
+.verse-counter-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Verses Carousel ─────────────────────────────────── */
+.verses-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.verses-carousel::-webkit-scrollbar { display: none; }
+
+.verse-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  overflow-y: auto;
+  padding: 0 16px 20px;
+  min-height: 0;
+}
+
+/* Intro slide (reflection / explanation) */
+.verse-slide-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  padding: 40px 24px 40px;
+}
+
+.intro-emoji {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+.intro-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+.intro-text {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--text-mid);
+  max-width: 440px;
+}
+/* Blinking cursor during typewriter */
+.intro-text.typing::after {
+  content: '|';
+  animation: cursorBlink 0.65s step-end infinite;
+  color: var(--gold);
+  font-weight: 300;
+  margin-left: 1px;
+}
+
+.intro-swipe-hint {
+  margin-top: 24px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-soft);
+  animation: hintPulse 2s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* Verse cards inside carousel — no entrance animation */
+.verse-slide .verse-card {
+  opacity: 1;
+  transform: none;
+}
+.verse-slide .verse-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Verses Dots (pagination) ────────────────────────── */
+.verses-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 4px;
+}
+
+.verse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.verse-dot.active {
+  background: var(--gold);
+  transform: scale(1.25);
+}
+
+/* Loading state inside carousel */
+.verse-slide-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 18px;
 }
 
 /* ── Verse Card ───────────────────────────────────────── */

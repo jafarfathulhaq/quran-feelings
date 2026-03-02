@@ -60,7 +60,7 @@ Each search makes **5–6 parallel AI calls** then one sequential GPT-4o call:
 2. **HyDE × 3** (`gpt-4o-mini`) — generates hypothetical Qur'anic descriptions. Curhat uses emotional / situational / divine-hope angles; Panduan uses topical / ethical / practical angles
 3. **Embed × 3** (`text-embedding-3-large`, 1536 dims) — embeds the three HyDE texts
 4. **Hybrid search × 3** (Supabase `match_verses_hybrid` RPC) — 20 results per angle, round-robin merged, deduped, surah-diversity filtered → top 25 candidates
-5. **Select** (`gpt-4o`) — picks 1–3 verses. Curhat writes `reflection` + `verse_resonance`; Panduan writes `explanation` + `verse_relevance`
+5. **Select** (`gpt-4o`) — picks 3–7 verses (3–4 for focused queries, 5–7 for complex/multi-dimensional). Curhat writes `reflection` + `verse_resonance`; Panduan writes `explanation` + `verse_relevance`
 6. **Tafsir fetch** (Supabase REST) — fetches `tafsir_kemenag`, `tafsir_ibnu_kathir`, `tafsir_ibnu_kathir_id` for the selected verses only
 
 **Mode**: POST body accepts `mode` (`'curhat'` default, `'panduan'`). Mode forks prompts at steps 1, 2, and 5.
@@ -75,7 +75,7 @@ Fire-and-forget from `app.js`. **Never logs user text.** Each event includes `se
 Valid event types:
 `mode_selected`, `search_started`, `search_completed`, `search_cached`, `mood_feedback`,
 `verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
-`asbabun_nuzul_opened`
+`asbabun_nuzul_opened`, `card_expanded`, `sub_question_selected`, `tulis_sendiri_opened`, `verse_swiped`
 
 To query analytics:
 ```sql
@@ -89,12 +89,14 @@ GROUP BY event_type ORDER BY count DESC;
 
 ## Frontend architecture (`app.js`)
 - **Four views**: `landing-view` (mode selection) → `selection-view` (curhat) / `panduan-view` (panduan) → `verses-view` (results). `switchView(id)` swaps the `.active` class.
-- **State**: `currentMode` (`'curhat'` or `'panduan'`) — set by `selectMode()` when user taps a landing card
+- **State**: `currentMode` (`'curhat'` or `'panduan'`), `expandedCardId` (active sub-question card or null), `currentCardIndex` / `totalVerseCards` (carousel position)
 - **Landing carousel**: 2 swipeable cards with CSS scroll-snap, pagination dots update on scroll
 - **Emotion cards**: 13 preset emotions → fire `fetchAyat()` with a fixed feeling string (curhat mode)
-- **Panduan presets**: 10 preset topics → fire `fetchAyat()` with a fixed query string (panduan mode), teal accent cards
+- **Panduan presets**: 10 preset topics → tap expands to sub-questions drill-down (`expandPanduanCard()`) with 8 sub-questions + "Tulis sendiri", teal accent cards
+- **Sub-questions**: `PANDUAN_SUB_QUESTIONS` object (10 categories × 8 questions, keyed by hyphenated ID). Expanded view is a fixed-position overlay (`#panduan-expanded`). Back navigation: verses → expanded card → panduan grid → landing
 - **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 mode-specific Indonesian messages every 1.8 s
-- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms; verse cards stagger in at 150 ms each
+- **Verse carousel**: horizontal swipeable carousel (`#verses-carousel`) with CSS scroll-snap. Intro slide (card 0) shows reflection/explanation with typewriter. Verse slides (1–N) each contain one verse card. Pagination dots + counter arrows in `.verses-header`. Actions/feedback appear on reaching last card
+- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms on intro slide; "Geser untuk mulai →" hint after completion
 - **Verse of the Day**: collapsed by default (tap to expand) on landing-view. Loaded from `/api/verse-of-day`, silently hidden on failure.
 - **html2canvas**: lazy-loaded (~200 KB) only on first "Bagikan" tap
 - **Audio**: Alafasy recitation via `cdn.islamic.network`, global ayah number computed from `SURAH_VERSE_COUNTS` cumulative sum

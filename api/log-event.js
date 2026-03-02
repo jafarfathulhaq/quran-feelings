@@ -21,6 +21,10 @@ const VALID_EVENTS = new Set([
   'tafsir_tab',
   'asbabun_nuzul_opened',
   'mode_selected',
+  'card_expanded',
+  'sub_question_selected',
+  'tulis_sendiri_opened',
+  'verse_swiped',
 ]);
 
 module.exports = async function handler(req, res) {

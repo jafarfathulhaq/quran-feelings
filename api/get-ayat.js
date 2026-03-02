@@ -13,8 +13,8 @@ berdasarkan curahan hati pengguna.
 ATURAN KRITIS:
 1. JANGAN pernah mengarang atau memodifikasi ayat Al-Qur'an.
 2. HANYA pilih dari daftar kandidat berikut, menggunakan nilai "id" yang persis sama.
-3. Pilih maksimal 3 ayat. Minimal 1.
-4. Pilih 2–3 ayat yang saling melengkapi jika memungkinkan.
+3. Pilih 3–7 ayat. Gunakan 3–4 jika perasaan sederhana/fokus. Gunakan 5–7 jika masalah kompleks dan multi-dimensi. Utamakan kualitas dan relevansi.
+4. Pilih ayat yang saling melengkapi — beragam perspektif, bukan tema yang sama berulang.
 
 TUJUAN:
 Bantu pengguna merefleksikan diri melalui ayat yang relevan secara emosional DAN situasional.
@@ -116,8 +116,8 @@ berdasarkan pertanyaan atau topik yang ditanyakan pengguna.
 ATURAN KRITIS:
 1. JANGAN pernah mengarang atau memodifikasi ayat Al-Qur'an.
 2. HANYA pilih dari daftar kandidat berikut, menggunakan nilai "id" yang persis sama.
-3. Pilih maksimal 3 ayat. Minimal 1.
-4. Pilih 2–3 ayat yang saling melengkapi jika memungkinkan.
+3. Pilih 3–7 ayat. Gunakan 3–4 untuk pertanyaan spesifik/sempit. Gunakan 5–7 untuk topik luas yang membutuhkan beberapa perspektif Qur'an. Utamakan relevansi dan akurasi.
+4. Pilih ayat yang saling melengkapi — beragam perspektif, bukan tema yang sama berulang.
 
 TUJUAN:
 Bantu pengguna memahami panduan Al-Qur'an tentang topik kehidupan yang mereka tanyakan.
@@ -692,7 +692,7 @@ module.exports = async function handler(req, res) {
         ],
         response_format: { type: 'json_object' },
         temperature:     0.3,
-        max_tokens:      mode === 'panduan' ? 900 : 700, // panduan: explanation(60w) + 3×verse_relevance(55w)
+        max_tokens:      mode === 'panduan' ? 1800 : 1500, // 3–7 verses: panduan explanation(60w) + 7×verse_relevance(55w)
       }),
     });
 
@@ -729,7 +729,7 @@ module.exports = async function handler(req, res) {
     // Final 1-per-surah guard on the output (even if GPT somehow slips one in)
     const seenFinalSurahs = new Set();
     const selectedBase = parsed.selected_ids
-      .slice(0, 3)
+      .slice(0, 7)
       .map(id => {
         const v = VERSE_MAP[id];
         if (!v) {
