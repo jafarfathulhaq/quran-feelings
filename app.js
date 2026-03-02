@@ -464,8 +464,8 @@ function buildVerseCard(verse, index) {
       });
     });
 
-    // ── Baca Selengkapnya expand ───────────────────────────────────────────
-    card.querySelectorAll('.vc-read-more-btn').forEach(btn => {
+    // ── Baca Selengkapnya expand (tafsir panel only) ────────────────────────
+    panel.querySelectorAll('.vc-read-more-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const wrap     = btn.previousElementSibling;
         const expanded = wrap.classList.toggle('expanded');
