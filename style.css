@@ -503,24 +503,7 @@ body {
   flex: 1;
 }
 
-.vc-reflection {
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  font-size: 12.5px;
-  line-height: 1.75;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-
-.vc-tafsir-source {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  opacity: 0.6;
-  font-style: italic;
-  margin-bottom: 16px;
-}
-
-/* ── Tafsir Lengkap Button ────────────────────────────── */
+/* ── Tafsir Toggle Button ─────────────────────────────── */
 .vc-tafsir-btn {
   display: flex;
   align-items: center;
@@ -554,58 +537,64 @@ body {
   opacity: 0.7;
 }
 
-/* ── Ibnu Kathir button — warm amber/brown to distinguish from Kemenag green */
-.vc-tafsir-ik-btn {
-  background:  rgba(133, 77, 14, 0.06);
-  border-color: #92601a;
-  color: #7a5016;
-}
-.vc-tafsir-ik-btn:hover {
-  background: rgba(133, 77, 14, 0.12);
-  color: #5a3a0e;
-}
-.vc-tafsir-ik-btn.open {
-  background: rgba(133, 77, 14, 0.10);
-  border-color: #92601a;
-}
-
-/* ── Tafsir Ibnu Kathir Panel ─────────────────────────── */
-.vc-tafsir-ik {
+/* ── Tafsir Unified Panel ─────────────────────────────── */
+.vc-tafsir-panel {
   margin-bottom: 6px;
-  background: rgba(133, 77, 14, 0.03);
-  border: 1.5px solid #92601a;
-  border-top: none;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-  padding: 14px 14px 12px;
-}
-.vc-tafsir-ik.hidden { display: none; }
-.vc-tafsir-ik .vc-tafsir-kemenag-label { color: #7a5016; }
-
-/* ── Tafsir Kemenag Panel ─────────────────────────────── */
-.vc-tafsir-kemenag {
-  margin-bottom: 6px;
-  background: rgba(45, 106, 79, 0.04);
   border: 1.5px solid var(--green-mid);
   border-top: none;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
+  overflow: hidden;
+}
+.vc-tafsir-panel.hidden { display: none; }
+
+/* ── Tab Bar ──────────────────────────────────────────── */
+.vc-tafsir-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: rgba(45, 106, 79, 0.04);
+}
+.vc-tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.vc-tab-btn.active {
+  color: var(--green-mid);
+  border-bottom-color: var(--green-mid);
+  background: rgba(45, 106, 79, 0.08);
+}
+.vc-tab-btn:hover:not(.active) {
+  background: rgba(45, 106, 79, 0.04);
+  color: var(--text-mid);
+}
+
+/* ── Tab Content ──────────────────────────────────────── */
+.vc-tab-content {
   padding: 14px 14px 12px;
 }
-.vc-tafsir-kemenag.hidden { display: none; }
+.vc-tab-content.hidden { display: none; }
 
-.vc-tafsir-kemenag-label {
-  font-size: 10.5px;
-  font-style: italic;
-  font-weight: 600;
-  color: var(--green-mid);
-  margin-bottom: 10px;
-}
-.vc-tafsir-kemenag-text {
+.vc-tafsir-text {
   font-size: 12.5px;
   line-height: 1.85;
   color: var(--text-mid);
   white-space: pre-wrap;
+  margin-bottom: 10px;
+}
+.vc-tafsir-note {
+  font-size: 10.5px;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--green-mid);
 }
 
 /* ── Verse Copy/Share Buttons ─────────────────────────── */
