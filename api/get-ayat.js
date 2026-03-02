@@ -58,6 +58,13 @@ Contoh:
 • Khawatir soal keuangan → ayat tentang rezeki dan tawakal
 • Merasa bersalah → ayat tentang tobat dan pengampunan
 
+⚠️ JIKA pengguna menyebut BEBERAPA masalah berbeda:
+Pilih ayat yang masing-masing menjawab dimensi yang BERBEDA — bukan 3 ayat tentang tema sama.
+Contoh input "capek merawat ibu sakit, kehabisan uang":
+  ✓ 1 ayat tentang birrul walidain / keutamaan merawat orang tua
+  ✓ 1 ayat tentang rezeki / tawakal dalam kesulitan finansial
+  ✗ HINDARI 3 ayat tentang "ujian/cobaan" generik
+
 LANGKAH 3 — Tulis pesan pembuka singkat (reflection)
 Maksimal 40 kata. Dalam Bahasa Indonesia. Lembut, rendah hati, mendukung.
 Gunakan frasa seperti: "Semoga ayat-ayat ini bisa menemanimu", "Mungkin ini yang kamu butuhkan sekarang"
@@ -139,6 +146,31 @@ const HYDE_DIVINE =
   'dan pengingat bahwa Allah tidak pernah meninggalkan hamba-Nya. ' +
   'Gunakan kosakata tema Quranic: kemudahan setelah kesulitan, pertolongan Allah, ' +
   'harapan, ampunan, ketenangan hati, cahaya setelah kegelapan, doa yang dikabulkan. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
+// ── Intent Decomposition ──────────────────────────────────────────────────────
+// Splits multi-dimensional input into up to 3 distinct spiritual needs.
+// Enables one targeted HyDE per need instead of all 3 angles blending together.
+// Single-need inputs return 1 element → falls back to 3-angle HyDE (no regression).
+const DECOMPOSE_PROMPT =
+  'Kamu membantu sistem pencarian ayat Al-Qur\'an. ' +
+  'Analisis curahan hati pengguna dan identifikasi kebutuhan spiritual yang BERBEDA-BEDA. ' +
+  'Keluarkan 1–3 kebutuhan spesifik dalam JSON. Aturan: ' +
+  '(1) Maksimal 3. ' +
+  '(2) Setiap kebutuhan BERBEDA — bukan variasi dari tema yang sama. ' +
+  '(3) Gunakan kosakata Islami spesifik jika ada: ' +
+  '    birrul walidain, rezeki, taubat, hijrah, sabar merawat orang sakit, dll. ' +
+  '(4) Jika hanya ada 1 inti masalah, kembalikan array 1 elemen. ' +
+  'Format output: {"needs":["deskripsi kebutuhan 1","kebutuhan 2","kebutuhan 3"]}';
+
+// Generates a targeted HyDE system prompt focused on ONE extracted need.
+// User message will be the need itself (not the full feeling) to stay focused.
+const makeHyDE_need = (need) =>
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan. ' +
+  `Fokus KHUSUS pada kebutuhan ini: "${need}". ` +
+  'Tulis 2–3 kalimat yang mendeskripsikan tema dan kosakata Quranic dari ayat ideal ' +
+  'untuk kebutuhan tersebut secara spesifik. ' +
+  'Gunakan kosakata Islami yang tepat dan spesifik untuk tema ini. ' +
   'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
 
 // ── Result Cache ──────────────────────────────────────────────────────────────
@@ -244,13 +276,71 @@ module.exports = async function handler(req, res) {
   try {
     const rawFeeling = feeling.trim();
 
-    // ── Step 1: Three HyDE queries in parallel ────────────────────────────
-    // Three angles attack the embedding space from different directions:
-    //   Emotional   — what the user feels / needs emotionally
-    //   Situational — real-life context / practical guidance
-    //   Divine      — Allah's promises, hope, ease after hardship
-    // All three run in parallel — no added wall-clock time vs one.
-    const makeHyDE = (systemContent) =>
+    // ── Step 0.5: Intent decomposition ───────────────────────────────────────
+    // Splits multi-need input into up to 3 distinct spiritual needs.
+    // "ibu sakit + capek merawat + kehabisan uang" → 3 separate needs
+    // → each gets its own targeted HyDE → diverse candidate pool.
+    // Single-need inputs return 1 element → 3-angle fallback (no regression).
+    const decomposeRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model:           'gpt-4o-mini',
+        messages:        [
+          { role: 'system', content: DECOMPOSE_PROMPT },
+          { role: 'user',   content: rawFeeling },
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens:      200,
+        temperature:     0.2,
+      }),
+    });
+
+    // Parse extracted needs — fall back to null on any failure
+    let needs = null;
+    try {
+      if (decomposeRes.ok) {
+        const decompData   = await decomposeRes.json();
+        const decompParsed = JSON.parse(decompData.choices?.[0]?.message?.content || '{}');
+        const extracted    = decompParsed.needs;
+        if (Array.isArray(extracted) && extracted.length >= 1 && extracted.length <= 3) {
+          const valid = extracted.filter(n => typeof n === 'string' && n.trim().length > 0);
+          if (valid.length >= 1) needs = valid;
+        }
+      }
+    } catch (_) { /* fall through — 3-angle fallback below */ }
+
+    const isMultiIntent = needs && needs.length > 1;
+
+    // ── Step 1: HyDE — strategy depends on intent count ──────────────────────
+    // Single intent (or decompose failed) → 3 angles on full input (original behaviour)
+    // Multi-intent (2–3 needs)            → 1 targeted HyDE per need for diversity
+    //
+    // hydeSlots: array of [systemPrompt, userContent] tuples (always 3 slots)
+    let hydeSlots;
+    if (!isMultiIntent) {
+      // Original 3-angle behaviour — zero regression for simple inputs
+      hydeSlots = [
+        [HYDE_EMOTIONAL,   rawFeeling],
+        [HYDE_SITUATIONAL, rawFeeling],
+        [HYDE_DIVINE,      rawFeeling],
+      ];
+    } else {
+      // One focused HyDE per extracted need.
+      // If only 2 needs, pad 3rd slot with a divine-hope angle on the full input.
+      const slots = needs.slice(0, 3);
+      while (slots.length < 3) slots.push(null); // null = divine fallback
+      hydeSlots = slots.map(need =>
+        need
+          ? [makeHyDE_need(need), need]       // targeted: user msg = the need itself
+          : [HYDE_DIVINE,         rawFeeling] // fallback: hope angle on full input
+      );
+    }
+
+    const makeHyDE = (systemContent, userContent) =>
       fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -261,18 +351,16 @@ module.exports = async function handler(req, res) {
           model:       'gpt-4o-mini',
           messages:    [
             { role: 'system', content: systemContent },
-            { role: 'user',   content: rawFeeling },
+            { role: 'user',   content: userContent },
           ],
           max_tokens:  120,
           temperature: 0.3,
         }),
       });
 
-    const [hydeRes1, hydeRes2, hydeRes3] = await Promise.all([
-      makeHyDE(HYDE_EMOTIONAL),
-      makeHyDE(HYDE_SITUATIONAL),
-      makeHyDE(HYDE_DIVINE),
-    ]);
+    const [hydeRes1, hydeRes2, hydeRes3] = await Promise.all(
+      hydeSlots.map(([system, user]) => makeHyDE(system, user))
+    );
 
     // Parse all three, fall back to raw feeling on failure (non-blocking)
     const parseHyDE = async (res) => {
@@ -331,8 +419,9 @@ module.exports = async function handler(req, res) {
     const embedding3 = embedData3.data[0].embedding;
 
     // ── Step 3: Hybrid search — all three embeddings in parallel ──────────
-    // match_count 50 per angle; round-robin merge gives ~80–100 unique
-    // candidates before diversity filtering. FTS still uses raw feeling.
+    // match_count 20 per angle; 3×20 = 60 unique candidates, more than
+    // enough for GPT to pick 3. Lower count reduces Supabase DB load and
+    // prevents statement timeouts on the free tier.
     const makeSearch = (embedding) =>
       fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses_hybrid`, {
         method: 'POST',
@@ -344,7 +433,7 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify({
           query_embedding: embedding,
           query_text:      rawFeeling,
-          match_count:     50,
+          match_count:     20,
         }),
       });
 
