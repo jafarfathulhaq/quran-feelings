@@ -297,12 +297,17 @@ function buildVerseCard(verse, index) {
           `<button class="vc-tab-btn${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`
         ).join('')}
       </div>
-      ${tafsirTabs.map((t, i) => `
+      ${tafsirTabs.map((t, i) => {
+        const long = t.text.length > 400;
+        return `
         <div class="vc-tab-content${i === 0 ? '' : ' hidden'}" data-content="${t.id}">
-          <p class="vc-tafsir-text">${escapeHtml(t.text)}</p>
+          <div class="vc-tafsir-text-wrap${long ? '' : ' expanded'}">
+            <p class="vc-tafsir-text">${escapeHtml(t.text)}</p>
+          </div>
+          ${long ? `<button class="vc-read-more-btn">${EXPAND_ICON} Baca Selengkapnya</button>` : ''}
           <p class="vc-tafsir-note">${t.note}</p>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>
   ` : '';
 
@@ -350,6 +355,17 @@ function buildVerseCard(verse, index) {
         card.querySelectorAll('.vc-tab-content').forEach(c => c.classList.add('hidden'));
         card.querySelector(`.vc-tab-content[data-content="${btn.dataset.tab}"]`).classList.remove('hidden');
         logEvent('tafsir_tab', { surah_name: verse.surah_name, tab: btn.dataset.tab });
+      });
+    });
+
+    // ── Baca Selengkapnya expand ───────────────────────────────────────────
+    card.querySelectorAll('.vc-read-more-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wrap     = btn.previousElementSibling;
+        const expanded = wrap.classList.toggle('expanded');
+        btn.innerHTML  = expanded
+          ? `${COLLAPSE_ICON} Sembunyikan`
+          : `${EXPAND_ICON} Baca Selengkapnya`;
       });
     });
   }
