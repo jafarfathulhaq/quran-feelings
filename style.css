@@ -916,49 +916,42 @@ body {
   min-height: 0;
 }
 
-/* Intro slide (reflection / explanation) */
-.verse-slide-intro {
+/* Intro slide — dark-gradient chat-bubble style */
+.intro-chat {
+  background: linear-gradient(160deg, #0A0F1E 0%, #0F2044 55%, #0A5C7A 100%);
+  border-radius: 24px;
+  padding: 24px 20px 28px;
+  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(10,15,30,0.20);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  min-height: 45vh;
+}
+.intro-chat::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.10);
+  pointer-events: none;
+}
+.intro-chat .chat-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  min-height: 50vh;
-  text-align: center;
-  padding: 40px 24px 40px;
-}
-
-.intro-emoji {
-  font-size: 2.5rem;
-  margin-bottom: 12px;
-}
-.intro-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 20px;
-}
-.intro-text {
-  font-size: 15px;
-  line-height: 1.85;
-  color: var(--text-mid);
-  max-width: 440px;
-}
-/* Blinking cursor during typewriter */
-.intro-text.typing::after {
-  content: '|';
-  animation: cursorBlink 0.65s step-end infinite;
-  color: var(--gold);
-  font-weight: 300;
-  margin-left: 1px;
+  gap: 10px;
 }
 
 .intro-swipe-hint {
-  margin-top: 24px;
+  margin-top: 20px;
+  text-align: center;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-soft);
+  color: rgba(255,255,255,0.35);
   animation: hintPulse 2s ease-in-out infinite;
 }
 @keyframes hintPulse {

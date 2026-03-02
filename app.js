@@ -640,8 +640,8 @@ function buildVerseCard(verse, index) {
 }
 
 // ── Loading State ─────────────────────────────────────────────────────────────
-// Shows the user's feeling as a right-side chat bubble immediately,
-// then a left-side typing indicator while the API call is in flight.
+// Dark-gradient chat header with user feeling bubble on the right
+// and a typing-indicator app bubble on the left while the API call is in flight.
 
 function showLoading() {
   typewriterActive = false;
@@ -656,9 +656,13 @@ function showLoading() {
   const carousel = document.getElementById('verses-carousel');
   carousel.innerHTML = `
     <div class="verse-slide">
-      <div class="verse-slide-loading">
-        <div class="loading-spinner"></div>
-        <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
+      <div class="intro-chat">
+        <div class="chat-thread">
+          <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
+          <div class="chat-bubble chat-bubble--app chat-bubble--typing">
+            <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -683,16 +687,18 @@ function renderVerses(data) {
   totalVerseCards  = data.ayat.length + 1; // intro + verse slides
   currentCardIndex = 0;
 
-  // ── A: Build intro slide ────────────────────────────────────────────────────
+  // ── A: Build intro slide (chat-bubble style) ───────────────────────────────
   const introSlide = document.createElement('div');
   introSlide.className = 'verse-slide';
-  const introLabel = currentMode === 'panduan' ? 'Penjelasan' : 'Refleksi';
-  const introEmoji = currentMode === 'panduan' ? '📖' : '🤲';
   introSlide.innerHTML = `
-    <div class="verse-slide-intro">
-      <span class="intro-emoji">${introEmoji}</span>
-      <span class="intro-label">${introLabel}</span>
-      <p class="intro-text typing" id="intro-typewriter"></p>
+    <div class="intro-chat">
+      <div class="chat-thread">
+        <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
+        <div class="chat-bubble chat-bubble--app chat-bubble--typing-active">
+          <span class="cb-text" id="intro-typewriter"></span>
+        </div>
+      </div>
+      <p class="intro-swipe-hint" id="intro-swipe-hint" style="display:none;">Geser untuk mulai →</p>
     </div>
   `;
   carousel.appendChild(introSlide);
@@ -724,19 +730,22 @@ function renderVerses(data) {
     if (pos < reflection.length) {
       setTimeout(tick, 15);
     } else {
-      introTextEl.classList.remove('typing');
+      // Remove blinking cursor
+      const appBubble = introTextEl.closest('.chat-bubble--app');
+      if (appBubble) appBubble.classList.remove('chat-bubble--typing-active');
       typewriterActive = false;
-      // Add swipe hint
-      const hint = document.createElement('p');
-      hint.className = 'intro-swipe-hint';
-      hint.textContent = 'Geser untuk mulai →';
-      introTextEl.parentElement.appendChild(hint);
+      // Show swipe hint
+      const hint = document.getElementById('intro-swipe-hint');
+      if (hint) hint.style.display = '';
     }
   }
 
   if (reflection) tick(); else {
-    introTextEl.classList.remove('typing');
+    const appBubble = introTextEl.closest('.chat-bubble--app');
+    if (appBubble) appBubble.classList.remove('chat-bubble--typing-active');
     typewriterActive = false;
+    const hint = document.getElementById('intro-swipe-hint');
+    if (hint) hint.style.display = '';
   }
 
   // ── E: Scroll listener for carousel ─────────────────────────────────────────
@@ -891,9 +900,14 @@ function showAppBubble(text, btnLabel, btnAction) {
   const carousel = document.getElementById('verses-carousel');
   carousel.innerHTML = `
     <div class="verse-slide">
-      <div class="verse-slide-intro">
-        <p class="intro-text" style="margin-bottom:20px;">${text}</p>
-        <button class="back-btn-light" id="error-back-btn">${btnLabel}</button>
+      <div class="intro-chat">
+        <div class="chat-thread">
+          <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
+          <div class="chat-bubble chat-bubble--app">${text}</div>
+        </div>
+        <div style="text-align:center; margin-top:20px;">
+          <button class="cb-back-btn" id="error-back-btn">${btnLabel}</button>
+        </div>
       </div>
     </div>
   `;
