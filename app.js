@@ -275,9 +275,6 @@ const COLLAPSE_ICON       = `<svg width="13" height="13" viewBox="0 0 24 24" fil
 const SHARE_ICON          = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
 const PLAY_ICON           = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
 const PAUSE_ICON          = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-const BOOKMARK_ICON       = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
-const BOOKMARK_FILLED_ICON= `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
-
 // ── Audio ──────────────────────────────────────────────────────────────────────
 // CDN: https://cdn.islamic.network/quran/audio/128/ar.alafasy/{global_ayah}.mp3
 // Global ayah number = cumulative verse count before the surah + verse number.
@@ -336,61 +333,12 @@ function playAudio(verse, btn) {
   audio.addEventListener('ended', stopCurrentAudio);
 }
 
-// ── Saved Verses ──────────────────────────────────────────────────────────────
-
-function getSaved() {
-  try { return JSON.parse(localStorage.getItem('savedVerses') || '[]'); }
-  catch { return []; }
-}
-
-function setSaved(arr) {
-  localStorage.setItem('savedVerses', JSON.stringify(arr));
-}
-
-function isVerseSaved(id) {
-  return getSaved().some(v => v.id === id);
-}
-
-function toggleSave(verse, btn) {
-  const saved = getSaved();
-  const idx   = saved.findIndex(v => v.id === verse.id);
-  if (idx === -1) {
-    saved.push(verse);
-    setSaved(saved);
-    btn.innerHTML = BOOKMARK_FILLED_ICON + ' Tersimpan';
-    btn.classList.add('saved');
-    showToast('Ayat disimpan ✓');
-    logEvent('verse_saved', { surah_name: verse.surah_name });
-  } else {
-    saved.splice(idx, 1);
-    setSaved(saved);
-    btn.innerHTML = BOOKMARK_ICON + ' Simpan';
-    btn.classList.remove('saved');
-    showToast('Dihapus dari simpanan');
-    logEvent('verse_unsaved', { surah_name: verse.surah_name });
-  }
-  updateSavedBadge();
-}
-
-function updateSavedBadge() {
-  const count = getSaved().length;
-  const badge = document.getElementById('saved-badge');
-  if (!badge) return;
-  badge.textContent = count;
-  badge.classList.toggle('hidden', count === 0);
-}
-
 // ── Verse Card ────────────────────────────────────────────────────────────────
 
 function buildVerseCard(verse, index) {
   const card    = document.createElement('article');
   card.className = 'verse-card';
   card.style.animationDelay = `${index * 0.08}s`;
-
-  const saved   = isVerseSaved(verse.id);
-  const bmkHtml = saved
-    ? `${BOOKMARK_FILLED_ICON} Tersimpan`
-    : `${BOOKMARK_ICON} Simpan`;
 
   // ── Build tafsir tabs (only include tabs that have content) ──────────────
   const tafsirTabs = [];
@@ -457,13 +405,11 @@ function buildVerseCard(verse, index) {
       <div class="vc-actions">
         <button class="vc-btn vc-audio-btn">${PLAY_ICON} Dengarkan</button>
         <button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>
-        <button class="vc-btn vc-btn--save vc-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
       </div>
     </div>
   `;
 
   card.querySelector('.vc-audio-btn').addEventListener('click',  e => playAudio(verse, e.currentTarget));
-  card.querySelector('.vc-save-btn').addEventListener('click',   e => toggleSave(verse, e.currentTarget));
   card.querySelector('.vc-share-btn').addEventListener('click',  () => shareVerse(verse));
 
   // ── Tafsir accordion toggle ──────────────────────────────────────────────
@@ -658,37 +604,6 @@ function renderFeedback() {
           .addEventListener('click', () => switchView('selection-view'));
       }
     });
-  });
-}
-
-// ── Saved View Renderer ───────────────────────────────────────────────────────
-
-function renderSavedView() {
-  const saved    = getSaved();
-  const subtitle = document.getElementById('saved-subtitle');
-  const grid     = document.getElementById('saved-grid');
-
-  subtitle.textContent = saved.length === 0
-    ? ''
-    : `${saved.length} ayat tersimpan`;
-
-  grid.innerHTML = '';
-
-  if (saved.length === 0) {
-    grid.innerHTML = `
-      <div class="saved-empty">
-        <span class="saved-empty-icon">🔖</span>
-        <p class="saved-empty-msg">Belum ada ayat yang tersimpan.<br>Tekan ikon bookmark pada kartu ayat untuk menyimpannya.</p>
-      </div>
-    `;
-    return;
-  }
-
-  // Newest first — add card-visible immediately so no fade-in animation
-  [...saved].reverse().forEach((verse, i) => {
-    const card = buildVerseCard(verse, i);
-    card.classList.add('card-visible');
-    grid.appendChild(card);
   });
 }
 
@@ -919,10 +834,6 @@ function renderVOTD(verse, container) {
 
   // Local curated verses use surah_name + verse_number; API verses have ref
   const ref     = verse.ref || `QS. ${verse.surah_name}: ${verse.verse_number}`;
-  const saved   = isVerseSaved(verse.id);
-  const bmkHtml = saved
-    ? `${BOOKMARK_FILLED_ICON} Tersimpan`
-    : `${BOOKMARK_ICON} Simpan`;
 
   const CHEVRON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
 
@@ -942,7 +853,6 @@ function renderVOTD(verse, container) {
           <p class="votd-ref">${ref}</p>
           <div class="votd-actions">
             <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
-            <button class="vc-btn votd-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
           </div>
         </div>
       </div>
@@ -959,23 +869,14 @@ function renderVOTD(verse, container) {
   container.querySelector('.votd-audio-btn').addEventListener('click',
     e => playAudio(verse, e.currentTarget)
   );
-  container.querySelector('.votd-save-btn').addEventListener('click',
-    e => toggleSave(verse, e.currentTarget)
-  );
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-document.getElementById('back-btn').addEventListener('click',       () => switchView('selection-view'));
-document.getElementById('saved-back-btn').addEventListener('click', () => switchView('selection-view'));
-document.getElementById('saved-nav-btn').addEventListener('click',  () => {
-  renderSavedView();
-  switchView('saved-view');
-});
+document.getElementById('back-btn').addEventListener('click', () => switchView('selection-view'));
 
 renderEmotionCards();
 initSearch();
-updateSavedBadge();
 initVOTD();
 
 // ── Service Worker ─────────────────────────────────────────────────────────────

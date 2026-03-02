@@ -70,7 +70,7 @@ body {
     #0A5C7A 75%,
     #0D7A7A 100%
   );
-  padding: 20px 24px 52px;
+  padding: 28px 24px 44px;
   position: relative;
 }
 
@@ -92,12 +92,6 @@ body {
   border-radius: 50%;
   border: 1px solid rgba(201,168,76,0.08);
   pointer-events: none;
-}
-
-.hero-nav {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 24px;
 }
 
 .hero-ornament {
@@ -137,47 +131,6 @@ body {
 .hero-wave {
   display: none;
 }
-
-/* ── Saved Nav Button (glassmorphism on dark) ─────────── */
-.saved-nav-btn {
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 10px;
-  color: rgba(255,255,255,0.85);
-  cursor: pointer;
-  padding: 7px 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.saved-nav-btn:hover {
-  background: rgba(255,255,255,0.20);
-  border-color: rgba(255,255,255,0.28);
-}
-
-.saved-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--gold);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 100px;
-  padding: 0 4px;
-  line-height: 1;
-}
-
-.saved-badge.hidden { display: none; }
 
 /* ── Floating Input Card ──────────────────────────────── */
 .input-card {
@@ -427,20 +380,6 @@ body {
   color: white;
   border-color: rgba(255,255,255,0.38);
   background: rgba(255,255,255,0.12);
-}
-
-/* Back button in saved-view (light background) */
-.saved-header .back-btn {
-  color: var(--text-mid);
-  border-color: var(--border);
-  background: none;
-  margin-bottom: 0;
-}
-
-.saved-header .back-btn:hover {
-  color: var(--text-dark);
-  border-color: var(--teal-dark);
-  background: rgba(10,92,122,0.05);
 }
 
 /* ── Chat Thread ──────────────────────────────────────── */
@@ -900,78 +839,6 @@ body {
   background: rgba(10,92,122,0.08);
 }
 
-/* Bookmark button */
-.vc-btn--save {
-  margin-left: auto;
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201,168,76,0.07);
-}
-
-.vc-btn--save:hover {
-  color: #a07a20;
-  border-color: #a07a20;
-  background: rgba(201,168,76,0.15);
-}
-
-/* Bookmark — saved state */
-.vc-btn.saved {
-  color: var(--gold);
-  border-color: var(--gold);
-  background: rgba(201,168,76,0.08);
-}
-
-.vc-btn.saved:hover {
-  color: #a07a20;
-  border-color: #a07a20;
-  background: rgba(201,168,76,0.15);
-}
-
-/* ════════════════════════════════════════════════════════
-   SAVED VIEW
-════════════════════════════════════════════════════════ */
-.saved-header {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 28px 20px 24px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-
-.saved-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text-dark);
-  letter-spacing: -0.4px;
-}
-
-.saved-subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.saved-grid {
-  padding: 0 16px 60px;
-}
-
-.saved-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.saved-empty-icon { font-size: 36px; }
-
-.saved-empty-msg {
-  font-size: 14px;
-  color: var(--text-muted);
-  line-height: 1.75;
-}
-
 /* ════════════════════════════════════════════════════════
    VERSE OF THE DAY
 ════════════════════════════════════════════════════════ */
@@ -1144,17 +1011,6 @@ body {
   color: var(--gold);
   background: rgba(201,168,76,0.15);
 }
-.votd-card .vc-btn.saved {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201,168,76,0.15);
-}
-.votd-card .vc-btn.saved:hover {
-  border-color: #d4a83a;
-  color: #d4a83a;
-  background: rgba(201,168,76,0.22);
-}
-
 /* ════════════════════════════════════════════════════════
    VERSE ACTIONS + FEEDBACK + DISCLAIMER
 ════════════════════════════════════════════════════════ */
