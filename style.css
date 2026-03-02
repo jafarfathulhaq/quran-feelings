@@ -324,8 +324,8 @@ body {
   width: 92px;
   min-height: 114px;
   scroll-snap-align: start;
-  background: color-mix(in srgb, var(--ec-accent, #94A3B8) 9%, white);
-  border: 1.5px solid color-mix(in srgb, var(--ec-accent, #94A3B8) 20%, #E2E8F0);
+  background: #EEF3FB;
+  border: 1.5px solid #C8D8F0;
   border-radius: var(--radius);
   padding: 14px 8px 12px;
   display: flex;
@@ -350,13 +350,13 @@ body {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: var(--ec-accent, var(--border));
+  background: #6B8DD6;
   border-radius: 2px 2px 0 0;
 }
 
 .emotion-card:hover {
   box-shadow: 0 8px 24px rgba(10,15,30,0.13);
-  border-color: var(--ec-accent);
+  border-color: #6B8DD6;
 }
 .emotion-card:active { opacity: 0.75 !important; }
 
@@ -491,6 +491,8 @@ body {
 /* Loading step indicator */
 .chat-bubble--typing {
   padding: 14px 20px;
+  display: flex;
+  align-items: center;
 }
 
 .ls-step-text {
@@ -507,6 +509,22 @@ body {
 @keyframes lsSlideIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+.ls-dots {
+  display: inline-block;
+  overflow: hidden;
+  width: 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 500;
+  vertical-align: bottom;
+  animation: lsDots 1.2s steps(4, end) infinite;
+}
+
+@keyframes lsDots {
+  from { width: 0; }
+  to   { width: 1.4em; }
 }
 
 /* Blinking cursor during typewriter */
@@ -964,6 +982,53 @@ body {
    VERSE OF THE DAY
 ════════════════════════════════════════════════════════ */
 .votd-section { margin-top: 8px; }
+
+/* ── VOTD collapsible wrapper ─────────────────────────── */
+.votd-wrap {
+  margin: 0 0 24px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.votd-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+}
+
+.votd-trigger-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Override label/date colors for light trigger background */
+.votd-trigger .votd-label { color: var(--gold); }
+.votd-trigger .votd-date  { color: var(--text-muted); }
+
+.votd-chevron {
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.votd-trigger[aria-expanded="true"] .votd-chevron { transform: rotate(180deg); }
+
+.votd-body          { display: none; }
+.votd-body.open     { display: block; }
+
+/* Card inside body: top corners squared off (wrap handles them) */
+.votd-body .votd-card { border-radius: 0 0 var(--radius) var(--radius); }
 
 .votd-skeleton {
   height: 200px;

@@ -41,10 +41,10 @@ let typewriterActive  = false; // set false to abort an in-progress typewriter
 // ── Loading Steps ─────────────────────────────────────────────────────────────
 
 const LOADING_STEPS = [
-  'Memahami perasaanmu...',
-  'Menelusuri Al-Qur\'an...',
-  'Mencocokkan ayat yang relevan...',
-  'Menyiapkan refleksi untukmu...',
+  'Memahami perasaanmu',
+  'Menelusuri Al-Qur\'an',
+  'Mencocokkan ayat yang relevan',
+  'Menyiapkan refleksi untukmu',
 ];
 
 let _loadingStepTimer = null;
@@ -526,7 +526,7 @@ function showLoading() {
       </div>
     ` : ''}
     <div class="chat-bubble chat-bubble--app chat-bubble--typing" id="typing-indicator">
-      <span class="ls-step-text" id="loading-step-text"></span>
+      <span class="ls-step-text" id="loading-step-text"></span><span class="ls-dots" aria-hidden="true">...</span>
     </div>
   `;
   startLoadingSteps();
@@ -830,7 +830,6 @@ function renderEmotionCards() {
       class="emotion-card"
       data-feeling="${e.feeling}"
       data-emotion-id="${e.id}"
-      style="--ec-accent: ${e.accent};"
       aria-label="${e.label} — ${e.desc}"
     >
       <span class="ec-emoji">${e.emoji}</span>
@@ -925,21 +924,37 @@ function renderVOTD(verse, container) {
     ? `${BOOKMARK_FILLED_ICON} Tersimpan`
     : `${BOOKMARK_ICON} Simpan`;
 
+  const CHEVRON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+
   container.innerHTML = `
-    <div class="votd-card">
-      <div class="votd-header">
-        <span class="votd-label">✦ Ayat Hari Ini</span>
-        <span class="votd-date">${dateStr}</span>
-      </div>
-      <p class="votd-arabic">${verse.arabic}</p>
-      <p class="votd-translation">"${verse.translation}"</p>
-      <p class="votd-ref">${ref}</p>
-      <div class="votd-actions">
-        <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
-        <button class="vc-btn votd-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
+    <div class="votd-wrap">
+      <button class="votd-trigger" aria-expanded="false">
+        <div class="votd-trigger-info">
+          <span class="votd-label">✦ Ayat Hari Ini</span>
+          <span class="votd-date">${dateStr}</span>
+        </div>
+        <span class="votd-chevron">${CHEVRON}</span>
+      </button>
+      <div class="votd-body">
+        <div class="votd-card">
+          <p class="votd-arabic">${verse.arabic}</p>
+          <p class="votd-translation">"${verse.translation}"</p>
+          <p class="votd-ref">${ref}</p>
+          <div class="votd-actions">
+            <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
+            <button class="vc-btn votd-save-btn ${saved ? 'saved' : ''}">${bmkHtml}</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
+
+  // Toggle expand/collapse
+  container.querySelector('.votd-trigger').addEventListener('click', function () {
+    const expanded = this.getAttribute('aria-expanded') === 'true';
+    this.setAttribute('aria-expanded', !expanded);
+    container.querySelector('.votd-body').classList.toggle('open', !expanded);
+  });
 
   container.querySelector('.votd-audio-btn').addEventListener('click',
     e => playAudio(verse, e.currentTarget)
