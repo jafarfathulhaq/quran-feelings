@@ -58,11 +58,17 @@ Contoh:
 • Khawatir soal keuangan → ayat tentang rezeki dan tawakal
 • Merasa bersalah → ayat tentang tobat dan pengampunan
 
-LANGKAH 3 — Tulis pesan refleksi
-Maksimal 80 kata. Dalam Bahasa Indonesia. Lembut, rendah hati, mendukung.
-Gunakan frasa seperti: "Semoga ayat ini bisa menemanimu", "Ayat ini mengingatkan kita", "Mungkin ayat ini relevan"
+LANGKAH 3 — Tulis pesan pembuka singkat (reflection)
+Maksimal 40 kata. Dalam Bahasa Indonesia. Lembut, rendah hati, mendukung.
+Gunakan frasa seperti: "Semoga ayat-ayat ini bisa menemanimu", "Mungkin ini yang kamu butuhkan sekarang"
 JANGAN katakan: "Ini jawaban Allah untukmu", "Allah sedang memberitahumu", "Kamu harus..."
-Sebut situasi spesifik mereka, bukan hanya bicara emosi umum.
+
+LANGKAH 4 — Tulis resonansi personal untuk setiap ayat (verse_resonance)
+Untuk setiap ayat yang kamu pilih, tulis 2–3 kalimat (maks 45 kata) yang:
+• Menjelaskan MENGAPA ayat ini relevan dengan situasi SPESIFIK pengguna — bukan penjelasan umum
+• Menyebut detail konkret dari curahan hati mereka (situasi, perasaan, atau kekhawatiran yang disebutkan)
+• Terasa personal dan hangat, seperti teman yang benar-benar mendengarkan
+Gunakan "kamu" bukan "Anda". Nada: teman yang peduli, bukan ceramah.
 
 FORMAT OUTPUT — kembalikan HANYA salah satu dari dua format JSON berikut, tanpa teks tambahan:
 
@@ -70,7 +76,11 @@ Jika input relevan:
 {
   "relevant": true,
   "reflection": "...",
-  "selected_ids": ["id1", "id2"]
+  "selected_ids": ["id1", "id2"],
+  "verse_resonance": {
+    "id1": "Penjelasan personal 2–3 kalimat mengapa ayat ini relevan dengan situasi spesifik pengguna...",
+    "id2": "Penjelasan personal untuk ayat kedua jika ada..."
+  }
 }
 
 Jika input tidak relevan:
@@ -80,11 +90,12 @@ Jika input tidak relevan:
 }
 
 selected_ids harus merupakan nilai "id" dari kandidat (contoh: ["31:14", "46:15"]).
+verse_resonance harus memiliki entri untuk setiap id di selected_ids.
 Jangan pernah mengembalikan selected_ids yang kosong jika relevant: true.
 
-CONTOH NADA:
-Baik: "Semoga ayat ini bisa menemanimu. Kelelahan dalam merawat orang yang kita cintai adalah bentuk cinta yang Allah catat."
-Buruk: "Ini adalah pesan Allah untukmu. Allah menyuruhmu untuk bersabar."
+CONTOH NADA verse_resonance:
+Baik: "Kamu bilang merasa lelah merawat orang yang sakit sendirian. Ayat ini mengingatkan bahwa setiap tetes keringat yang kamu korbankan untuk orang yang kamu cintai, Allah catat sebagai amal yang mulia."
+Buruk: "Ayat ini berbicara tentang kesabaran dan Allah menyukai orang yang sabar."
 
 Daftar kandidat ayat (dipilih melalui pencarian semantik):
 {{CANDIDATES}}`;
@@ -114,6 +125,20 @@ const HYDE_SITUATIONAL =
   'dan tema situasional apa yang harus diangkat oleh ayat tersebut. ' +
   'Gunakan kosakata tema Quranic: rezeki, ujian, musibah, amanah, ' +
   'ikhtiar, silaturahmi, doa, berserah diri. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
+// Angle 3 — divine hope: Allah's promises, ease after hardship, meaning behind trials.
+// Catches verses like "with hardship comes ease", "Allah does not burden beyond capacity",
+// "call upon Me and I will answer" — the forward-looking, hope-restoring layer.
+const HYDE_DIVINE =
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan. ' +
+  'Berdasarkan curahan hati pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+  'tema HARAPAN dan JANJI ILAHI dari ayat Al-Qur\'an yang ideal: ' +
+  'janji Allah kepada hamba-Nya yang bersabar dan bertawakkal, ' +
+  'jaminan bahwa setiap ujian memiliki makna dan akhir yang baik, ' +
+  'dan pengingat bahwa Allah tidak pernah meninggalkan hamba-Nya. ' +
+  'Gunakan kosakata tema Quranic: kemudahan setelah kesulitan, pertolongan Allah, ' +
+  'harapan, ampunan, ketenangan hati, cahaya setelah kegelapan, doa yang dikabulkan. ' +
   'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
 
 // ── Result Cache ──────────────────────────────────────────────────────────────
@@ -219,10 +244,12 @@ module.exports = async function handler(req, res) {
   try {
     const rawFeeling = feeling.trim();
 
-    // ── Step 1: Two HyDE queries in parallel ──────────────────────────────
-    // A: Emotional angle (what the user feels / needs emotionally) and
-    //    Situational angle (real-life context / practical guidance).
-    // Running both in parallel costs the same wall-clock time as one.
+    // ── Step 1: Three HyDE queries in parallel ────────────────────────────
+    // Three angles attack the embedding space from different directions:
+    //   Emotional   — what the user feels / needs emotionally
+    //   Situational — real-life context / practical guidance
+    //   Divine      — Allah's promises, hope, ease after hardship
+    // All three run in parallel — no added wall-clock time vs one.
     const makeHyDE = (systemContent) =>
       fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -241,24 +268,29 @@ module.exports = async function handler(req, res) {
         }),
       });
 
-    const [hydeRes1, hydeRes2] = await Promise.all([
+    const [hydeRes1, hydeRes2, hydeRes3] = await Promise.all([
       makeHyDE(HYDE_EMOTIONAL),
       makeHyDE(HYDE_SITUATIONAL),
+      makeHyDE(HYDE_DIVINE),
     ]);
 
-    // Parse both, fall back to raw feeling on failure (non-blocking)
+    // Parse all three, fall back to raw feeling on failure (non-blocking)
     const parseHyDE = async (res) => {
       if (!res.ok) return rawFeeling;
       const d = await res.json();
       return d.choices?.[0]?.message?.content?.trim() || rawFeeling;
     };
 
-    const [queryEmotional, querySituational] = await Promise.all([
+    const [queryEmotional, querySituational, queryDivine] = await Promise.all([
       parseHyDE(hydeRes1),
       parseHyDE(hydeRes2),
+      parseHyDE(hydeRes3),
     ]);
 
-    // ── Step 2: Embed both HyDE descriptions in parallel ──────────────────
+    // ── Step 2: Embed all three HyDE descriptions in parallel ────────────
+    // text-embedding-3-large with dimensions:1536 keeps the pgvector schema
+    // unchanged while delivering significantly richer semantic representation
+    // than text-embedding-3-small at the same vector size.
     const makeEmbed = (text) =>
       fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
@@ -267,34 +299,40 @@ module.exports = async function handler(req, res) {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
+          // TODO: switch to 'text-embedding-3-large' (dimensions: 1536) after
+          // reembed.py is re-run with the same model — query and stored vectors
+          // must match or cosine similarity returns meaningless results.
           model:           'text-embedding-3-small',
           input:           text,
           encoding_format: 'float',
         }),
       });
 
-    const [embedRes1, embedRes2] = await Promise.all([
+    const [embedRes1, embedRes2, embedRes3] = await Promise.all([
       makeEmbed(queryEmotional),
       makeEmbed(querySituational),
+      makeEmbed(queryDivine),
     ]);
 
-    if (!embedRes1.ok || !embedRes2.ok) {
-      const errRes = embedRes1.ok ? embedRes2 : embedRes1;
+    if (!embedRes1.ok || !embedRes2.ok || !embedRes3.ok) {
+      const errRes = !embedRes1.ok ? embedRes1 : !embedRes2.ok ? embedRes2 : embedRes3;
       const err    = await errRes.json();
       throw new Error(err.error?.message || 'Embedding API error');
     }
 
-    const [embedData1, embedData2] = await Promise.all([
+    const [embedData1, embedData2, embedData3] = await Promise.all([
       embedRes1.json(),
       embedRes2.json(),
+      embedRes3.json(),
     ]);
 
     const embedding1 = embedData1.data[0].embedding;
     const embedding2 = embedData2.data[0].embedding;
+    const embedding3 = embedData3.data[0].embedding;
 
-    // ── Step 3: Hybrid search — both embeddings in parallel ───────────────
-    // C: match_count raised 30 → 50 for a larger initial pool.
-    // FTS still uses the raw feeling so the user's own keywords drive it.
+    // ── Step 3: Hybrid search — all three embeddings in parallel ──────────
+    // match_count 50 per angle; round-robin merge gives ~80–100 unique
+    // candidates before diversity filtering. FTS still uses raw feeling.
     const makeSearch = (embedding) =>
       fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses_hybrid`, {
         method: 'POST',
@@ -306,50 +344,51 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify({
           query_embedding: embedding,
           query_text:      rawFeeling,
-          match_count:     50,   // C: was 30
+          match_count:     50,
         }),
       });
 
-    const [supaRes1, supaRes2] = await Promise.all([
+    const [supaRes1, supaRes2, supaRes3] = await Promise.all([
       makeSearch(embedding1),
       makeSearch(embedding2),
+      makeSearch(embedding3),
     ]);
 
-    if (!supaRes1.ok || !supaRes2.ok) {
-      const errRes = supaRes1.ok ? supaRes2 : supaRes1;
+    if (!supaRes1.ok || !supaRes2.ok || !supaRes3.ok) {
+      const errRes = !supaRes1.ok ? supaRes1 : !supaRes2.ok ? supaRes2 : supaRes3;
       const err    = await errRes.json();
       throw new Error(err.message || 'Vector search error');
     }
 
-    const [results1, results2] = await Promise.all([
+    const [results1, results2, results3] = await Promise.all([
       supaRes1.json(),
       supaRes2.json(),
+      supaRes3.json(),
     ]);
 
     const safeR1 = Array.isArray(results1) ? results1 : [];
     const safeR2 = Array.isArray(results2) ? results2 : [];
+    const safeR3 = Array.isArray(results3) ? results3 : [];
 
-    if (safeR1.length === 0 && safeR2.length === 0) {
+    if (safeR1.length === 0 && safeR2.length === 0 && safeR3.length === 0) {
       throw new Error('Tidak ada ayat yang cocok ditemukan. Silakan coba lagi.');
     }
 
-    // ── A: Interleave-merge both result lists, deduplicate by verse ID ─────
-    // Round-robin ensures emotional and situational angles are represented
-    // equally at every rank level. A verse appearing in both lists (highly
-    // relevant from both angles) wins its slot from whichever list ranked it
-    // higher — and is never counted twice.
-    const seenIds  = new Set();
+    // ── A: Round-robin merge all three result lists, deduplicate by verse ID
+    // Emotional → Situational → Divine rotation ensures all angles are
+    // represented equally at every rank level. A verse appearing in multiple
+    // lists (relevant from several angles) is kept at its first occurrence —
+    // the strongest signal — and never counted twice.
+    const seenIds    = new Set();
     const candidates = [];
-    const maxLen   = Math.max(safeR1.length, safeR2.length);
+    const maxLen     = Math.max(safeR1.length, safeR2.length, safeR3.length);
 
     for (let i = 0; i < maxLen; i++) {
-      if (i < safeR1.length && !seenIds.has(safeR1[i].id)) {
-        candidates.push(safeR1[i]);
-        seenIds.add(safeR1[i].id);
-      }
-      if (i < safeR2.length && !seenIds.has(safeR2[i].id)) {
-        candidates.push(safeR2[i]);
-        seenIds.add(safeR2[i].id);
+      for (const list of [safeR1, safeR2, safeR3]) {
+        if (i < list.length && !seenIds.has(list[i].id)) {
+          candidates.push(list[i]);
+          seenIds.add(list[i].id);
+        }
       }
     }
 
@@ -400,8 +439,8 @@ module.exports = async function handler(req, res) {
           { role: 'user',   content: rawFeeling },
         ],
         response_format: { type: 'json_object' },
-        temperature:     0.3,        // slightly tighter than before (was 0.4)
-        max_tokens:      400,
+        temperature:     0.3,
+        max_tokens:      700,   // increased: reflection(40w) + 3×verse_resonance(45w) + JSON
       }),
     });
 
@@ -477,6 +516,8 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    const verseResonance = parsed.verse_resonance || {};
+
     const ayat = selectedBase.map(v => ({
       id:                    v.id,
       ref:                   `QS. ${v.surah_name} : ${v.verse_number}`,
@@ -484,10 +525,11 @@ module.exports = async function handler(req, res) {
       verse_number:          v.verse_number,
       arabic:                v.arabic,
       translation:           v.translation,
-      tafsir_summary:        v.tafsir_summary          || null,
-      tafsir_kemenag:        kemenagMap[v.id]           || null,
-      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]        || null,
-      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]      || null,
+      resonance:             verseResonance[v.id]       || null,
+      tafsir_summary:        v.tafsir_summary           || null,
+      tafsir_kemenag:        kemenagMap[v.id]            || null,
+      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]         || null,
+      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]       || null,
     }));
 
     if (ayat.length === 0) {

@@ -364,6 +364,10 @@ function buildVerseCard(verse, index) {
     </div>
   ` : '';
 
+  const resonanceHtml = verse.resonance
+    ? `<p class="vc-resonance">${escapeHtml(verse.resonance)}</p>`
+    : '';
+
   card.innerHTML = `
     <div class="vc-ref">
       <span class="vc-ref-dot"></span>
@@ -371,6 +375,7 @@ function buildVerseCard(verse, index) {
     </div>
     <p class="vc-arabic">${verse.arabic}</p>
     <p class="vc-translation">"${verse.translation}"</p>
+    ${resonanceHtml}
     ${tafsirHtml}
     <button class="vc-share-cta vc-share-btn">${SHARE_ICON} Share Ayat ke Socmed / WA</button>
     <div class="vc-actions">
