@@ -9,12 +9,25 @@ const IS_IN_APP_BROWSER = /Instagram|FBAN|FBAV|TikTok|Line\//i.test(navigator.us
 
 // ── Analytics ──────────────────────────────────────────────────────────────────
 // Fire-and-forget: never blocks UI, never throws, never logs user input text.
+// session_id: random ID per browser tab session (sessionStorage), no PII.
+
+const SESSION_ID = (() => {
+  try {
+    const key = 'qf_sid';
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+      id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      sessionStorage.setItem(key, id);
+    }
+    return id;
+  } catch { return 'unknown'; }
+})();
 
 function logEvent(eventType, properties = {}) {
   fetch('/api/log-event', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ event_type: eventType, properties }),
+    body:    JSON.stringify({ event_type: eventType, properties: { ...properties, session_id: SESSION_ID } }),
   }).catch(() => {}); // silently ignore network failures
 }
 
@@ -93,6 +106,9 @@ const emotions = [
   { id: 'stressed', label: 'Stres',       emoji: '⚡', desc: 'Merasa tertekan atau kelelahan',      accent: '#F6AD55', feeling: 'Aku merasa sangat stres dan kelelahan, beban hidup terasa terlalu berat' },
   { id: 'guilty',   label: 'Bersalah',    emoji: '🍂', desc: 'Merasa bersalah atau menyesal',       accent: '#C9A84C', feeling: 'Aku merasa sangat bersalah dan menyesal atas perbuatanku, ingin bertobat' },
   { id: 'envious',  label: 'Iri Hati',    emoji: '🌿', desc: 'Merasa iri atau membandingkan diri',  accent: '#68D391', feeling: 'Aku merasa iri hati melihat orang lain, sulit bersyukur dengan apa yang aku miliki' },
+  { id: 'longing',  label: 'Rindu',       emoji: '💭', desc: 'Merasa rindu atau kehilangan seseorang', accent: '#76A9EA', feeling: 'Aku merasa sangat rindu dan kehilangan seseorang yang sangat berarti bagiku, rasa kangen ini terasa berat' },
+  { id: 'disappointed', label: 'Kecewa', emoji: '🌫️', desc: 'Merasa kecewa atau patah harapan',     accent: '#94A3B8', feeling: 'Aku merasa sangat kecewa karena harapan dan ekspektasiku tidak terwujud' },
+  { id: 'afraid',   label: 'Takut',       emoji: '🌪️', desc: 'Merasa takut atau tidak aman',         accent: '#E07B4A', feeling: 'Aku merasa sangat takut dan tidak berani menghadapi sesuatu yang ada di depanku' },
 ];
 
 // ── Copy / Share ──────────────────────────────────────────────────────────────
@@ -107,9 +123,27 @@ async function copyVerse(verse) {
   }
 }
 
+// ── Lazy-load html2canvas ─────────────────────────────────────────────────────
+// Only fetched (~200 KB) when the user first taps "Bagikan", not on every page load.
+
+let _h2cPromise = null;
+function loadHtml2Canvas() {
+  if (window.html2canvas) return Promise.resolve();
+  if (_h2cPromise) return _h2cPromise;
+  _h2cPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload  = resolve;
+    s.onerror = () => reject(new Error('Gagal memuat library share. Coba lagi.'));
+    document.head.appendChild(s);
+  });
+  return _h2cPromise;
+}
+
 // ── Share as Image ─────────────────────────────────────────────────────────────
 
 async function generateShareImage(verse) {
+  await loadHtml2Canvas();
   // Populate the off-screen share card
   document.getElementById('sc-arabic').textContent      = verse.arabic;
   document.getElementById('sc-translation').textContent = `"${verse.translation}"`;
@@ -553,9 +587,12 @@ function renderVerses(data) {
     setTimeout(() => {
       const actionsEl = document.getElementById('verse-actions');
       actionsEl.innerHTML = `
-        <button class="va-secondary" id="find-more-btn">Temukan ayat lain</button>
+        <button class="va-refresh" id="refresh-btn">↺ Coba ayat lain</button>
+        <button class="va-secondary" id="find-more-btn">Perasaan lain</button>
       `;
       actionsEl.classList.remove('hidden');
+      document.getElementById('refresh-btn')
+        .addEventListener('click', () => fetchAyat(currentFeeling, { ...currentSearchCtx, refresh: true }));
       document.getElementById('find-more-btn')
         .addEventListener('click', () => switchView('selection-view'));
 
@@ -696,11 +733,11 @@ function showNotRelevant(message) {
 
 // ── API Call ──────────────────────────────────────────────────────────────────
 
-async function callAPI(feeling) {
+async function callAPI(feeling, { refresh = false } = {}) {
   const res = await fetch('/api/get-ayat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ feeling }),
+    body: JSON.stringify({ feeling, ...(refresh ? { refresh: true } : {}) }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
@@ -708,7 +745,7 @@ async function callAPI(feeling) {
   return data;
 }
 
-async function fetchAyat(feeling, { method = 'text', emotionId } = {}) {
+async function fetchAyat(feeling, { method = 'text', emotionId, refresh = false } = {}) {
   currentFeeling   = feeling;
   currentSearchCtx = { method, emotionId: emotionId || null };
   switchView('verses-view');
@@ -719,7 +756,7 @@ async function fetchAyat(feeling, { method = 'text', emotionId } = {}) {
   logEvent('search_started', startProps);
 
   try {
-    const data = await callAPI(feeling);
+    const data = await callAPI(feeling, { refresh });
     if (data.not_relevant) {
       logEvent('search_completed', { outcome: 'not_relevant' });
       showNotRelevant(data.message);

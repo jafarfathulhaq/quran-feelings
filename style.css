@@ -1107,6 +1107,22 @@ body {
 }
 .verse-actions.hidden { display: none; }
 
+.va-refresh {
+  flex: 1;
+  padding: 13px 20px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: 1.5px solid var(--teal-dark);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  min-width: 150px;
+}
+.va-refresh:hover { opacity: 0.85; }
+
 .va-secondary {
   flex: 1;
   padding: 13px 20px;

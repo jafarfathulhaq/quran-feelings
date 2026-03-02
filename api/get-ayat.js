@@ -229,11 +229,11 @@ function checkRateLimit(ip) {
   const entry = rateLimitStore.get(ip);
   if (!entry || now > entry.resetAt) {
     rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return true; // first request in window → allowed
+    return null; // allowed
   }
-  if (entry.count >= RATE_MAX) return false; // over limit → blocked
+  if (entry.count >= RATE_MAX) return entry.resetAt; // blocked — return reset timestamp
   entry.count++;
-  return true;
+  return null; // allowed
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -250,12 +250,16 @@ module.exports = async function handler(req, res) {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
     || req.socket?.remoteAddress
     || 'unknown';
-  if (!checkRateLimit(ip)) {
-    return res.status(429).json({ error: 'Terlalu banyak permintaan. Silakan coba lagi dalam satu jam.' });
+  const rateLimitReset = checkRateLimit(ip);
+  if (rateLimitReset !== null) {
+    const minutes = Math.ceil((rateLimitReset - Date.now()) / 60_000);
+    return res.status(429).json({
+      error: `Terlalu banyak permintaan. Coba lagi dalam ${minutes} menit.`,
+    });
   }
 
   // ── Input validation ────────────────────────────────────────────────────────
-  const { feeling } = req.body || {};
+  const { feeling, refresh } = req.body || {};
   if (!feeling || feeling.trim().length < 2) {
     return res.status(400).json({ error: 'Ceritakan apa yang kamu rasakan.' });
   }
@@ -266,11 +270,14 @@ module.exports = async function handler(req, res) {
   // ── Result cache check ───────────────────────────────────────────────────────
   // Normalise: trim + collapse whitespace + lower-case.
   // A hit skips HyDE, embed, vector search, AND the GPT selection call.
+  // Pass refresh:true from client to bypass cache and get fresh verse selection.
   const cacheKey = feeling.trim().replace(/\s+/g, ' ').toLowerCase();
-  const cached   = getCached(cacheKey);
-  if (cached) {
-    res.setHeader('X-Cache', 'HIT');
-    return res.status(200).json(cached);
+  if (!refresh) {
+    const cached = getCached(cacheKey);
+    if (cached) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json(cached);
+    }
   }
 
   try {
