@@ -526,7 +526,7 @@ function showLoading() {
       </div>
     ` : ''}
     <div class="chat-bubble chat-bubble--app chat-bubble--typing" id="typing-indicator">
-      <span class="ls-step-text" id="loading-step-text"></span><span class="ls-dots" aria-hidden="true">...</span>
+      <span class="ls-step-text" id="loading-step-text"></span><span class="ls-dots" aria-hidden="true"><span></span><span></span><span></span></span>
     </div>
   `;
   startLoadingSteps();
