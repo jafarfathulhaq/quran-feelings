@@ -1,7 +1,7 @@
 # CLAUDE.md — quran-feelings
 
 ## Project overview
-**Curhat & Temukan Ayat** — a privacy-first web app where users describe how they feel and receive relevant Qur'anic verses. No user text is ever stored.
+**Curhat & Temukan Ayat** — a privacy-first web app with two modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations. No user text is ever stored.
 
 - **Live URL**: https://quran-feelings.vercel.app
 - **Deploy**: `git push origin main` → auto-deploys on Vercel (no build step)
@@ -23,11 +23,11 @@
 
 ## Key files
 ```
-index.html          — single-page shell (two views: selection-view, verses-view)
+index.html          — single-page shell (4 views: landing-view, selection-view, panduan-view, verses-view)
 style.css           — all styles, no framework
 app.js              — all frontend JS, no framework, no build
 api/
-  get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select)
+  get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select), mode-aware (curhat/panduan)
   log-event.js      — privacy-safe analytics proxy (event allowlist, no user text)
   verse-of-day.js   — serves a daily verse from data/verses.json, cached by day
 data/verses.json    — curated verses for Verse of the Day feature
@@ -56,14 +56,15 @@ SUPABASE_ANON_KEY       — anon/public key (used in API functions for DB querie
 ## AI pipeline (`api/get-ayat.js`)
 Each search makes **5–6 parallel AI calls** then one sequential GPT-4o call:
 
-1. **Decompose** (`gpt-4o-mini`) — splits multi-issue input into up to 3 distinct spiritual needs
-2. **HyDE × 3** (`gpt-4o-mini`) — generates hypothetical Qur'anic descriptions (emotional / situational / divine-hope angles, or one per need for multi-intent)
+1. **Decompose** (`gpt-4o-mini`) — splits multi-issue input into up to 3 distinct needs (spiritual needs for curhat, topics for panduan)
+2. **HyDE × 3** (`gpt-4o-mini`) — generates hypothetical Qur'anic descriptions. Curhat uses emotional / situational / divine-hope angles; Panduan uses topical / ethical / practical angles
 3. **Embed × 3** (`text-embedding-3-large`, 1536 dims) — embeds the three HyDE texts
 4. **Hybrid search × 3** (Supabase `match_verses_hybrid` RPC) — 20 results per angle, round-robin merged, deduped, surah-diversity filtered → top 25 candidates
-5. **Select** (`gpt-4o`) — picks 1–3 verses from candidates, writes `reflection` + `verse_resonance` per verse
+5. **Select** (`gpt-4o`) — picks 1–3 verses. Curhat writes `reflection` + `verse_resonance`; Panduan writes `explanation` + `verse_relevance`
 6. **Tafsir fetch** (Supabase REST) — fetches `tafsir_kemenag`, `tafsir_ibnu_kathir`, `tafsir_ibnu_kathir_id` for the selected verses only
 
-**Cache**: in-memory per container, 24h TTL, 500 entries max (FIFO eviction). `refresh: true` in POST body bypasses lookup but still writes result.
+**Mode**: POST body accepts `mode` (`'curhat'` default, `'panduan'`). Mode forks prompts at steps 1, 2, and 5.
+**Cache**: in-memory per container, 24h TTL, 500 entries max (FIFO eviction). Cache key prefixed with `mode:`. `refresh: true` bypasses lookup but still writes result.
 **Rate limit**: 20 requests / IP / hour, in-memory. Returns `resetAt` timestamp → frontend shows exact minutes.
 
 ---
@@ -72,7 +73,7 @@ Each search makes **5–6 parallel AI calls** then one sequential GPT-4o call:
 Fire-and-forget from `app.js`. **Never logs user text.** Each event includes `session_id` (random per tab, `sessionStorage`).
 
 Valid event types:
-`search_started`, `search_completed`, `search_cached`, `mood_feedback`,
+`mode_selected`, `search_started`, `search_completed`, `search_cached`, `mood_feedback`,
 `verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
 `asbabun_nuzul_opened`
 
@@ -87,11 +88,14 @@ GROUP BY event_type ORDER BY count DESC;
 ---
 
 ## Frontend architecture (`app.js`)
-- **Two views**: `selection-view` (home) and `verses-view` (results). `switchView(id)` swaps the `.active` class.
-- **Emotion cards**: 13 preset emotions → fire `fetchAyat()` with a fixed feeling string
-- **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 Indonesian messages every 1.8 s with a fade-in slide animation
-- **Typewriter**: reflection text types at 3 chars / 15 ms; verse cards stagger in at 150 ms each
-- **Verse of the Day**: collapsed by default (tap to expand). Loaded from `/api/verse-of-day`, silently hidden on failure.
+- **Four views**: `landing-view` (mode selection) → `selection-view` (curhat) / `panduan-view` (panduan) → `verses-view` (results). `switchView(id)` swaps the `.active` class.
+- **State**: `currentMode` (`'curhat'` or `'panduan'`) — set by `selectMode()` when user taps a landing card
+- **Landing carousel**: 2 swipeable cards with CSS scroll-snap, pagination dots update on scroll
+- **Emotion cards**: 13 preset emotions → fire `fetchAyat()` with a fixed feeling string (curhat mode)
+- **Panduan presets**: 10 preset topics → fire `fetchAyat()` with a fixed query string (panduan mode), teal accent cards
+- **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 mode-specific Indonesian messages every 1.8 s
+- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms; verse cards stagger in at 150 ms each
+- **Verse of the Day**: collapsed by default (tap to expand) on landing-view. Loaded from `/api/verse-of-day`, silently hidden on failure.
 - **html2canvas**: lazy-loaded (~200 KB) only on first "Bagikan" tap
 - **Audio**: Alafasy recitation via `cdn.islamic.network`, global ayah number computed from `SURAH_VERSE_COUNTS` cumulative sum
 
@@ -100,7 +104,8 @@ GROUP BY event_type ORDER BY count DESC;
 ## CSS conventions
 - CSS custom properties defined in `:root` in `style.css` — use these, don't hardcode colours
 - Key vars: `--gold`, `--gold-light`, `--teal-dark`, `--text-dark`, `--text-mid`, `--text-muted`, `--border`, `--radius`, `--radius-sm`, `--shadow-card`
-- Emotion cards: uniform blue — `#EEF3FB` bg, `#C8D8F0` border, `#6B8DD6` accent bar
+- Emotion cards (curhat): uniform blue — `#EEF3FB` bg, `#C8D8F0` border, `#6B8DD6` accent bar
+- Panduan cards: teal accent — `#EDF7F6` bg, `#B8DDD9` border, `var(--teal-dark)` accent bar
 - No CSS framework, no preprocessor
 
 ---

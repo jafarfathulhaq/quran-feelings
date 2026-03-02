@@ -51,6 +51,161 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════
+   LANDING VIEW — Mode Selection Carousel
+════════════════════════════════════════════════════════ */
+
+.landing-header {
+  text-align: center;
+  padding: 2.5rem 1rem 1.25rem;
+}
+
+.landing-greeting {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  letter-spacing: -0.3px;
+}
+
+.landing-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+.landing-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 12px;
+  padding: 1rem 7.5%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.landing-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.landing-card {
+  flex: 0 0 85%;
+  scroll-snap-align: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.landing-card:active {
+  transform: scale(0.97);
+}
+
+.landing-card:hover {
+  box-shadow: 0 8px 32px rgba(10,15,30,0.14);
+}
+
+.landing-card-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.landing-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.landing-card-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.landing-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.landing-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s ease;
+}
+
+.landing-dots .dot.active {
+  background: var(--gold);
+}
+
+.landing-votd {
+  padding: 0 20px 48px;
+}
+
+/* ── Mode Back Button (light background variant) ─────── */
+.mode-back-wrap {
+  padding: 16px 16px 0;
+}
+
+.back-btn-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 7px 16px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.back-btn-light:hover {
+  color: var(--text-dark);
+  border-color: var(--text-muted);
+  background: rgba(0,0,0,0.03);
+}
+
+/* ── Panduan Card (teal accent) ──────────────────────── */
+.panduan-grid .emotion-card {
+  background: #EDF7F6;
+  border-color: #B8DDD9;
+}
+
+.panduan-grid .emotion-card::before {
+  background: var(--teal-dark);
+}
+
+.panduan-grid .emotion-card:hover {
+  border-color: var(--teal-dark);
+}
+
+/* ── Per-verse Relevance (panduan mode) ──────────────── */
+.vc-relevance {
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-mid);
+  background: #EDF7F6;
+  border-left: 3px solid var(--teal-dark);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 13px;
+  margin-bottom: 14px;
+}
+
+/* ════════════════════════════════════════════════════════
    SELECTION VIEW — Hero + Input + Emotions
 ════════════════════════════════════════════════════════ */
 

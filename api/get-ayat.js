@@ -4,7 +4,7 @@
 // The verse database is injected dynamically (15 candidates from vector search),
 // so the prompt is a template with a {{CANDIDATES}} placeholder.
 
-const PROMPT_TEMPLATE = `Kamu adalah asisten untuk aplikasi refleksi Al-Qur'an.
+const PROMPT_CURHAT = `Kamu adalah asisten untuk aplikasi refleksi Al-Qur'an.
 
 Tugasmu BUKAN untuk menghasilkan atau mengarang ayat Al-Qur'an.
 Tugasmu HANYA memilih ayat yang paling relevan dari daftar kandidat di bawah ini,
@@ -107,6 +107,106 @@ Buruk: "Ayat ini berbicara tentang kesabaran dan Allah menyukai orang yang sabar
 Daftar kandidat ayat (dipilih melalui pencarian semantik):
 {{CANDIDATES}}`;
 
+const PROMPT_PANDUAN = `Kamu adalah asisten panduan hidup Islami berdasarkan Al-Qur'an.
+
+Tugasmu BUKAN untuk menghasilkan atau mengarang ayat Al-Qur'an.
+Tugasmu HANYA memilih ayat yang paling relevan dari daftar kandidat di bawah ini,
+berdasarkan pertanyaan atau topik yang ditanyakan pengguna.
+
+ATURAN KRITIS:
+1. JANGAN pernah mengarang atau memodifikasi ayat Al-Qur'an.
+2. HANYA pilih dari daftar kandidat berikut, menggunakan nilai "id" yang persis sama.
+3. Pilih maksimal 3 ayat. Minimal 1.
+4. Pilih 2–3 ayat yang saling melengkapi jika memungkinkan.
+
+TUJUAN:
+Bantu pengguna memahami panduan Al-Qur'an tentang topik kehidupan yang mereka tanyakan.
+Bersikap ilmiah namun mudah dipahami. Jangan memberikan fatwa hukum yang mengikat.
+Rujuk konteks Al-Qur'an secara natural dalam penjelasanmu.
+
+═══════════════════════════════════════════
+LANGKAH 0 — CEK RELEVANSI (WAJIB DILAKUKAN PERTAMA)
+═══════════════════════════════════════════
+Mode ini untuk pertanyaan tentang panduan hidup, nilai-nilai Islam, akhlak, dan topik kehidupan.
+
+✅ TERIMA input seperti:
+• Pertanyaan tentang hukum/aturan Islam: "bagaimana hukum riba?", "apa panduan tentang hutang?"
+• Topik kehidupan: keluarga, pernikahan, rezeki, ibadah, akhlak, pergaulan, akhirat
+• Pertanyaan panduan: "bagaimana Islam memandang...", "apa yang Al-Qur'an katakan tentang..."
+• Keinginan memperbaiki diri: "ingin lebih dekat Allah", "ingin memperbaiki ibadah"
+
+❌ TOLAK input seperti:
+• Pertanyaan faktual/akademik non-Islam: "siapa presiden Indonesia?", "jelaskan teori relativitas"
+• Soal matematika atau logika: "2+2=?", "hitung integral ini"
+• Pertanyaan teknis: "cara install Python", "bug di kode saya"
+• Teks acak/tidak bermakna: "asdfgh", "tes tes 123", "aaaaaa"
+
+Jika input TIDAK RELEVAN, kembalikan LANGSUNG:
+{"relevant": false, "message": "<pesan ramah dalam Bahasa Indonesia, maks 2 kalimat, ajak mereka bertanya tentang panduan hidup dalam Islam>"}
+
+Jika input RELEVAN, lanjutkan ke Langkah 1–4 di bawah.
+
+═══════════════════════════════════════════
+LANGKAH 1 — Pahami pertanyaan pengguna
+═══════════════════════════════════════════
+Identifikasi:
+• Topik utama yang ditanyakan (ibadah, muamalah, akhlak, keluarga, dll.)
+• Aspek spesifik yang ingin dipahami (hukum, hikmah, panduan praktis, motivasi)
+• Konteks pertanyaan (apakah ini pertanyaan umum atau situasi spesifik?)
+
+LANGKAH 2 — Pilih ayat terbaik dari kandidat
+Prioritaskan: kecocokan topik langsung > konteks terkait > prinsip umum
+Contoh:
+• Pertanyaan tentang riba → ayat yang langsung membahas riba/transaksi
+• Pertanyaan tentang berbakti orang tua → ayat tentang birrul walidain
+• Pertanyaan tentang sabar → ayat yang membahas kesabaran dalam konteks yang ditanyakan
+
+⚠️ JIKA pertanyaan menyentuh BEBERAPA aspek berbeda:
+Pilih ayat yang masing-masing menjawab aspek yang BERBEDA.
+
+LANGKAH 3 — Tulis penjelasan ringkas (explanation)
+Maksimal 60 kata. Dalam Bahasa Indonesia. Informatif, jelas, dan mudah dipahami.
+Langsung jawab pertanyaan pengguna berdasarkan ayat yang dipilih.
+Gunakan frasa seperti: "Al-Qur'an memberikan panduan tentang...", "Berdasarkan ayat-ayat berikut..."
+JANGAN katakan: "Kamu harus...", "Wajib bagi kamu..."
+
+LANGKAH 4 — Tulis relevansi untuk setiap ayat (verse_relevance)
+Untuk setiap ayat yang kamu pilih, tulis 2–3 kalimat (maks 55 kata) yang:
+• Menjelaskan MENGAPA ayat ini relevan dengan pertanyaan pengguna
+• Menyertakan konteks Qur'ani (kapan diturunkan, apa yang dibahas) jika membantu
+• Menghubungkan pesan ayat dengan kehidupan praktis
+Nada: seperti ustadz/ustadzah yang menjelaskan dengan hangat dan mudah dipahami.
+
+FORMAT OUTPUT — kembalikan HANYA salah satu dari dua format JSON berikut, tanpa teks tambahan:
+
+Jika input relevan:
+{
+  "relevant": true,
+  "explanation": "...",
+  "selected_ids": ["id1", "id2"],
+  "verse_relevance": {
+    "id1": "Penjelasan 2–3 kalimat mengapa ayat ini relevan dengan topik yang ditanyakan...",
+    "id2": "Penjelasan untuk ayat kedua jika ada..."
+  }
+}
+
+Jika input tidak relevan:
+{
+  "relevant": false,
+  "message": "..."
+}
+
+selected_ids harus merupakan nilai "id" dari kandidat (contoh: ["2:275", "2:282"]).
+verse_relevance harus memiliki entri untuk setiap id di selected_ids.
+Jangan pernah mengembalikan selected_ids yang kosong jika relevant: true.
+
+CONTOH NADA verse_relevance:
+Baik: "Ayat ini adalah ayat terpanjang dalam Al-Qur'an yang secara khusus membahas tata cara hutang piutang. Allah memerintahkan agar setiap transaksi hutang dicatat dengan jelas dan disaksikan, sebagai perlindungan bagi kedua belah pihak."
+Buruk: "Ayat ini membahas tentang hutang."
+
+Daftar kandidat ayat (dipilih melalui pencarian semantik):
+{{CANDIDATES}}`;
+
 // ── HyDE Prompts ───────────────────────────────────────────────────────────────
 // Two angles attack the embedding space from different directions, increasing
 // the chance that the hybrid search surfaces the truly relevant verses.
@@ -148,11 +248,45 @@ const HYDE_DIVINE =
   'harapan, ampunan, ketenangan hati, cahaya setelah kegelapan, doa yang dikabulkan. ' +
   'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
 
+// ── Panduan HyDE Prompts ─────────────────────────────────────────────────────
+// Three angles for Panduan mode: topical, ethical, practical.
+
+// Angle 1 — topical: directly describe the Qur'anic theme.
+const HYDE_TOPICAL =
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan untuk panduan hidup. ' +
+  'Berdasarkan pertanyaan pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+  'tema TOPIKAL dari ayat Al-Qur\'an yang ideal: topik apa yang dibahas langsung, ' +
+  'hukum atau aturan apa yang disebutkan, dan konteks spesifik apa yang relevan. ' +
+  'Gunakan kosakata tema Quranic: halal, haram, wajib, sunnah, ' +
+  'fardhu, muamalah, ibadah, akhlak, syariah. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
+// Angle 2 — ethical: the underlying moral/ethical principle.
+const HYDE_ETHICAL =
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan untuk panduan hidup. ' +
+  'Berdasarkan pertanyaan pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+  'tema ETIKA dan MORAL dari ayat Al-Qur\'an yang ideal: prinsip moral apa yang mendasari, ' +
+  'nilai-nilai apa yang diajarkan, dan hikmah apa yang terkandung. ' +
+  'Gunakan kosakata tema Quranic: keadilan, amanah, kejujuran, ' +
+  'ihsan, taqwa, birrul walidain, silaturahmi, akhlakul karimah. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
+// Angle 3 — practical: frame as practical life guidance.
+const HYDE_PRACTICAL =
+  'Kamu membantu mencari ayat Al-Qur\'an yang relevan untuk panduan hidup. ' +
+  'Berdasarkan pertanyaan pengguna, tulis 2–3 kalimat yang mendeskripsikan ' +
+  'tema PANDUAN PRAKTIS dari ayat Al-Qur\'an yang ideal: panduan konkret apa yang diberikan, ' +
+  'bagaimana menerapkannya dalam kehidupan sehari-hari, ' +
+  'dan tindakan nyata apa yang bisa dilakukan. ' +
+  'Gunakan kosakata tema Quranic: ikhtiar, tawakkal, istiqamah, ' +
+  'hijrah, muhasabah, dzikir, sedekah, infaq. ' +
+  'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
+
 // ── Intent Decomposition ──────────────────────────────────────────────────────
 // Splits multi-dimensional input into up to 3 distinct spiritual needs.
 // Enables one targeted HyDE per need instead of all 3 angles blending together.
 // Single-need inputs return 1 element → falls back to 3-angle HyDE (no regression).
-const DECOMPOSE_PROMPT =
+const DECOMPOSE_CURHAT =
   'Kamu membantu sistem pencarian ayat Al-Qur\'an. ' +
   'Analisis curahan hati pengguna dan identifikasi kebutuhan spiritual yang BERBEDA-BEDA. ' +
   'Keluarkan 1–3 kebutuhan spesifik dalam JSON. Aturan: ' +
@@ -162,6 +296,17 @@ const DECOMPOSE_PROMPT =
   '    birrul walidain, rezeki, taubat, hijrah, sabar merawat orang sakit, dll. ' +
   '(4) Jika hanya ada 1 inti masalah, kembalikan array 1 elemen. ' +
   'Format output: {"needs":["deskripsi kebutuhan 1","kebutuhan 2","kebutuhan 3"]}';
+
+const DECOMPOSE_PANDUAN =
+  'Kamu membantu sistem pencarian ayat Al-Qur\'an untuk panduan hidup. ' +
+  'Analisis pertanyaan pengguna dan identifikasi topik atau aspek yang BERBEDA-BEDA. ' +
+  'Keluarkan 1–3 topik spesifik dalam JSON. Aturan: ' +
+  '(1) Maksimal 3. ' +
+  '(2) Setiap topik BERBEDA — bukan variasi dari tema yang sama. ' +
+  '(3) Gunakan istilah Islami spesifik jika ada: ' +
+  '    riba, zakat, birrul walidain, nikah, muamalah, ibadah, akhlak, dll. ' +
+  '(4) Jika hanya ada 1 topik utama, kembalikan array 1 elemen. ' +
+  'Format output: {"needs":["deskripsi topik 1","topik 2","topik 3"]}';
 
 // Generates a targeted HyDE system prompt focused on ONE extracted need.
 // User message will be the need itself (not the full feeling) to stay focused.
@@ -259,9 +404,12 @@ module.exports = async function handler(req, res) {
   }
 
   // ── Input validation ────────────────────────────────────────────────────────
-  const { feeling, refresh } = req.body || {};
+  const { feeling, refresh, mode: rawMode } = req.body || {};
+  const mode = rawMode === 'panduan' ? 'panduan' : 'curhat'; // default curhat
   if (!feeling || feeling.trim().length < 2) {
-    return res.status(400).json({ error: 'Ceritakan apa yang kamu rasakan.' });
+    return res.status(400).json({ error: mode === 'panduan'
+      ? 'Tulis pertanyaan tentang panduan hidup.'
+      : 'Ceritakan apa yang kamu rasakan.' });
   }
   if (feeling.length > MAX_INPUT_LEN) {
     return res.status(400).json({ error: `Input terlalu panjang (maks ${MAX_INPUT_LEN} karakter).` });
@@ -269,9 +417,10 @@ module.exports = async function handler(req, res) {
 
   // ── Result cache check ───────────────────────────────────────────────────────
   // Normalise: trim + collapse whitespace + lower-case.
+  // Include mode in cache key to prevent cross-mode cache hits.
   // A hit skips HyDE, embed, vector search, AND the GPT selection call.
   // Pass refresh:true from client to bypass cache and get fresh verse selection.
-  const cacheKey = feeling.trim().replace(/\s+/g, ' ').toLowerCase();
+  const cacheKey = `${mode}:${feeling.trim().replace(/\s+/g, ' ').toLowerCase()}`;
   if (!refresh) {
     const cached = getCached(cacheKey);
     if (cached) {
@@ -297,7 +446,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model:           'gpt-4o-mini',
         messages:        [
-          { role: 'system', content: DECOMPOSE_PROMPT },
+          { role: 'system', content: mode === 'panduan' ? DECOMPOSE_PANDUAN : DECOMPOSE_CURHAT },
           { role: 'user',   content: rawFeeling },
         ],
         response_format: { type: 'json_object' },
@@ -327,23 +476,29 @@ module.exports = async function handler(req, res) {
     // Multi-intent (2–3 needs)            → 1 targeted HyDE per need for diversity
     //
     // hydeSlots: array of [systemPrompt, userContent] tuples (always 3 slots)
+    // Select HyDE angles based on mode
+    const hydeAngles = mode === 'panduan'
+      ? [HYDE_TOPICAL, HYDE_ETHICAL, HYDE_PRACTICAL]
+      : [HYDE_EMOTIONAL, HYDE_SITUATIONAL, HYDE_DIVINE];
+    const hydeFallback = mode === 'panduan' ? HYDE_PRACTICAL : HYDE_DIVINE;
+
     let hydeSlots;
     if (!isMultiIntent) {
-      // Original 3-angle behaviour — zero regression for simple inputs
+      // 3-angle behaviour — uses mode-appropriate angles
       hydeSlots = [
-        [HYDE_EMOTIONAL,   rawFeeling],
-        [HYDE_SITUATIONAL, rawFeeling],
-        [HYDE_DIVINE,      rawFeeling],
+        [hydeAngles[0], rawFeeling],
+        [hydeAngles[1], rawFeeling],
+        [hydeAngles[2], rawFeeling],
       ];
     } else {
       // One focused HyDE per extracted need.
-      // If only 2 needs, pad 3rd slot with a divine-hope angle on the full input.
+      // If only 2 needs, pad 3rd slot with a fallback angle on the full input.
       const slots = needs.slice(0, 3);
-      while (slots.length < 3) slots.push(null); // null = divine fallback
+      while (slots.length < 3) slots.push(null); // null = fallback
       hydeSlots = slots.map(need =>
         need
           ? [makeHyDE_need(need), need]       // targeted: user msg = the need itself
-          : [HYDE_DIVINE,         rawFeeling] // fallback: hope angle on full input
+          : [hydeFallback,        rawFeeling] // fallback angle on full input
       );
     }
 
@@ -517,7 +672,8 @@ module.exports = async function handler(req, res) {
       tafsir_summary: v.tafsir_summary || null,
     }));
 
-    const systemPrompt = PROMPT_TEMPLATE.replace(
+    const promptTemplate = mode === 'panduan' ? PROMPT_PANDUAN : PROMPT_CURHAT;
+    const systemPrompt = promptTemplate.replace(
       '{{CANDIDATES}}',
       JSON.stringify(DB_FOR_PROMPT, null, 2)
     );
@@ -536,7 +692,7 @@ module.exports = async function handler(req, res) {
         ],
         response_format: { type: 'json_object' },
         temperature:     0.3,
-        max_tokens:      700,   // increased: reflection(40w) + 3×verse_resonance(45w) + JSON
+        max_tokens:      mode === 'panduan' ? 900 : 700, // panduan: explanation(60w) + 3×verse_relevance(55w)
       }),
     });
 
@@ -550,10 +706,12 @@ module.exports = async function handler(req, res) {
 
     // ── Relevance gate ─────────────────────────────────────────────────────
     if (parsed.relevant === false) {
+      const defaultMsg = mode === 'panduan'
+        ? 'Sepertinya itu bukan pertanyaan tentang panduan hidup. Coba tanyakan sesuatu tentang kehidupan sehari-hari dalam Islam.'
+        : 'Sepertinya itu bukan curahan hati. Coba ceritakan apa yang sedang kamu rasakan atau hadapi hari ini.';
       const notRelevantPayload = {
         not_relevant: true,
-        message: parsed.message ||
-          'Sepertinya itu bukan curahan hati. Coba ceritakan apa yang sedang kamu rasakan atau hadapi hari ini.',
+        message: parsed.message || defaultMsg,
       };
       setCached(cacheKey, notRelevantPayload);
       return res.status(200).json(notRelevantPayload);
@@ -616,29 +774,38 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    const verseResonance = parsed.verse_resonance || {};
+    // Mode-aware field mapping:
+    // Curhat: reflection + verse_resonance → resonance
+    // Panduan: explanation + verse_relevance → relevance
+    const isPanduan      = mode === 'panduan';
+    const perVerseMap    = isPanduan ? (parsed.verse_relevance || {}) : (parsed.verse_resonance || {});
+    const perVerseField  = isPanduan ? 'relevance' : 'resonance';
+    const summaryText    = isPanduan ? (parsed.explanation || '') : (parsed.reflection || '');
 
     const ayat = selectedBase.map(v => ({
       id:                    v.id,
       ref:                   `QS. ${v.surah_name} : ${v.verse_number}`,
       surah_name:            v.surah_name,
+      surah_number:          v.surah_number,
       verse_number:          v.verse_number,
       arabic:                v.arabic,
       translation:           v.translation,
-      resonance:             verseResonance[v.id]       || null,
-      tafsir_summary:        v.tafsir_summary           || null,
-      tafsir_kemenag:        kemenagMap[v.id]            || null,
-      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]         || null,
-      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]       || null,
-      asbabun_nuzul:         asbabunNuzulMap[v.id]       || null,
-      asbabun_nuzul_id:      asbabunNuzulIdMap[v.id]     || null,
+      [perVerseField]:       perVerseMap[v.id]           || null,
+      tafsir_summary:        v.tafsir_summary            || null,
+      tafsir_kemenag:        kemenagMap[v.id]             || null,
+      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]          || null,
+      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]        || null,
+      asbabun_nuzul:         asbabunNuzulMap[v.id]        || null,
+      asbabun_nuzul_id:      asbabunNuzulIdMap[v.id]      || null,
     }));
 
     if (ayat.length === 0) {
       throw new Error('Gagal menemukan ayat yang relevan. Silakan coba lagi.');
     }
 
-    const successPayload = { reflection: parsed.reflection || '', ayat };
+    // Curhat: { reflection, ayat }, Panduan: { explanation, ayat }
+    const summaryField = isPanduan ? 'explanation' : 'reflection';
+    const successPayload = { [summaryField]: summaryText, ayat };
     setCached(cacheKey, successPayload);
     return res.status(200).json(successPayload);
 

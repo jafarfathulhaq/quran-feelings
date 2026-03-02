@@ -37,14 +37,22 @@ let currentFeeling    = '';
 let currentAyat       = [];
 let currentSearchCtx  = { method: 'text', emotionId: null }; // populated in fetchAyat
 let typewriterActive  = false; // set false to abort an in-progress typewriter
+let currentMode       = null;  // 'curhat' or 'panduan'
 
 // ── Loading Steps ─────────────────────────────────────────────────────────────
 
-const LOADING_STEPS = [
+const LOADING_STEPS_CURHAT = [
   'Memahami perasaanmu',
   'Menelusuri Al-Qur\'an',
   'Mencocokkan ayat yang relevan',
   'Menyiapkan refleksi untukmu',
+];
+
+const LOADING_STEPS_PANDUAN = [
+  'Memahami pertanyaanmu',
+  'Menelusuri Al-Qur\'an',
+  'Mencocokkan ayat yang relevan',
+  'Menyiapkan penjelasan untukmu',
 ];
 
 let _loadingStepTimer = null;
@@ -52,17 +60,18 @@ let _loadingStepTimer = null;
 function startLoadingSteps() {
   const el = document.getElementById('loading-step-text');
   if (!el) return;
+  const steps = currentMode === 'panduan' ? LOADING_STEPS_PANDUAN : LOADING_STEPS_CURHAT;
   let i = 0;
-  el.textContent = LOADING_STEPS[0];
+  el.textContent = steps[0];
   el.classList.remove('ls-fade');
   void el.offsetWidth; // force reflow to restart animation
   el.classList.add('ls-fade');
 
   _loadingStepTimer = setInterval(() => {
-    i = (i + 1) % LOADING_STEPS.length;
+    i = (i + 1) % steps.length;
     el.classList.remove('ls-fade');
     void el.offsetWidth;
-    el.textContent = LOADING_STEPS[i];
+    el.textContent = steps[i];
     el.classList.add('ls-fade');
   }, 1800);
 }
@@ -109,6 +118,19 @@ const emotions = [
   { id: 'longing',  label: 'Rindu',       emoji: '💭', desc: 'Merasa rindu atau kehilangan seseorang', accent: '#76A9EA', feeling: 'Aku merasa sangat rindu dan kehilangan seseorang yang sangat berarti bagiku, rasa kangen ini terasa berat' },
   { id: 'disappointed', label: 'Kecewa', emoji: '🌫️', desc: 'Merasa kecewa atau patah harapan',     accent: '#94A3B8', feeling: 'Aku merasa sangat kecewa karena harapan dan ekspektasiku tidak terwujud' },
   { id: 'afraid',   label: 'Takut',       emoji: '🌪️', desc: 'Merasa takut atau tidak aman',         accent: '#E07B4A', feeling: 'Aku merasa sangat takut dan tidak berani menghadapi sesuatu yang ada di depanku' },
+];
+
+const panduanPresets = [
+  { id: 'ibadah',      label: 'Ingin Ibadah Lebih Baik',    emoji: '🕌',     query: 'Saya ingin memperbaiki dan meningkatkan kualitas ibadah saya' },
+  { id: 'dekat-allah', label: 'Ingin Lebih Dekat Allah',    emoji: '🤲',     query: 'Saya ingin memperdalam hubungan saya dengan Allah melalui doa dan dzikir' },
+  { id: 'taubat',      label: 'Ingin Bertaubat',            emoji: '❤️‍🩹',    query: 'Saya ingin bertaubat dan kembali ke jalan yang benar' },
+  { id: 'hati-niat',   label: 'Menjaga Hati & Niat',       emoji: '🪞',     query: 'Saya ingin menjaga keikhlasan dan kebersihan niat dalam hidup' },
+  { id: 'halal-haram', label: 'Halal atau Haram?',          emoji: '⚖️',     query: 'Saya ingin memahami batasan halal dan haram dalam kehidupan sehari-hari' },
+  { id: 'rezeki',      label: 'Rezeki & Harta',             emoji: '💰',     query: 'Saya mencari panduan tentang rezeki halal, sedekah, dan pengelolaan harta' },
+  { id: 'keluarga',    label: 'Menjaga Keluarga',           emoji: '👨‍👩‍👧',   query: 'Saya ingin panduan membangun dan menjaga keharmonisan keluarga' },
+  { id: 'pernikahan',  label: 'Mempersiapkan Pernikahan',   emoji: '💍',     query: 'Saya ingin panduan tentang pernikahan menurut Al-Qur\'an' },
+  { id: 'akhlak',      label: 'Bergaul dengan Baik',        emoji: '🤝',     query: 'Saya ingin panduan berakhlak baik dan menjaga hubungan dengan sesama' },
+  { id: 'akhirat',     label: 'Mengingat Akhirat',          emoji: '🌙',     query: 'Saya ingin merenungkan kehidupan akhirat dan mempersiapkan diri' },
 ];
 
 // ── Copy / Share ──────────────────────────────────────────────────────────────
@@ -408,8 +430,10 @@ function buildVerseCard(verse, index) {
   `;
   })() : '';
 
-  const resonanceHtml = verse.resonance
-    ? `<div class="vc-resonance">${escapeHtml(verse.resonance)}</div>`
+  const perVerseText = verse.relevance || verse.resonance || '';
+  const perVerseClass = verse.relevance ? 'vc-relevance' : 'vc-resonance';
+  const resonanceHtml = perVerseText
+    ? `<div class="${perVerseClass}">${escapeHtml(perVerseText)}</div>`
     : '';
 
   // Surah number for the circle badge
@@ -550,8 +574,8 @@ function renderVerses(data) {
   appBubble.appendChild(textEl);
   thread.appendChild(appBubble);
 
-  // ── B: Typewriter — reveal reflection text 3 chars per 15 ms ────────────────
-  const reflection = data.reflection || '';
+  // ── B: Typewriter — reveal reflection/explanation text 3 chars per 15 ms ────
+  const reflection = data.explanation || data.reflection || '';
   typewriterActive = true;
   let pos = 0;
 
@@ -585,15 +609,17 @@ function renderVerses(data) {
     const afterCards = data.ayat.length * 150 + 250;
     setTimeout(() => {
       const actionsEl = document.getElementById('verse-actions');
+      const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
+      const moreLabel  = currentMode === 'panduan' ? 'Topik lain' : 'Perasaan lain';
       actionsEl.innerHTML = `
         <button class="va-refresh" id="refresh-btn">↺ Coba ayat lain</button>
-        <button class="va-secondary" id="find-more-btn">Perasaan lain</button>
+        <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
       `;
       actionsEl.classList.remove('hidden');
       document.getElementById('refresh-btn')
         .addEventListener('click', () => fetchAyat(currentFeeling, { ...currentSearchCtx, refresh: true }));
       document.getElementById('find-more-btn')
-        .addEventListener('click', () => switchView('selection-view'));
+        .addEventListener('click', () => switchView(parentView));
 
       renderFeedback();
     }, afterCards);
@@ -654,7 +680,7 @@ function renderFeedback() {
       `;
       if (actionLabel) {
         feedbackEl.querySelector('.feedback-try-again')
-          .addEventListener('click', () => switchView('selection-view'));
+          .addEventListener('click', () => switchView(currentMode === 'panduan' ? 'panduan-view' : 'selection-view'));
       }
     });
   });
@@ -684,18 +710,21 @@ function showAppBubble(text, btnLabel, btnAction) {
 }
 
 function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
+  const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
   showAppBubble(
     `😔 ${escapeHtml(message)}`,
     '← Coba Lagi',
-    () => switchView('selection-view'),
+    () => switchView(parentView),
   );
 }
 
 function showNotRelevant(message) {
+  const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
+  const btnLabel   = currentMode === 'panduan' ? '← Ajukan pertanyaan lain' : '← Ceritakan perasaanmu';
   showAppBubble(
     `🤔 ${escapeHtml(message)}`,
-    '← Ceritakan perasaanmu',
-    () => switchView('selection-view'),
+    btnLabel,
+    () => switchView(parentView),
   );
 }
 
@@ -705,7 +734,7 @@ async function callAPI(feeling, { refresh = false } = {}) {
   const res = await fetch('/api/get-ayat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ feeling, ...(refresh ? { refresh: true } : {}) }),
+    body: JSON.stringify({ feeling, mode: currentMode, ...(refresh ? { refresh: true } : {}) }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
@@ -813,6 +842,109 @@ function renderEmotionCards() {
   });
 
   initCarouselEffect();
+}
+
+// ── Panduan Cards ──────────────────────────────────────────────────────────
+
+function renderPanduanCards() {
+  const grid = document.getElementById('panduan-grid');
+  if (!grid) return;
+  grid.innerHTML = panduanPresets.map(p => `
+    <button
+      class="emotion-card"
+      data-query="${escapeHtml(p.query)}"
+      data-preset-id="${p.id}"
+      aria-label="${p.label}"
+    >
+      <span class="ec-emoji">${p.emoji}</span>
+      <span class="ec-label">${p.label}</span>
+    </button>
+  `).join('');
+
+  grid.querySelectorAll('.emotion-card').forEach(card => {
+    card.addEventListener('click', () =>
+      fetchAyat(card.dataset.query, { method: 'panduan_card', emotionId: card.dataset.presetId })
+    );
+  });
+
+  initPanduanCarouselEffect();
+}
+
+function initPanduanCarouselEffect() {
+  const carousel = document.getElementById('panduan-grid');
+  if (!carousel) return;
+
+  function update() {
+    const visibleWidth = carousel.offsetWidth;
+    const center = carousel.scrollLeft + visibleWidth / 2;
+
+    carousel.querySelectorAll('.emotion-card').forEach(card => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const dist = Math.abs(center - cardCenter);
+      const maxDist = visibleWidth * 0.65;
+      const ratio = Math.min(dist / maxDist, 1);
+
+      const scale   = (1 - ratio * 0.10).toFixed(3);
+      const opacity = (1 - ratio * 0.42).toFixed(3);
+      card.style.transform = `scale(${scale})`;
+      card.style.opacity   = opacity;
+    });
+  }
+
+  carousel.addEventListener('scroll', update, { passive: true });
+
+  let isDragging = false, startX = 0, scrollStart = 0;
+  carousel.addEventListener('mousedown', e => {
+    isDragging  = true;
+    startX      = e.pageX;
+    scrollStart = carousel.scrollLeft;
+    carousel.classList.add('is-dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    carousel.scrollLeft = scrollStart - (e.pageX - startX);
+  });
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    carousel.classList.remove('is-dragging');
+  });
+
+  requestAnimationFrame(() => requestAnimationFrame(update));
+}
+
+// ── Panduan Search Input ──────────────────────────────────────────────────
+
+function initPanduanSearch() {
+  const input     = document.getElementById('panduan-input');
+  const clearBtn  = document.getElementById('panduan-clear');
+  const submitBtn = document.getElementById('panduan-submit');
+  if (!input) return;
+
+  const triggerSearch = () => {
+    const val = input.value.trim();
+    if (val.length >= 3) fetchAyat(val, { method: 'text' });
+  };
+
+  input.addEventListener('input', () => {
+    const len = input.value.length;
+    clearBtn.classList.toggle('hidden', len === 0);
+    submitBtn.classList.toggle('hidden', len < 3);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) triggerSearch();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.classList.add('hidden');
+    submitBtn.classList.add('hidden');
+    input.focus();
+  });
+
+  submitBtn.addEventListener('click', triggerSearch);
 }
 
 // ── Search Input ──────────────────────────────────────────────────────────────
@@ -924,12 +1056,54 @@ function renderVOTD(verse, container) {
   );
 }
 
+// ── Mode Selection ────────────────────────────────────────────────────────
+
+function selectMode(mode) {
+  currentMode = mode;
+  logEvent('mode_selected', { mode });
+  switchView(mode === 'panduan' ? 'panduan-view' : 'selection-view');
+}
+
+// ── Landing Carousel Dots ────────────────────────────────────────────────
+
+function initLandingCarousel() {
+  const carousel = document.getElementById('landing-carousel');
+  const dots     = document.querySelectorAll('#landing-dots .dot');
+  if (!carousel || dots.length < 2) return;
+
+  // Card click → selectMode
+  carousel.querySelectorAll('.landing-card').forEach(card => {
+    card.addEventListener('click', () => selectMode(card.dataset.mode));
+  });
+
+  // Update dots on scroll
+  carousel.addEventListener('scroll', () => {
+    const scrollLeft   = carousel.scrollLeft;
+    const cardWidth    = carousel.querySelector('.landing-card').offsetWidth;
+    const gap          = 12;
+    const activeIndex  = Math.round(scrollLeft / (cardWidth + gap));
+    dots.forEach((d, i) => d.classList.toggle('active', i === activeIndex));
+  }, { passive: true });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-document.getElementById('back-btn').addEventListener('click', () => switchView('selection-view'));
+// Verses-view back button → return to mode parent
+document.getElementById('back-btn').addEventListener('click', () =>
+  switchView(currentMode === 'panduan' ? 'panduan-view' : 'selection-view')
+);
 
+// Curhat back → landing
+document.getElementById('curhat-back-btn').addEventListener('click', () => switchView('landing-view'));
+
+// Panduan back → landing
+document.getElementById('panduan-back-btn').addEventListener('click', () => switchView('landing-view'));
+
+initLandingCarousel();
 renderEmotionCards();
+renderPanduanCards();
 initSearch();
+initPanduanSearch();
 initVOTD();
 
 // ── Service Worker ─────────────────────────────────────────────────────────────

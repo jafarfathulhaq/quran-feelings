@@ -46,10 +46,17 @@ def strip_html(text: str) -> str:
     text = re.sub(r" {2,}", " ", text)
     return text.strip()
 
+QURAN_COM_HEADERS = {
+    "Accept":     "application/json",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    "Origin":     "https://quran.com",
+    "Referer":    "https://quran.com/",
+}
+
 def fetch_json(url: str, retries: int = 3) -> dict:
     for attempt in range(retries):
         try:
-            req = Request(url, headers={"Accept": "application/json"})
+            req = Request(url, headers=QURAN_COM_HEADERS)
             with urlopen(req, timeout=15) as r:
                 return json.loads(r.read().decode())
         except Exception as e:
