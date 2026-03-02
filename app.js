@@ -698,7 +698,7 @@ function renderVerses(data) {
           <span class="cb-text" id="intro-typewriter"></span>
         </div>
       </div>
-      <p class="intro-swipe-hint" id="intro-swipe-hint" style="display:none;">Geser untuk mulai →</p>
+      <p class="intro-swipe-hint" id="intro-swipe-hint" style="display:none;">Geser untuk menemukan ayat →</p>
     </div>
   `;
   carousel.appendChild(introSlide);
