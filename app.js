@@ -605,11 +605,11 @@ function updateSharePreview() {
   const verse   = shareActiveVerse;
   const preview = document.getElementById('share-preview');
 
-  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;">`;
+  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;padding:8% 10%;justify-content:center;">`;
 
   // Branding header (top)
   html += `
-    <div class="si-header" style="padding-top:6%;">
+    <div class="si-header">
       <span class="si-header-brand" style="font-size:14px;">TemuQuran.com</span>
       <span class="si-header-sub" style="font-size:8px;">Temukan Jawaban Dalam Al-Qur'an</span>
       <div class="si-header-divider"></div>
