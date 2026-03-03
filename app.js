@@ -605,7 +605,7 @@ function updateSharePreview() {
   const verse   = shareActiveVerse;
   const preview = document.getElementById('share-preview');
 
-  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;padding:8% 10%;justify-content:center;">`;
+  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;padding:8% 12%;justify-content:center;">`;
 
   // Branding header (top)
   html += `
@@ -622,7 +622,7 @@ function updateSharePreview() {
   }
 
   // Arabic (smaller for preview)
-  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:10px;">${verse.arabic}</p>`;
+  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:10px;max-width:92%;">${verse.arabic}</p>`;
 
   // Translation
   const shortTrans = verse.translation.length > 80
