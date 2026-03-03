@@ -456,163 +456,94 @@ body {
 }
 
 /* ── Jelajahi Preset Grid (2-column) ─────────────────── */
-.jelajahi-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding-bottom: 20px;
-}
-
-.jelajahi-card {
-  background: var(--card-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px 12px;
-  text-align: center;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
-  position: relative;
-  overflow: hidden;
-}
-
-.jelajahi-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--teal-dark);
-  border-radius: 2px 2px 0 0;
-  opacity: 0.5;
-}
-
-.jelajahi-card:hover {
-  border-color: var(--teal-dark);
-  background: #EDF7F6;
-}
-
-.jelajahi-card:active {
-  transform: scale(0.97);
-}
-
-.jc-name,
-.jc-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-dark);
-  display: block;
-}
-
-.jc-meta,
-.jc-sub {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  margin-top: 3px;
-  display: block;
-}
-
-/* ── Jelajahi Helper + Chips ─────────────────────────── */
-.jelajahi-helper {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin-top: 8px;
-  text-align: center;
-  padding: 0 12px;
-}
-
-.jelajahi-chips {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 12px 0 4px;
-  justify-content: center;
-  -webkit-overflow-scrolling: touch;
-}
-.jelajahi-chips::-webkit-scrollbar { display: none; }
-
-.jelajahi-chip {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: transparent;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-mid);
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  white-space: nowrap;
-}
-.jelajahi-chip:active {
-  background: rgba(0,0,0,0.04);
-  border-color: var(--text-muted);
-}
-
 /* ── Surah Browser (114-surah list) ─────────────────── */
 .surah-browser { padding-bottom: 40px; }
 
 .surah-browser-row {
   width: 100%;
   text-align: left;
-  padding: 14px 4px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: background 0.1s ease;
-  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, background 0.15s;
   display: flex;
   align-items: center;
-  font-family: inherit;
-  background: transparent;
-  border-left: none;
-  border-right: none;
-  border-top: none;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
-.surah-browser-row:active { background: rgba(0,0,0,0.03); }
+.surah-browser-row:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+}
+.surah-browser-row:active { transform: scale(0.98); }
 
 /* ── Multi-Result Selection ─────────────────────────── */
-.jelajahi-multi { padding: 0 0 40px; }
+.jelajahi-multi { padding: 16px 0 40px; }
 .jelajahi-multi.hidden { display: none; }
 
 .multi-result-heading {
-  font-size: 0.875rem;
-  color: var(--text-mid);
-  margin-bottom: 16px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.multi-result-subheading {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
   line-height: 1.5;
 }
 
 .multi-result-card {
   width: 100%;
   text-align: left;
-  padding: 18px 20px;
+  padding: 16px 18px;
   background: var(--card-bg);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  font-family: inherit;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
 }
-.multi-result-card:hover { border-color: var(--teal-dark); }
+.multi-result-card:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+}
 .multi-result-card:active { transform: scale(0.98); }
 
-.multi-card-top {
+.multi-card-body { flex: 1; min-width: 0; }
+
+.multi-card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
 }
 .multi-card-name {
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-dark);
-  flex: 1;
+}
+.multi-card-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
 }
 .multi-card-reason {
   font-size: 0.8125rem;
   color: var(--text-muted);
-  margin: 6px 0 0 48px;
+  margin-top: 4px;
   line-height: 1.5;
 }
 

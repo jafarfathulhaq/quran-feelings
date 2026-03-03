@@ -388,20 +388,6 @@ const SURAH_META = [
   { number: 114, name: 'An-Nas', name_arabic: 'الناس', verses: 6, type: 'Makkiyyah' },
 ];
 
-// ── Jelajahi Presets ──────────────────────────────────────────────────────────
-const JELAJAHI_PRESETS = [
-  { label: 'Al-Fatihah',   surah: 1,  type: 'surah' },
-  { label: 'Ya Sin',       surah: 36, type: 'surah' },
-  { label: 'Al-Kahf',      surah: 18, type: 'surah' },
-  { label: 'Ar-Rahman',    surah: 55, type: 'surah' },
-  { label: 'Al-Waqi\'ah', surah: 56, type: 'surah' },
-  { label: 'Al-Mulk',      surah: 67, type: 'surah' },
-  { label: 'Maryam',       surah: 19, type: 'surah' },
-  { label: 'Al-Insyirah',  surah: 94, type: 'surah' },
-  { label: 'Juz Amma',     juz: 30,   type: 'juz'   },
-  { label: 'Ayatul Kursi', surah: 2,  ayah: 255, type: 'ayat' },
-];
-
 const JUZ_30_SURAHS = SURAH_META.filter(s => s.number >= 78 && s.number <= 114);
 
 const LOADING_STEPS_JELAJAHI = [
@@ -1839,31 +1825,6 @@ function showTulisSendiri(cardId) {
 
 // ── Jelajahi Cards ──────────────────────────────────────────────────────────
 
-function renderJelajahiCards() {
-  const grid = document.getElementById('jelajahi-grid');
-  if (!grid) return;
-
-  grid.innerHTML = JELAJAHI_PRESETS.map(p => {
-    const meta = SURAH_META[p.surah ? p.surah - 1 : 0];
-    const sub = p.type === 'juz' ? 'Juz 30 · 37 surah'
-      : p.type === 'ayat' ? `${meta.number}:${p.ayah} · 1 ayat`
-      : `${meta.number} · ${meta.verses} ayat`;
-    return `
-      <button class="jelajahi-card" data-preset-idx="${JELAJAHI_PRESETS.indexOf(p)}">
-        <span class="jc-label">${escapeHtml(p.label)}</span>
-        <span class="jc-sub">${sub}</span>
-      </button>
-    `;
-  }).join('');
-
-  grid.querySelectorAll('.jelajahi-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const p = JELAJAHI_PRESETS[parseInt(card.dataset.presetIdx, 10)];
-      handleJelajahiPreset(p);
-    });
-  });
-}
-
 function renderSurahBrowser() {
   const container = document.getElementById('surah-browser');
   if (!container) return;
@@ -1886,23 +1847,6 @@ function renderSurahBrowser() {
       fetchJelajahi(null, { type: 'surah', surah: surahNum });
     });
   });
-}
-
-function handleJelajahiPreset(preset) {
-  if (preset.type === 'juz') {
-    logEvent('jelajahi_preset', { type: 'juz', juz: preset.juz, name: preset.label });
-    showJuzSurahList();
-    return;
-  }
-
-  const intent = preset.type === 'ayat'
-    ? { type: 'ayat', surah: preset.surah, ayah_start: preset.ayah, ayah_end: preset.ayah }
-    : { type: 'surah', surah: preset.surah };
-
-  logEvent('jelajahi_preset', { type: preset.type, surah: preset.surah, name: preset.label });
-  lastJuzSurahTapped = null;
-  cameFromMultiResult = false;
-  fetchJelajahi(null, intent);
 }
 
 function showJuzSurahList() {
@@ -1970,7 +1914,7 @@ function hideJuzSurahList() {
 function toggleJelajahiLanding(show) {
   const jView = document.getElementById('jelajahi-view');
   const display = show ? '' : 'none';
-  ['.header', '.input-card', '.jelajahi-helper', '.jelajahi-chips', '.home-content'].forEach(sel => {
+  ['.header', '.input-card', '.home-content'].forEach(sel => {
     const el = jView.querySelector(sel);
     if (el) el.style.display = display;
   });
@@ -1984,15 +1928,18 @@ function showMultiResults(results) {
   toggleJelajahiLanding(false);
 
   container.innerHTML = `
-    <p class="multi-result-heading">Kami menemukan beberapa surat yang cocok:</p>
+    <p class="multi-result-heading">Kami menemukan beberapa surat yang cocok</p>
+    <p class="multi-result-subheading">Pilih salah satu untuk mulai membaca:</p>
     ${results.map((r, i) => `
       <button class="multi-result-card" data-idx="${i}">
-        <div class="multi-card-top">
-          <span class="juz-surah-num">${r.surah}</span>
-          <span class="multi-card-name">${escapeHtml(r.name)}</span>
-          <span class="juz-surah-info">${r.verse_count} ayat</span>
+        <span class="juz-surah-num">${r.surah}</span>
+        <div class="multi-card-body">
+          <div class="multi-card-header">
+            <span class="multi-card-name">${escapeHtml(r.name)}</span>
+            <span class="multi-card-info">${r.verse_count} ayat</span>
+          </div>
+          <p class="multi-card-reason">${escapeHtml(r.reason)}</p>
         </div>
-        <p class="multi-card-reason">${escapeHtml(r.reason)}</p>
       </button>
     `).join('')}
   `;
@@ -2061,18 +2008,6 @@ function initJelajahiSearch() {
   });
 
   submitBtn.addEventListener('click', triggerSearch);
-
-  // Example chip click handlers
-  document.querySelectorAll('#jelajahi-chips .jelajahi-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const query = chip.dataset.query;
-      input.value = query;
-      clearBtn.classList.remove('hidden');
-      submitBtn.classList.remove('hidden');
-      logEvent('jelajahi_chip_tapped', { query });
-      triggerSearch();
-    });
-  });
 }
 
 // ── Jelajahi API Call ────────────────────────────────────────────────────────
@@ -2342,7 +2277,6 @@ document.querySelectorAll('.share-platform-btn').forEach(btn => {
 initLandingCarousel();
 renderEmotionCards();
 renderPanduanCards();
-renderJelajahiCards();
 renderSurahBrowser();
 initSearch();
 initPanduanSearch();
