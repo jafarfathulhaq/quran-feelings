@@ -48,12 +48,13 @@ let totalVerseCards   = 0;     // total slides (intro + verses)
 // display it on the intro card instead for a cleaner reading experience.
 // Al-Fatihah (1) keeps it because the Bismillah *is* verse 1.
 const BISMILLAH_AR = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+const BISMILLAH_NFC = BISMILLAH_AR.normalize('NFC');
 function stripBismillah(arabic, surahNumber) {
   if (surahNumber === 1 || surahNumber === 9) return arabic;
-  // Handle possible BOM (\uFEFF) at start
-  const clean = arabic.replace(/^\uFEFF/, '');
-  if (clean.startsWith(BISMILLAH_AR)) {
-    return clean.slice(BISMILLAH_AR.length).trim();
+  // NFC-normalise both sides — DB diacritics ordering may differ from our constant
+  const clean = arabic.replace(/^\uFEFF/, '').normalize('NFC');
+  if (clean.startsWith(BISMILLAH_NFC)) {
+    return clean.slice(BISMILLAH_NFC.length).trim();
   }
   return arabic;
 }
