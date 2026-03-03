@@ -16,7 +16,7 @@
 | Frontend | Vanilla HTML / CSS / JS (`index.html`, `style.css`, `app.js`) |
 | Backend | Vercel Serverless Functions (`api/*.js`, Node 20) |
 | Database | Supabase (PostgreSQL + pgvector) |
-| AI | OpenAI — `gpt-4o` (verse selection), `gpt-4o-mini` (HyDE + decompose + jelajahi intent parser), `text-embedding-3-large` |
+| AI | OpenAI — `gpt-4o-mini` (verse selection, HyDE, decompose, jelajahi intent parser), `text-embedding-3-large` (1536 dims) |
 | Analytics | Supabase `analytics_events` table via `/api/log-event` |
 | PWA | `manifest.json` + `sw.js` |
 
@@ -39,7 +39,7 @@ supabase/migrations/
 scripts/
   seed_asbabun_nuzul.py      — fetches English asbabun nuzul from spa5k/tafsir_api (Al-Wahidi)
   translate_asbabun_nuzul.py  — translates to Indonesian via OpenAI Batch API
-vercel.json         — sets maxDuration: 30s for get-ayat.js
+vercel.json         — maxDuration 30s, security headers (CSP, X-Frame-Options, etc.), redirect vercel.app → temuquran.com
 ```
 
 ---
@@ -63,7 +63,7 @@ Each search makes **5–6 parallel AI calls** then one sequential GPT-4o call:
 2. **HyDE × 3** (`gpt-4o-mini`) — generates hypothetical Qur'anic descriptions. Curhat uses emotional / situational / divine-hope angles; Panduan uses topical / ethical / practical angles
 3. **Embed × 3** (`text-embedding-3-large`, 1536 dims) — embeds the three HyDE texts
 4. **Hybrid search × 3** (Supabase `match_verses_hybrid` RPC) — 20 results per angle, round-robin merged, deduped, surah-diversity filtered → top 25 candidates
-5. **Select** (`gpt-4o`) — picks 3–7 verses (3–4 for focused queries, 5–7 for complex/multi-dimensional). Curhat writes `reflection` + `verse_resonance`; Panduan writes `explanation` + `verse_relevance`
+5. **Select** (`gpt-4o-mini`) — picks 3–7 verses (3–4 for focused queries, 5–7 for complex/multi-dimensional). Curhat writes `reflection` + `verse_resonance`; Panduan writes `explanation` + `verse_relevance`
 6. **Tafsir fetch** (Supabase REST) — fetches `tafsir_kemenag`, `tafsir_ibnu_kathir`, `tafsir_ibnu_kathir_id` for the selected verses only
 
 **Mode**: POST body accepts `mode` (`'curhat'` default, `'panduan'`, `'jelajahi'`). Mode forks prompts at steps 1, 2, and 5.
@@ -88,7 +88,7 @@ Valid event types:
 `mode_selected`, `search_started`, `search_completed`, `search_cached`, `mood_feedback`,
 `verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
 `asbabun_nuzul_opened`, `card_expanded`, `sub_question_selected`, `tulis_sendiri_opened`, `verse_swiped`,
-`jelajahi_preset`, `jelajahi_search`, `jelajahi_juz_surah_selected`,
+`jelajahi_search`, `jelajahi_juz_surah_selected`, `jelajahi_surah_browser`, `jelajahi_juz_group_opened`, `jelajahi_multi_selected`,
 `share_sheet_opened`, `share_theme_selected`, `share_completed`
 
 To query analytics:
@@ -124,7 +124,7 @@ GROUP BY event_type ORDER BY count DESC;
 
 ### Key data constants
 - `SURAH_META` — 114 entries with `{ number, name, name_arabic, verses, type }` (~5KB)
-- `JELAJAHI_PRESETS` — 10 popular surah/juz/ayat presets
+- `SURAH_BROWSER` — 10 Juz groups (flat array), each `{ label, surahs: [numbers] }`. Groups: Juz 1–5, 6–10, 11–15, 16–20, 21–25, 26, 27, 28, 29, 30
 - `JUZ_30_SURAHS` — filtered subset of SURAH_META (surahs 78–114)
 - `PANDUAN_SUB_QUESTIONS` — 10 categories × 8 sub-questions
 - `BISMILLAH_AR` / `BISMILLAH_NFC` — Bismillah constant for stripping/display
@@ -146,7 +146,7 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 
 ### Jelajahi Al-Qur'an mode
 - **Hero + search input**: text input for natural language queries ("Surah Maryam", "Al-Baqarah ayat 255")
-- **10 preset cards**: 2-col grid, includes popular surahs + Juz Amma + Ayatul Kursi
+- **Surah browser**: categorized accordion with 10 Juz groups (`SURAH_BROWSER` array). Single-open behavior — expanding one group collapses others. Each group header shows label + surah count badge. Surah rows have rounded number badges, proper spacing, and rounded corners.
 - **Juz Amma flow**: Tapping Juz Amma shows a full-screen surah list overlay (surahs 78–114). Tapping a surah loads its verses. Back button returns to the list.
 - **Lazy loading**: `JELAJAHI_BATCH_SIZE = 15`. First batch renders intro + 15 verse slides. More slides appended when user scrolls within 3 slides of the loaded end.
 - **Progress bar**: Replaces pagination dots when `totalVerseCards > 16`. 4px teal bar with smooth width transition.
@@ -182,6 +182,16 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 
 ---
 
+## Infrastructure & billing
+| Service | Plan | Key limits | Status (Mar 2026) |
+|---|---|---|---|
+| **Vercel** | Hobby (free) | 100 GB bandwidth, 1M edge requests, 1M function invocations | All metrics < 3% |
+| **Supabase** | Free | 500 MB database, 5 GB egress, 50K MAU | DB: 270 MB / 500 MB (54%), egress < 5% |
+| **OpenAI** | Pay-as-you-go | — | ~$0.01–0.03 per curhat/panduan search, ~$0.0001 per jelajahi typed query |
+| **Domain** | temuquran.com via Namecheap | — | — |
+
+---
+
 ## CSS conventions
 - CSS custom properties defined in `:root` in `style.css` — use these, don't hardcode colours
 - Key vars: `--gold`, `--gold-light`, `--teal-dark`, `--text-dark`, `--text-mid`, `--text-muted`, `--border`, `--radius`, `--radius-sm`, `--shadow-card`
@@ -191,6 +201,40 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - Jelajahi intro card: dark gradient bg (`#0A0F1E` → `#0A5C7A`), gold Bismillah (`.ji-bismillah`)
 - Reading progress bar: `var(--border)` track, `var(--teal-dark)` fill, 4px height
 - No CSS framework, no preprocessor
+
+---
+
+## Security
+
+### Headers (`vercel.json`)
+All routes serve these security headers:
+| Header | Value |
+|---|---|
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdn.islamic.network; media-src https://cdn.islamic.network; frame-ancestors 'none'` |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Strict-Transport-Security` | Vercel adds automatically (`max-age=63072000`) |
+
+### CORS
+Both API endpoints (`get-ayat.js`, `log-event.js`) restrict `Access-Control-Allow-Origin` to `https://temuquran.com` only. Requests from other origins receive no ACAO header. `Vary: Origin` is set for proper caching.
+
+### Redirect
+`quran-feelings.vercel.app/*` → **308 permanent redirect** → `temuquran.com/*` (configured in `vercel.json` redirects).
+
+### Error messages
+API error responses never expose raw OpenAI/Supabase error details. Internal errors are logged with `console.error()` server-side; the client always receives a generic Indonesian error message.
+
+### XSS protection
+- `escapeHtml()` function escapes `& < > "` — used for all user input AND all DB content (arabic, translation, ref, tafsir) before `innerHTML` insertion.
+- `renderMarkdown()` has its own inline escape (for tafsir markdown content).
+- Typewriter effect uses `textContent` (safe).
+
+### Secrets
+- `.env` is in `.gitignore` and has **never** been committed to git history.
+- All API keys use `process.env.*` — server-side only in Vercel serverless functions.
+- Zero npm dependencies — no supply chain risk.
 
 ---
 
@@ -206,3 +250,5 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - **Jelajahi lazy loading** — triggers 3 slides before the loaded boundary for smooth UX. `jelajahiAllVerses` holds the full array; slides are appended in batches of 15.
 - **Share image themes** — `.si-theme-*` classes in `style.css` define colors for the off-screen share render element AND the live preview. Both share the same class hierarchy (`si-wrap`, `si-arabic`, `si-translation`, `si-ref`, `si-tafsir`, `si-footer`).
 - **OG meta tags** — title is "TemuQuran — Temukan dalam Al-Qur'an", description mentions all 3 modes + privacy + no ads. Theme color is `#2A7C6F` (teal).
+- **CSP changes** — if you add a new CDN script or connect to a new external API from the frontend, update the CSP in `vercel.json` or the browser will block it.
+- **CORS changes** — if you add a new custom domain or need localhost dev access, update the `allowedOrigin` in both `api/get-ayat.js` and `api/log-event.js`.
