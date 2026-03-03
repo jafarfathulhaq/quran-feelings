@@ -439,9 +439,14 @@ function checkRateLimit(ip) {
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigin = 'https://temuquran.com';
+  const origin = req.headers.origin;
+  if (origin === allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
@@ -759,7 +764,8 @@ module.exports = async function handler(req, res) {
 
     if (!openaiRes.ok) {
       const err = await openaiRes.json();
-      throw new Error(err.error?.message || 'OpenAI API error');
+      console.error('OpenAI API error:', err.error?.message);
+      throw new Error('Gagal memproses permintaan. Silakan coba lagi.');
     }
 
     const openaiData = await openaiRes.json();
@@ -872,7 +878,7 @@ module.exports = async function handler(req, res) {
 
   } catch (error) {
     console.error('Handler error:', error.message);
-    return res.status(500).json({ error: error.message || 'Terjadi kesalahan. Silakan coba lagi.' });
+    return res.status(500).json({ error: 'Terjadi kesalahan. Silakan coba lagi.' });
   }
 };
 
@@ -935,7 +941,8 @@ async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) 
 
       if (!intentRes.ok) {
         const err = await intentRes.json();
-        throw new Error(err.error?.message || 'Intent parsing failed');
+        console.error('Intent parse API error:', err.error?.message);
+        throw new Error('Gagal memahami permintaan. Coba lagi.');
       }
 
       const intentData = await intentRes.json();

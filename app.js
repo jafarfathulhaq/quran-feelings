@@ -487,7 +487,7 @@ function buildShareElement(verse, options) {
 
   // Arabic text — smaller in compact mode
   const arabicStyle = compact ? 'font-size:24px;line-height:1.9;margin-bottom:14px;' : '';
-  html += `<p class="si-arabic" style="${arabicStyle}">${verse.arabic}</p>`;
+  html += `<p class="si-arabic" style="${arabicStyle}">${escapeHtml(verse.arabic)}</p>`;
 
   // Translation — smaller in compact mode
   const transStyle = compact ? 'font-size:12px;line-height:1.7;margin-bottom:10px;' : '';
@@ -633,7 +633,7 @@ function updateSharePreview() {
   }
 
   // Arabic (smaller for preview)
-  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:10px;max-width:92%;">${verse.arabic}</p>`;
+  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:10px;max-width:92%;">${escapeHtml(verse.arabic)}</p>`;
 
   // Translation
   const shortTrans = verse.translation.length > 80
@@ -905,13 +905,13 @@ function buildVerseCard(verse, index) {
   card.innerHTML = `
     <div class="vc-arabic-section">
       <div class="vc-ref-row">
-        <span class="vc-ref-label">${verse.ref}</span>
+        <span class="vc-ref-label">${escapeHtml(verse.ref)}</span>
         <span class="vc-surah-number">${surahNum}</span>
       </div>
-      <p class="vc-arabic-text">${verse.arabic}</p>
+      <p class="vc-arabic-text">${escapeHtml(verse.arabic)}</p>
     </div>
     <div class="vc-content">
-      <p class="vc-translation">"${verse.translation}"</p>
+      <p class="vc-translation">"${escapeHtml(verse.translation)}"</p>
       ${resonanceHtml}
       ${tafsirHtml}
       ${asbabHtml}
@@ -1675,9 +1675,9 @@ function renderVOTD(verse, container) {
       </button>
       <div class="votd-body">
         <div class="votd-card">
-          <p class="votd-arabic">${verse.arabic}</p>
-          <p class="votd-translation">"${verse.translation}"</p>
-          <p class="votd-ref">${ref}</p>
+          <p class="votd-arabic">${escapeHtml(verse.arabic)}</p>
+          <p class="votd-translation">"${escapeHtml(verse.translation)}"</p>
+          <p class="votd-ref">${escapeHtml(ref)}</p>
           <div class="votd-actions">
             <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
           </div>
@@ -2192,7 +2192,7 @@ function renderJelajahiVerses(verses) {
     <div class="jelajahi-intro">
       <span class="ji-emoji">📜</span>
       ${info ? `<h2 class="ji-name">${escapeHtml(info.name)}</h2>` : ''}
-      ${info && info.name_arabic ? `<p class="ji-arabic-name">${info.name_arabic}</p>` : ''}
+      ${info && info.name_arabic ? `<p class="ji-arabic-name">${escapeHtml(info.name_arabic)}</p>` : ''}
       ${surahLabel ? `<p class="ji-meta">${surahLabel}</p>` : ''}
       <p class="ji-meta">${totalVersesDisplay} Ayat${typeLabel ? ` · ${typeLabel}` : ''}</p>
       ${showBismillah ? `<p class="ji-bismillah">${BISMILLAH_AR}</p>` : ''}
