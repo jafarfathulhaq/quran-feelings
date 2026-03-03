@@ -2337,7 +2337,7 @@ body {
 .si-theme-light .si-header-brand { color: #2A7C6F; }
 .si-theme-light .si-header-sub { color: #AAAAAA; }
 .si-theme-light .si-header-divider { background: rgba(42,124,111,0.25); }
-.si-theme-light .si-question { color: #4A4A4A; }
+.si-theme-light .si-question { color: #999999; }
 .si-theme-light .si-arabic { color: #1A1A1A; }
 .si-theme-light .si-translation { color: #1A1A1A; }
 .si-theme-light .si-ref { color: var(--teal-dark); background: rgba(42,124,111,0.08); }
@@ -2347,7 +2347,7 @@ body {
 .si-theme-dark .si-header-brand { color: #C9A84C; }
 .si-theme-dark .si-header-sub { color: rgba(255,255,255,0.4); }
 .si-theme-dark .si-header-divider { background: rgba(201,168,76,0.3); }
-.si-theme-dark .si-question { color: #C0C0D0; }
+.si-theme-dark .si-question { color: #808090; }
 .si-theme-dark .si-arabic { color: #FFFFFF; }
 .si-theme-dark .si-translation { color: #F0F0F0; }
 .si-theme-dark .si-ref { color: #C9A84C; background: rgba(196,152,59,0.12); }
@@ -2357,7 +2357,7 @@ body {
 .si-theme-classic .si-header-brand { color: #8B6F47; }
 .si-theme-classic .si-header-sub { color: rgba(61,50,37,0.4); }
 .si-theme-classic .si-header-divider { background: rgba(139,111,71,0.25); }
-.si-theme-classic .si-question { color: #5C4E3E; }
+.si-theme-classic .si-question { color: #A89880; }
 .si-theme-classic .si-arabic { color: #2A1F14; }
 .si-theme-classic .si-translation { color: #3D3225; }
 .si-theme-classic .si-ref { color: #8B6F47; background: rgba(139,111,71,0.10); }
