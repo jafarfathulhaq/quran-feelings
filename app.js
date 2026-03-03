@@ -454,39 +454,46 @@ const SHARE_THEME_BG = { light: '#FFFFFF', dark: '#1A1D2E', classic: '#F5EFE0' }
 
 // Build the off-screen share image HTML element
 function buildShareElement(verse, options) {
-  const { theme, width, height, includeQuestion } = options;
+  const { theme, width, height, includeQuestion, compact } = options;
   const el = document.createElement('div');
   el.className = `si-wrap si-theme-${theme}`;
   el.style.width  = width + 'px';
   el.style.height = height + 'px';
   el.style.position = 'absolute';
   el.style.left = '-9999px';
+  if (compact) el.style.padding = '6% 12%';
 
   // Build content — branding header at top, then verse content centered
   let html = '';
 
-  // Branding header (top)
+  // Branding header (top) — smaller in compact/square mode
   html += `
-    <div class="si-header">
-      <span class="si-header-brand">TemuQuran.com</span>
-      <span class="si-header-sub">Temukan Jawaban Dalam Al-Qur'an</span>
-      <div class="si-header-divider"></div>
+    <div class="si-header" style="${compact ? 'margin-bottom:16px;' : ''}">
+      <span class="si-header-brand" style="${compact ? 'font-size:18px;' : ''}">TemuQuran.com</span>
+      <span class="si-header-sub" style="${compact ? 'font-size:10px;' : ''}">Temukan Jawaban Dalam Al-Qur'an</span>
+      <div class="si-header-divider" style="${compact ? 'margin-top:10px;' : ''}"></div>
     </div>
   `;
 
-  // Optional user feeling/question
+  // Optional user feeling/question — truncate in compact mode
   if (includeQuestion && verse._userQuestion) {
-    html += `<p class="si-question">"${escapeHtml(verse._userQuestion)}"</p>`;
+    let qText = verse._userQuestion;
+    if (compact && qText.length > 60) qText = qText.slice(0, 60) + '...';
+    const qStyle = compact ? 'font-size:13px;margin-bottom:14px;' : '';
+    html += `<p class="si-question" style="${qStyle}">"${escapeHtml(qText)}"</p>`;
   }
 
-  // Arabic text
-  html += `<p class="si-arabic">${verse.arabic}</p>`;
+  // Arabic text — smaller in compact mode
+  const arabicStyle = compact ? 'font-size:24px;line-height:1.9;margin-bottom:14px;' : '';
+  html += `<p class="si-arabic" style="${arabicStyle}">${verse.arabic}</p>`;
 
-  // Translation
-  html += `<p class="si-translation">"${escapeHtml(verse.translation)}"</p>`;
+  // Translation — smaller in compact mode
+  const transStyle = compact ? 'font-size:12px;line-height:1.7;margin-bottom:10px;' : '';
+  html += `<p class="si-translation" style="${transStyle}">"${escapeHtml(verse.translation)}"</p>`;
 
   // Surah reference
-  html += `<span class="si-ref">${escapeHtml(verse.ref)}</span>`;
+  const refStyle = compact ? 'font-size:10px;padding:4px 12px;' : '';
+  html += `<span class="si-ref" style="${refStyle}">${escapeHtml(verse.ref)}</span>`;
 
   el.innerHTML = html;
   return el;
@@ -504,12 +511,14 @@ function getShareDimensions(platform) {
 async function generateShareImage(verse, platform) {
   await loadHtml2Canvas();
 
-  const dims = getShareDimensions(platform);
+  const dims    = getShareDimensions(platform);
+  const isSquare = dims.width === dims.height;
   const el = buildShareElement(verse, {
     theme:           shareTheme,
     width:           dims.width / 2, // render at half-size, html2canvas scale: 2 → full res
     height:          dims.height / 2,
     includeQuestion: shareIncludeQuestion,
+    compact:         isSquare,
   });
 
   const container = document.getElementById('share-render');
