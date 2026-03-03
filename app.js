@@ -417,6 +417,8 @@ let jelajahiLoadedUpTo   = 0;    // how many verse slides rendered so far
 let jelajahiSurahInfo    = null; // { number, name, name_arabic, verses, type }
 let juzSurahListVisible  = false; // whether juz surah list overlay is showing
 let lastJuzSurahTapped   = null; // for back-nav from verses to juz list
+let jelajahiMultiResults = null; // multi-result array from AI, or null
+let cameFromMultiResult  = false; // whether user arrived at verses via multi-result selection
 
 // ── Copy / Share ──────────────────────────────────────────────────────────────
 
@@ -1862,6 +1864,30 @@ function renderJelajahiCards() {
   });
 }
 
+function renderSurahBrowser() {
+  const container = document.getElementById('surah-browser');
+  if (!container) return;
+
+  container.innerHTML = SURAH_META.map(s => `
+    <button class="surah-browser-row" data-surah="${s.number}">
+      <span class="juz-surah-num">${s.number}</span>
+      <span class="juz-surah-name">${escapeHtml(s.name)}</span>
+      <span class="juz-surah-info">${s.verses} ayat</span>
+    </button>
+  `).join('');
+
+  container.querySelectorAll('.surah-browser-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const surahNum = parseInt(row.dataset.surah, 10);
+      const meta = SURAH_META[surahNum - 1];
+      logEvent('jelajahi_surah_browser', { surah: surahNum, name: meta.name });
+      lastJuzSurahTapped = null;
+      cameFromMultiResult = false;
+      fetchJelajahi(null, { type: 'surah', surah: surahNum });
+    });
+  });
+}
+
 function handleJelajahiPreset(preset) {
   if (preset.type === 'juz') {
     logEvent('jelajahi_preset', { type: 'juz', juz: preset.juz, name: preset.label });
@@ -1875,6 +1901,7 @@ function handleJelajahiPreset(preset) {
 
   logEvent('jelajahi_preset', { type: preset.type, surah: preset.surah, name: preset.label });
   lastJuzSurahTapped = null;
+  cameFromMultiResult = false;
   fetchJelajahi(null, intent);
 }
 
@@ -1938,6 +1965,87 @@ function hideJuzSurahList() {
   });
 }
 
+// ── Jelajahi Multi-Result ─────────────────────────────────────────────────
+
+function showMultiResults(results) {
+  jelajahiMultiResults = results;
+  const container = document.getElementById('jelajahi-multi');
+  const jView = document.getElementById('jelajahi-view');
+
+  // Hide landing content
+  const homeContent = jView.querySelector('.home-content');
+  const inputCard = jView.querySelector('.input-card');
+  const header = jView.querySelector('.header');
+  const helper = jView.querySelector('.jelajahi-helper');
+  const chips = jView.querySelector('.jelajahi-chips');
+  if (homeContent) homeContent.classList.add('hidden');
+  if (inputCard) inputCard.classList.add('hidden');
+  if (header) header.classList.add('hidden');
+  if (helper) helper.classList.add('hidden');
+  if (chips) chips.classList.add('hidden');
+
+  container.innerHTML = `
+    <p class="multi-result-heading">Kami menemukan beberapa surat yang cocok:</p>
+    ${results.map((r, i) => `
+      <button class="multi-result-card" data-idx="${i}">
+        <div class="multi-card-top">
+          <span class="juz-surah-num">${r.surah}</span>
+          <span class="multi-card-name">${escapeHtml(r.name)}</span>
+          <span class="juz-surah-info">${r.verse_count} ayat</span>
+        </div>
+        <p class="multi-card-reason">${escapeHtml(r.reason)}</p>
+      </button>
+    `).join('')}
+  `;
+
+  container.classList.remove('hidden');
+
+  container.querySelectorAll('.multi-result-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.dataset.idx, 10);
+      const chosen = results[idx];
+      logEvent('jelajahi_multi_selected', { surah: chosen.surah, name: chosen.name, position: idx + 1 });
+      cameFromMultiResult = true;
+      // Hide multi UI but preserve results for back navigation
+      container.classList.add('hidden');
+      container.innerHTML = '';
+      const jView = document.getElementById('jelajahi-view');
+      const homeContent = jView.querySelector('.home-content');
+      const inputCard = jView.querySelector('.input-card');
+      const header = jView.querySelector('.header');
+      const helper = jView.querySelector('.jelajahi-helper');
+      const chips = jView.querySelector('.jelajahi-chips');
+      if (homeContent) homeContent.classList.remove('hidden');
+      if (inputCard) inputCard.classList.remove('hidden');
+      if (header) header.classList.remove('hidden');
+      if (helper) helper.classList.remove('hidden');
+      if (chips) chips.classList.remove('hidden');
+      fetchJelajahi(null, { type: 'surah', surah: chosen.surah });
+    });
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function hideMultiResults() {
+  const container = document.getElementById('jelajahi-multi');
+  container.classList.add('hidden');
+  container.innerHTML = '';
+  jelajahiMultiResults = null;
+
+  const jView = document.getElementById('jelajahi-view');
+  const homeContent = jView.querySelector('.home-content');
+  const inputCard = jView.querySelector('.input-card');
+  const header = jView.querySelector('.header');
+  const helper = jView.querySelector('.jelajahi-helper');
+  const chips = jView.querySelector('.jelajahi-chips');
+  if (homeContent) homeContent.classList.remove('hidden');
+  if (inputCard) inputCard.classList.remove('hidden');
+  if (header) header.classList.remove('hidden');
+  if (helper) helper.classList.remove('hidden');
+  if (chips) chips.classList.remove('hidden');
+}
+
 // ── Jelajahi Search Input ──────────────────────────────────────────────────
 
 function initJelajahiSearch() {
@@ -1951,6 +2059,8 @@ function initJelajahiSearch() {
     if (val.length >= 2) {
       logEvent('jelajahi_search', { query_length: val.length });
       lastJuzSurahTapped = null;
+      cameFromMultiResult = false;
+      jelajahiMultiResults = null;
       fetchJelajahi(val, null);
     }
   };
@@ -1973,6 +2083,18 @@ function initJelajahiSearch() {
   });
 
   submitBtn.addEventListener('click', triggerSearch);
+
+  // Example chip click handlers
+  document.querySelectorAll('#jelajahi-chips .jelajahi-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const query = chip.dataset.query;
+      input.value = query;
+      clearBtn.classList.remove('hidden');
+      submitBtn.classList.remove('hidden');
+      logEvent('jelajahi_chip_tapped', { query });
+      triggerSearch();
+    });
+  });
 }
 
 // ── Jelajahi API Call ────────────────────────────────────────────────────────
@@ -2006,6 +2128,14 @@ async function fetchJelajahi(queryText, presetIntent) {
       switchView('jelajahi-view');
       // Render inline surah list similar to juz amma
       showJuzSurahList();
+      return;
+    }
+
+    // Handle multi-result response (user picks from 2-3 suggestions)
+    if (data.type === 'multi' && Array.isArray(data.results)) {
+      stopLoadingSteps();
+      switchView('jelajahi-view');
+      showMultiResults(data.results);
       return;
     }
 
@@ -2140,7 +2270,12 @@ function scrollCarouselTo(index) {
 // Verses-view back button → return to mode parent (or expanded card / juz list)
 document.getElementById('back-btn').addEventListener('click', () => {
   if (currentMode === 'jelajahi') {
-    if (lastJuzSurahTapped) {
+    if (cameFromMultiResult && jelajahiMultiResults) {
+      // Go back to multi-result selection
+      cameFromMultiResult = false;
+      switchView('jelajahi-view');
+      setTimeout(() => showMultiResults(jelajahiMultiResults), 50);
+    } else if (lastJuzSurahTapped) {
       // Go back to juz surah list
       switchView('jelajahi-view');
       setTimeout(() => showJuzSurahList(), 50);
@@ -2168,10 +2303,12 @@ document.getElementById('panduan-back-btn').addEventListener('click', () => {
   }
 });
 
-// Jelajahi back → landing (or close juz surah list)
+// Jelajahi back → landing (or close juz surah list / multi results)
 document.getElementById('jelajahi-back-btn').addEventListener('click', () => {
   if (juzSurahListVisible) {
     hideJuzSurahList();
+  } else if (document.getElementById('jelajahi-multi') && !document.getElementById('jelajahi-multi').classList.contains('hidden')) {
+    hideMultiResults();
   } else {
     switchView('landing-view');
   }
@@ -2228,6 +2365,7 @@ initLandingCarousel();
 renderEmotionCards();
 renderPanduanCards();
 renderJelajahiCards();
+renderSurahBrowser();
 initSearch();
 initPanduanSearch();
 initJelajahiSearch();

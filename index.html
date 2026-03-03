@@ -232,7 +232,7 @@
       <header class="header">
         <div class="hero hero-jelajahi">
           <p class="hero-ornament">✦ &nbsp;JELAJAHI AL-QUR'AN&nbsp; ✦</p>
-          <h1 class="hero-title">Baca dan telusuri<br/><span>ayat Al-Qur'an</span></h1>
+          <h1 class="hero-title">Baca ayat di surat<br/><span>pilihanmu</span></h1>
         </div>
         <div class="hero-wave"></div>
       </header>
@@ -243,7 +243,7 @@
           <textarea
             id="jelajahi-input"
             class="search-textarea"
-            placeholder="Cari surah, ayat, atau juz..."
+            placeholder="Cari surat yang ingin kamu baca..."
             autocomplete="off"
             rows="2"
           ></textarea>
@@ -259,11 +259,27 @@
         </button>
       </div>
 
+      <!-- Helper text + Example chips -->
+      <p class="jelajahi-helper">Ketik nama surat, nomor, ciri-ciri, atau bahkan jika tidak yakin ejaannya &mdash; kami bantu carikan.</p>
+      <div class="jelajahi-chips" id="jelajahi-chips">
+        <button class="jelajahi-chip" data-query="Yasin">Yasin</button>
+        <button class="jelajahi-chip" data-query="Surat tentang Maryam">Surat tentang Maryam</button>
+        <button class="jelajahi-chip" data-query="Surat ke-36">Surat ke-36</button>
+        <button class="jelajahi-chip" data-query="Juz 30">Juz 30</button>
+      </div>
+
       <!-- Jelajahi Preset Grid -->
       <div class="home-content">
-        <p class="search-divider"><span>atau pilih surah populer</span></p>
+        <p class="search-divider"><span>SURAH POPULER</span></p>
         <div id="jelajahi-grid" class="jelajahi-grid"></div>
+
+        <!-- Full 114-surah browser -->
+        <p class="search-divider"><span>ATAU PILIH SENDIRI</span></p>
+        <div id="surah-browser" class="surah-browser"></div>
       </div>
+
+      <!-- Multi-result selection (rendered by JS) -->
+      <div id="jelajahi-multi" class="jelajahi-multi hidden"></div>
 
       <!-- Juz Amma surah list (rendered by JS) -->
       <div id="juz-surah-list" class="juz-surah-list hidden"></div>

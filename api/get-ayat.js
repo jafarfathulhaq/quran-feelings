@@ -319,9 +319,14 @@ const makeHyDE_need = (need) =>
   'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
 
 // ── Jelajahi Intent Parser Prompt ─────────────────────────────────────────────
-const PROMPT_JELAJAHI_INTENT = `You are a Quran reference parser. Given a user's natural language input in Indonesian or Arabic, extract their intent into structured JSON.
+const PROMPT_JELAJAHI_INTENT = `You are a Quran surah finder for the TemuQuran app. Given a user's input in Indonesian, Arabic, or English, identify which surah(s) they want to read.
 
-Return ONLY valid JSON with this shape:
+COMPLETE SURAH LIST (number:name(verse_count)):
+1:Al-Fatihah(7) 2:Al-Baqarah(286) 3:Ali Imran(200) 4:An-Nisa(176) 5:Al-Ma'idah(120) 6:Al-An'am(165) 7:Al-A'raf(206) 8:Al-Anfal(75) 9:At-Taubah(129) 10:Yunus(109) 11:Hud(123) 12:Yusuf(111) 13:Ar-Ra'd(43) 14:Ibrahim(52) 15:Al-Hijr(99) 16:An-Nahl(128) 17:Al-Isra'(111) 18:Al-Kahf(110) 19:Maryam(98) 20:Ta Ha(135) 21:Al-Anbiya(112) 22:Al-Hajj(78) 23:Al-Mu'minun(118) 24:An-Nur(64) 25:Al-Furqan(77) 26:Asy-Syu'ara'(227) 27:An-Naml(93) 28:Al-Qasas(88) 29:Al-'Ankabut(69) 30:Ar-Rum(60) 31:Luqman(34) 32:As-Sajdah(30) 33:Al-Ahzab(73) 34:Saba'(54) 35:Fatir(45) 36:Ya Sin(83) 37:As-Saffat(182) 38:Sad(88) 39:Az-Zumar(75) 40:Ghafir(85) 41:Fussilat(54) 42:Asy-Syura(53) 43:Az-Zukhruf(89) 44:Ad-Dukhan(59) 45:Al-Jasiyah(37) 46:Al-Ahqaf(35) 47:Muhammad(38) 48:Al-Fath(29) 49:Al-Hujurat(18) 50:Qaf(45) 51:Az-Zariyat(60) 52:At-Tur(49) 53:An-Najm(62) 54:Al-Qamar(55) 55:Ar-Rahman(78) 56:Al-Waqi'ah(96) 57:Al-Hadid(29) 58:Al-Mujadilah(22) 59:Al-Hasyr(24) 60:Al-Mumtahanah(13) 61:As-Saff(14) 62:Al-Jumu'ah(11) 63:Al-Munafiqun(11) 64:At-Tagabun(18) 65:At-Talaq(12) 66:At-Tahrim(12) 67:Al-Mulk(30) 68:Al-Qalam(52) 69:Al-Haqqah(52) 70:Al-Ma'arij(44) 71:Nuh(28) 72:Al-Jinn(28) 73:Al-Muzzammil(20) 74:Al-Muddassir(56) 75:Al-Qiyamah(40) 76:Al-Insan(31) 77:Al-Mursalat(50) 78:An-Naba'(40) 79:An-Nazi'at(46) 80:'Abasa(42) 81:At-Takwir(29) 82:Al-Infitar(19) 83:Al-Mutaffifin(36) 84:Al-Insyiqaq(25) 85:Al-Buruj(22) 86:At-Tariq(17) 87:Al-A'la(19) 88:Al-Gasyiyah(26) 89:Al-Fajr(30) 90:Al-Balad(20) 91:Asy-Syams(15) 92:Al-Lail(21) 93:Ad-Duha(11) 94:Al-Insyirah(8) 95:At-Tin(8) 96:Al-'Alaq(19) 97:Al-Qadr(5) 98:Al-Bayyinah(8) 99:Az-Zalzalah(8) 100:Al-'Adiyat(11) 101:Al-Qari'ah(11) 102:At-Takasur(8) 103:Al-'Asr(3) 104:Al-Humazah(9) 105:Al-Fil(5) 106:Quraisy(4) 107:Al-Ma'un(7) 108:Al-Kausar(3) 109:Al-Kafirun(6) 110:An-Nasr(3) 111:Al-Lahab(5) 112:Al-Ikhlas(4) 113:Al-Falaq(5) 114:An-Nas(6)
+
+Return ONLY valid JSON. Two possible shapes:
+
+SHAPE 1 — Single result (when intent is clear):
 {
   "type": "surah" | "ayat" | "ayat_range" | "juz" | "famous_ayat",
   "surah": <number 1-114 or null>,
@@ -331,16 +336,38 @@ Return ONLY valid JSON with this shape:
   "surah_name": "<name for display>"
 }
 
+SHAPE 2 — Multiple results (when query is descriptive/ambiguous, return 2-3 best matches):
+{
+  "type": "multi",
+  "results": [
+    { "surah": <number>, "name": "<surah name>", "verse_count": <number>, "reason": "<short Indonesian reason>" }
+  ]
+}
+
+Use "multi" when user describes a theme/topic/characteristic that matches multiple surahs.
+Use single result when user types a specific surah name (even with typos), specific ayat, or juz.
+
+INSTRUCTIONS:
+- Match user input to the closest surah(s) from the list above
+- Handle typos and transliteration variants (e.g. "yasiin"→Ya Sin, "ar rohman"→Ar-Rahman, "al bakara"→Al-Baqarah)
+- Handle descriptions like "surat tentang Maryam" → Maryam (19)
+- Handle characteristics like "surat yang pendek buat sholat" → multi with 2-3 short surahs
+- Handle cultural references like "surat yang dibaca malam Jumat" → Al-Kahf (18)
+- Handle specific ayat references like "al baqarah ayat 255" → surah 2, ayah 255
+- Handle juz references like "juz 30" → juz type
+
 Examples:
 - "surat yasin" → { "type": "surah", "surah": 36, "surah_name": "Ya Sin" }
+- "yasiin" → { "type": "surah", "surah": 36, "surah_name": "Ya Sin" }
+- "ar rohman" → { "type": "surah", "surah": 55, "surah_name": "Ar-Rahman" }
 - "al baqarah ayat 255" → { "type": "ayat", "surah": 2, "ayah_start": 255, "ayah_end": 255, "surah_name": "Al-Baqarah" }
 - "al baqarah 255-260" → { "type": "ayat_range", "surah": 2, "ayah_start": 255, "ayah_end": 260, "surah_name": "Al-Baqarah" }
 - "juz 30" → { "type": "juz", "juz": 30, "surah_name": "Juz 30" }
 - "ayatul kursi" → { "type": "famous_ayat", "surah": 2, "ayah_start": 255, "ayah_end": 255, "surah_name": "Al-Baqarah" }
 - "surat yang dibaca malam jumat" → { "type": "surah", "surah": 18, "surah_name": "Al-Kahf" }
-- "al fatihah" → { "type": "surah", "surah": 1, "surah_name": "Al-Fatihah" }
-- "an nas" → { "type": "surah", "surah": 114, "surah_name": "An-Nas" }
 - "3 ayat terakhir al baqarah" → { "type": "ayat_range", "surah": 2, "ayah_start": 284, "ayah_end": 286, "surah_name": "Al-Baqarah" }
+- "surat pendek untuk pemula" → { "type": "multi", "results": [{ "surah": 112, "name": "Al-Ikhlas", "verse_count": 4, "reason": "Surat pendek tentang tauhid, cocok untuk pemula" }, { "surah": 113, "name": "Al-Falaq", "verse_count": 5, "reason": "Surat pendek untuk perlindungan" }, { "surah": 114, "name": "An-Nas", "verse_count": 6, "reason": "Surat pendek untuk berlindung dari godaan" }] }
+- "surat tentang kesabaran" → { "type": "multi", "results": [{ "surah": 12, "name": "Yusuf", "verse_count": 111, "reason": "Kisah kesabaran Nabi Yusuf" }, { "surah": 103, "name": "Al-'Asr", "verse_count": 3, "reason": "Wasiat untuk saling menasihati kesabaran" }] }
 
 If the input is not a valid Quran reference, return:
 { "type": "unknown", "error": "Tidak bisa memahami permintaan. Coba ketik nama surah atau ayat." }`;
@@ -901,7 +928,7 @@ async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) 
             { role: 'user',   content: feeling.trim() },
           ],
           response_format: { type: 'json_object' },
-          max_tokens:      150,
+          max_tokens:      300,
           temperature:     0.1,
         }),
       });
@@ -928,7 +955,24 @@ async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) 
     }
   }
 
-  // ── B: Build cache key from parsed intent ──────────────────────────────────
+  // ── B: Handle multi-result response (2-3 suggested surahs) ─────────────────
+  if (intent.type === 'multi' && Array.isArray(intent.results)) {
+    const multiPayload = {
+      mode: 'jelajahi',
+      type: 'multi',
+      results: intent.results.map(r => ({
+        surah:       r.surah,
+        name:        r.name,
+        verse_count: r.verse_count,
+        reason:      r.reason,
+      })),
+    };
+    const multiCacheKey = `jelajahi:query:${feeling.trim().replace(/\s+/g, ' ').toLowerCase()}`;
+    setCached(multiCacheKey, multiPayload, JELAJAHI_CACHE_TTL);
+    return res.status(200).json(multiPayload);
+  }
+
+  // ── C: Build cache key from parsed intent ──────────────────────────────────
   const intentCacheKey = intent.type === 'juz'
     ? `jelajahi:juz:${intent.juz}`
     : `jelajahi:${intent.type}:${intent.surah}:${intent.ayah_start || 'all'}`;
