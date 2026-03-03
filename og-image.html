@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=1200" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,167 +14,96 @@
       height: 630px;
       overflow: hidden;
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #0E2A1A 0%, #1A3D2B 40%, #2D6A4F 100%);
-      position: relative;
+      background: #F8F8FA;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-    }
-
-    /* ── Decorative circles ── */
-    .deco-circle {
-      position: absolute;
-      border-radius: 50%;
-      border: 1px solid rgba(201, 168, 76, 0.15);
-    }
-    .deco-circle-1 { width: 520px; height: 520px; top: -160px; right: -160px; }
-    .deco-circle-2 { width: 340px; height: 340px; top: -80px;  right: -80px;  border-color: rgba(201,168,76,0.10); }
-    .deco-circle-3 { width: 640px; height: 640px; bottom: -260px; left: -200px; }
-    .deco-circle-4 { width: 420px; height: 420px; bottom: -160px; left: -100px; border-color: rgba(201,168,76,0.10); }
-
-    /* ── Subtle dot grid ── */
-    .dot-grid {
-      position: absolute;
-      inset: 0;
-      background-image: radial-gradient(circle, rgba(201,168,76,0.12) 1px, transparent 1px);
-      background-size: 36px 36px;
-    }
-
-    /* ── Main card ── */
-    .card {
       position: relative;
-      z-index: 10;
-      width: 900px;
+    }
+
+    /* ── Content wrapper ── */
+    .content {
       text-align: center;
-      padding: 0 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
     }
 
-    /* ── Top ornament ── */
-    .ornament {
+    /* ── Headline ── */
+    .headline {
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 28px;
+    }
+    .headline-top {
+      color: #1A1A1A;
+      display: block;
+    }
+    .headline-bottom {
+      color: #2A7C6F;
+      display: block;
+    }
+
+    /* ── Teal divider ── */
+    .divider {
+      width: 36px;
+      height: 2px;
+      background: #2A7C6F;
+      opacity: 0.6;
+      border-radius: 1px;
+      margin-bottom: 32px;
+    }
+
+    /* ── Mode indicators ── */
+    .modes {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 36px;
+      gap: 40px;
+      margin-bottom: 52px;
     }
-    .ornament-line {
-      width: 80px;
-      height: 1px;
-      background: linear-gradient(to right, transparent, #C9A84C);
-    }
-    .ornament-line.right {
-      background: linear-gradient(to left, transparent, #C9A84C);
-    }
-    .ornament-star {
-      color: #C9A84C;
-      font-size: 22px;
-      letter-spacing: 10px;
-    }
-
-    /* ── Arabic ── */
-    .arabic-text {
-      font-family: 'Amiri', serif;
-      font-size: 32px;
-      color: rgba(201, 168, 76, 0.75);
-      margin-bottom: 28px;
-      line-height: 1.5;
-      direction: rtl;
-    }
-
-    /* ── Title ── */
-    .title {
-      font-size: 64px;
-      font-weight: 700;
-      color: #FFFFFF;
-      letter-spacing: -1.5px;
-      line-height: 1.1;
-      margin-bottom: 20px;
-    }
-    .title-highlight {
-      color: #C9A84C;
-    }
-
-    /* ── Gold divider ── */
-    .divider {
-      width: 60px;
-      height: 3px;
-      background: #C9A84C;
-      border-radius: 2px;
-      margin: 24px auto 24px;
-    }
-
-    /* ── Subtitle ── */
-    .subtitle {
-      font-size: 22px;
+    .mode {
+      font-size: 18px;
+      color: #8E8E93;
       font-weight: 400;
-      color: rgba(255,255,255,0.70);
-      line-height: 1.6;
-      max-width: 600px;
-      margin: 0 auto 44px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-emoji {
+      font-size: 20px;
     }
 
-    /* ── URL pill ── */
-    .url-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(201,168,76,0.30);
-      border-radius: 100px;
-      padding: 10px 24px;
-      color: rgba(255,255,255,0.55);
-      font-size: 16px;
-      font-weight: 500;
-      letter-spacing: 0.3px;
-    }
-    .url-dot {
-      width: 6px;
-      height: 6px;
-      background: #C9A84C;
-      border-radius: 50%;
+    /* ── Branding footer ── */
+    .branding {
+      font-size: 24px;
+      font-weight: 600;
+      color: #AAAAAA;
+      position: absolute;
+      bottom: 52px;
+      left: 50%;
+      transform: translateX(-50%);
     }
   </style>
 </head>
 <body>
-  <!-- Decorative circles -->
-  <div class="deco-circle deco-circle-1"></div>
-  <div class="deco-circle deco-circle-2"></div>
-  <div class="deco-circle deco-circle-3"></div>
-  <div class="deco-circle deco-circle-4"></div>
-
-  <!-- Dot grid overlay -->
-  <div class="dot-grid"></div>
-
-  <!-- Main content -->
-  <div class="card">
-    <!-- Top ornament -->
-    <div class="ornament">
-      <div class="ornament-line"></div>
-      <div class="ornament-star">✦ ✦ ✦</div>
-      <div class="ornament-line right"></div>
+  <div class="content">
+    <div class="headline">
+      <span class="headline-top">Temukan dalam</span>
+      <span class="headline-bottom">Al-Qur'an</span>
     </div>
 
-    <!-- Arabic tagline -->
-    <div class="arabic-text">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-
-    <!-- App title -->
-    <div class="title">
-      Curhat &amp; <span class="title-highlight">Temukan Ayat</span>
-    </div>
-
-    <!-- Divider -->
     <div class="divider"></div>
 
-    <!-- Subtitle -->
-    <div class="subtitle">
-      Biarkan firman Allah menuntunmu melalui apa yang kamu rasakan
-    </div>
-
-    <!-- URL -->
-    <div class="url-pill">
-      <div class="url-dot"></div>
-      quran-feelings.vercel.app
+    <div class="modes">
+      <span class="mode"><span class="mode-emoji">🤲</span> Curhat</span>
+      <span class="mode"><span class="mode-emoji">📖</span> Panduan</span>
+      <span class="mode"><span class="mode-emoji">📜</span> Jelajahi</span>
     </div>
   </div>
+
+  <div class="branding">TemuQuran.com</div>
 </body>
 </html>

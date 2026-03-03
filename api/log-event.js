@@ -28,6 +28,9 @@ const VALID_EVENTS = new Set([
   'jelajahi_preset',
   'jelajahi_search',
   'jelajahi_juz_surah_selected',
+  'share_sheet_opened',
+  'share_theme_selected',
+  'share_completed',
 ]);
 
 module.exports = async function handler(req, res) {

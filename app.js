@@ -42,6 +42,13 @@ let expandedCardId    = null;  // panduan card ID currently expanded, or null
 let currentCardIndex  = 0;     // carousel active slide index
 let totalVerseCards   = 0;     // total slides (intro + verses)
 
+// ── Share sheet state ──────────────────────────────────────────────────────
+let shareTheme           = 'light';   // 'light', 'dark', 'classic'
+let shareIncludeQuestion = false;
+let shareIncludeTafsir   = false;
+let shareActiveVerse     = null;      // verse object being shared
+let shareLastPlatform    = 'wa_chat'; // last selected platform (for preview aspect ratio)
+
 // ── Bismillah Handling ───────────────────────────────────────────────────────
 // In the DB, verse 1 of every surah (except At-Tawbah/9) includes the
 // Bismillah as a prefix.  For Jelajahi we strip it from verse 1 and
@@ -441,67 +448,248 @@ function loadHtml2Canvas() {
   return _h2cPromise;
 }
 
-// ── Share as Image ─────────────────────────────────────────────────────────────
+// ── Share Sheet ────────────────────────────────────────────────────────────────
 
-async function generateShareImage(verse) {
+// Theme config for share image backgrounds (used by html2canvas)
+const SHARE_THEME_BG = { light: '#FFFFFF', dark: '#1A1D2E', classic: '#F5EFE0' };
+
+// Build the off-screen share image HTML element
+function buildShareElement(verse, options) {
+  const { theme, width, height, includeQuestion, includeTafsir } = options;
+  const el = document.createElement('div');
+  el.className = `si-wrap si-theme-${theme}`;
+  el.style.width  = width + 'px';
+  el.style.height = height + 'px';
+  el.style.position = 'absolute';
+  el.style.left = '-9999px';
+
+  // Build content
+  let html = '';
+
+  // Optional question
+  if (includeQuestion && verse._userQuestion) {
+    html += `<p class="si-question">"${escapeHtml(verse._userQuestion)}"</p>`;
+  }
+
+  // Arabic text
+  html += `<p class="si-arabic">${verse.arabic}</p>`;
+
+  // Translation
+  html += `<p class="si-translation">"${escapeHtml(verse.translation)}"</p>`;
+
+  // Surah reference
+  html += `<span class="si-ref">${escapeHtml(verse.ref)}</span>`;
+
+  // Optional tafsir (truncated)
+  if (includeTafsir) {
+    const tafsirText = verse.tafsir_kemenag || verse.tafsir_summary || '';
+    if (tafsirText) {
+      const truncated = tafsirText.length > 100 ? tafsirText.slice(0, 100) + '...' : tafsirText;
+      html += `<p class="si-tafsir">${escapeHtml(truncated)}</p>`;
+    }
+  }
+
+  // Branding footer
+  html += `
+    <div class="si-footer">
+      <div class="si-footer-divider"></div>
+      <span class="si-footer-brand">TemuQuran.com</span>
+    </div>
+  `;
+
+  el.innerHTML = html;
+  return el;
+}
+
+// Get dimensions for a platform
+function getShareDimensions(platform) {
+  if (platform === 'ig_story' || platform === 'wa_status') {
+    return { width: 1080, height: 1920 }; // 9:16
+  }
+  return { width: 1080, height: 1080 }; // 1:1
+}
+
+// Generate the share image blob
+async function generateShareImage(verse, platform) {
   await loadHtml2Canvas();
-  // Populate the off-screen share card
-  document.getElementById('sc-arabic').textContent      = verse.arabic;
-  document.getElementById('sc-translation').textContent = `"${verse.translation}"`;
-  document.getElementById('sc-ref').textContent         = verse.ref;
-  document.getElementById('sc-url').textContent         = window.location.hostname;
 
-  // Ensure fonts are fully loaded before capturing
+  const dims = getShareDimensions(platform);
+  const el = buildShareElement(verse, {
+    theme:           shareTheme,
+    width:           dims.width / 2, // render at half-size, html2canvas scale: 2 → full res
+    height:          dims.height / 2,
+    includeQuestion: shareIncludeQuestion,
+    includeTafsir:   shareIncludeTafsir,
+  });
+
+  const container = document.getElementById('share-render');
+  container.appendChild(el);
+
+  // Ensure fonts loaded
   await document.fonts.load('400 34px Amiri');
   await document.fonts.ready;
 
-  const card = document.getElementById('share-card');
-  const canvas = await html2canvas(card, {
-    scale:           2,       // 2x → 1080px output for retina/high-DPI
+  const canvas = await html2canvas(el, {
+    scale:           2,
     useCORS:         true,
-    backgroundColor: '#1A3D2B',
+    backgroundColor: SHARE_THEME_BG[shareTheme],
     logging:         false,
   });
+
+  container.removeChild(el);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
   );
 }
 
-async function shareVerse(verse) {
-  // In-app browsers block both navigator.share({files}) and blob URL downloads.
-  // Show a clear instruction instead of silently failing.
-  logEvent('verse_shared', { surah_name: verse.surah_name });
+// Open the share bottom sheet
+function openShareSheet(verse) {
+  shareActiveVerse = verse;
+
+  // Attach user question from current feeling text (for curhat/panduan modes)
+  if (currentMode !== 'jelajahi' && currentFeeling) {
+    verse._userQuestion = currentFeeling;
+  }
+
+  logEvent('share_sheet_opened', { mode: currentMode, card_index: currentCardIndex });
+
+  const overlay = document.getElementById('share-overlay');
+  const sheet   = document.getElementById('share-sheet');
+
+  // Show/hide question toggle based on mode
+  const qToggle = document.getElementById('share-toggle-question');
+  if (currentMode === 'jelajahi' || !currentFeeling) {
+    qToggle.style.display = 'none';
+  } else {
+    qToggle.style.display = '';
+  }
+
+  // Reset toggles
+  document.getElementById('share-include-question').checked = false;
+  document.getElementById('share-include-tafsir').checked   = false;
+  shareIncludeQuestion = false;
+  shareIncludeTafsir   = false;
+
+  // Reset theme to light
+  shareTheme = 'light';
+  document.querySelectorAll('.theme-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.theme === 'light');
+  });
+
+  // Reset preview aspect ratio
+  const preview = document.getElementById('share-preview');
+  preview.classList.remove('ratio-story');
+
+  // Show sheet
+  overlay.classList.remove('hidden');
+  sheet.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    overlay.classList.add('visible');
+    sheet.classList.add('visible');
+  });
+
+  // Render initial preview
+  updateSharePreview();
+}
+
+// Close the share bottom sheet
+function closeShareSheet() {
+  const overlay = document.getElementById('share-overlay');
+  const sheet   = document.getElementById('share-sheet');
+
+  overlay.classList.remove('visible');
+  sheet.classList.remove('visible');
+
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    sheet.classList.add('hidden');
+    overlay.setAttribute('aria-hidden', 'true');
+    sheet.setAttribute('aria-hidden', 'true');
+  }, 300);
+
+  shareActiveVerse = null;
+}
+
+// Update the live preview thumbnail (CSS-styled, not canvas)
+function updateSharePreview() {
+  if (!shareActiveVerse) return;
+  const verse   = shareActiveVerse;
+  const preview = document.getElementById('share-preview');
+
+  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;">`;
+
+  if (shareIncludeQuestion && verse._userQuestion && currentMode !== 'jelajahi') {
+    html += `<p class="si-question" style="font-size:10px;">"${escapeHtml(verse._userQuestion)}"</p>`;
+  }
+
+  // Arabic (smaller for preview)
+  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:12px;">${verse.arabic}</p>`;
+
+  // Translation
+  const shortTrans = verse.translation.length > 80
+    ? verse.translation.slice(0, 80) + '...'
+    : verse.translation;
+  html += `<p class="si-translation" style="font-size:10px;line-height:1.6;margin-bottom:10px;">"${escapeHtml(shortTrans)}"</p>`;
+
+  // Ref
+  html += `<span class="si-ref" style="font-size:8px;padding:4px 10px;">${escapeHtml(verse.ref)}</span>`;
+
+  // Tafsir
+  if (shareIncludeTafsir) {
+    const tafsirText = verse.tafsir_kemenag || verse.tafsir_summary || '';
+    if (tafsirText) {
+      const t = tafsirText.length > 60 ? tafsirText.slice(0, 60) + '...' : tafsirText;
+      html += `<p class="si-tafsir" style="font-size:8px;line-height:1.5;">${escapeHtml(t)}</p>`;
+    }
+  }
+
+  // Footer
+  html += `
+    <div class="si-footer">
+      <div class="si-footer-divider"></div>
+      <span class="si-footer-brand" style="font-size:10px;">TemuQuran.com</span>
+    </div>
+  `;
+
+  html += '</div>';
+  preview.innerHTML = html;
+}
+
+// Share to a platform
+async function shareToPlatform(platform) {
+  if (!shareActiveVerse) return;
 
   if (IS_IN_APP_BROWSER) {
     showToast('Buka di Chrome/Safari untuk berbagi gambar 🌐');
     return;
   }
 
+  logEvent('share_completed', {
+    platform,
+    theme: shareTheme,
+    include_question: shareIncludeQuestion,
+    include_tafsir: shareIncludeTafsir,
+  });
+
   showToast('Membuat gambar...');
 
   let blob = null;
   try {
-    blob = await generateShareImage(verse);
+    blob = await generateShareImage(shareActiveVerse, platform);
   } catch (imgErr) {
-    console.warn('Image generation failed, falling back to text:', imgErr);
+    console.warn('Image generation failed:', imgErr);
+    showToast('Gagal membuat gambar. Coba lagi.');
+    return;
   }
 
-  if (blob) {
-    const safeName = verse.ref.replace(/[^a-zA-Z0-9]/g, '-');
-    const file     = new File([blob], `${safeName}.png`, { type: 'image/png' });
+  if (!blob) return;
 
-    // 1. Best: share image file (Android Chrome, iOS Safari 15+)
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ title: verse.ref, files: [file] });
-        return;
-      } catch (err) {
-        if (err.name === 'AbortError') return; // user cancelled
-      }
-    }
+  const safeName = shareActiveVerse.ref.replace(/[^a-zA-Z0-9]/g, '-');
+  const file     = new File([blob], `${safeName}.png`, { type: 'image/png' });
 
-    // 2. Fallback: download the PNG
+  if (platform === 'download') {
+    // Direct download
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
@@ -512,19 +700,24 @@ async function shareVerse(verse) {
     return;
   }
 
-  // 3. Last resort: text share → copy
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: verse.ref,
-        text:  `${verse.arabic}\n\n"${verse.translation}"\n\n— ${verse.ref}`,
-      });
-    } else {
-      copyVerse(verse);
+  // IG Story / WA Status / WA Chat → try Web Share API, fall back to download
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ title: shareActiveVerse.ref, files: [file] });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
     }
-  } catch (err) {
-    if (err.name !== 'AbortError') copyVerse(verse);
   }
+
+  // Fallback: download
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = `${safeName}.png`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Gambar tersimpan ✓');
 }
 
 // ── Markdown renderer (for Ibnu Kathir ID — translated + formatted) ───────────
@@ -604,7 +797,7 @@ let activePlayBtn = null;
 function stopCurrentAudio() {
   if (activeAudio)   { activeAudio.pause(); activeAudio = null; }
   if (activePlayBtn) {
-    activePlayBtn.innerHTML = PLAY_ICON + ' Dengarkan';
+    activePlayBtn.innerHTML = PLAY_ICON + ' Dengar Audio';
     activePlayBtn.classList.remove('playing');
     activePlayBtn = null;
   }
@@ -730,15 +923,13 @@ function buildVerseCard(verse, index) {
       ${resonanceHtml}
       ${tafsirHtml}
       ${asbabHtml}
-      <div class="vc-actions">
-        <button class="vc-btn vc-audio-btn">${PLAY_ICON} Dengarkan</button>
-        <button class="vc-btn vc-share-btn">${SHARE_ICON} Bagikan</button>
-      </div>
+      <button class="vc-share-btn-full">Bagikan Gambar Ayat ini ke Socmed / WA</button>
+      <button class="vc-audio-btn-secondary">${PLAY_ICON} Dengar Audio</button>
     </div>
   `;
 
-  card.querySelector('.vc-audio-btn').addEventListener('click',  e => playAudio(verse, e.currentTarget));
-  card.querySelector('.vc-share-btn').addEventListener('click',  () => shareVerse(verse));
+  card.querySelector('.vc-audio-btn-secondary').addEventListener('click', e => playAudio(verse, e.currentTarget));
+  card.querySelector('.vc-share-btn-full').addEventListener('click', () => openShareSheet(verse));
 
   // ── Tafsir accordion toggle ──────────────────────────────────────────────
   const tafsirToggle = card.querySelector('.vc-tafsir-toggle');
@@ -2002,6 +2193,50 @@ document.getElementById('verse-prev').addEventListener('click', () => {
 });
 document.getElementById('verse-next').addEventListener('click', () => {
   if (currentCardIndex < totalVerseCards - 1) scrollCarouselTo(currentCardIndex + 1);
+});
+
+// ── Share Sheet Event Listeners ────────────────────────────────────────────────
+
+// Close sheet on overlay tap
+document.getElementById('share-overlay').addEventListener('click', closeShareSheet);
+
+// Theme picker
+document.getElementById('share-theme-picker').addEventListener('click', e => {
+  const pill = e.target.closest('.theme-pill');
+  if (!pill) return;
+  shareTheme = pill.dataset.theme;
+  document.querySelectorAll('.theme-pill').forEach(p => p.classList.toggle('active', p === pill));
+  logEvent('share_theme_selected', { theme: shareTheme });
+  updateSharePreview();
+});
+
+// Content toggles
+document.getElementById('share-include-question').addEventListener('change', e => {
+  shareIncludeQuestion = e.target.checked;
+  updateSharePreview();
+});
+document.getElementById('share-include-tafsir').addEventListener('change', e => {
+  shareIncludeTafsir = e.target.checked;
+  updateSharePreview();
+});
+
+// Platform buttons
+document.querySelectorAll('.share-platform-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const platform = btn.dataset.platform;
+    shareLastPlatform = platform;
+
+    // Update preview aspect ratio
+    const preview = document.getElementById('share-preview');
+    if (platform === 'ig_story' || platform === 'wa_status') {
+      preview.classList.add('ratio-story');
+    } else {
+      preview.classList.remove('ratio-story');
+    }
+    updateSharePreview();
+
+    shareToPlatform(platform);
+  });
 });
 
 initLandingCarousel();
