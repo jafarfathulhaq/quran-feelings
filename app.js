@@ -1269,26 +1269,16 @@ function selectMode(mode) {
   switchView(mode === 'panduan' ? 'panduan-view' : 'selection-view');
 }
 
-// ── Landing Carousel Dots ────────────────────────────────────────────────
+// ── Landing Card Clicks ─────────────────────────────────────────────────
 
 function initLandingCarousel() {
-  const carousel = document.getElementById('landing-carousel');
-  const dots     = document.querySelectorAll('#landing-dots .dot');
-  if (!carousel || dots.length < 2) return;
+  const container = document.getElementById('landing-cards');
+  if (!container) return;
 
   // Card click → selectMode
-  carousel.querySelectorAll('.landing-card').forEach(card => {
+  container.querySelectorAll('.landing-card').forEach(card => {
     card.addEventListener('click', () => selectMode(card.dataset.mode));
   });
-
-  // Update dots on scroll
-  carousel.addEventListener('scroll', () => {
-    const scrollLeft   = carousel.scrollLeft;
-    const cardWidth    = carousel.querySelector('.landing-card').offsetWidth;
-    const gap          = 12;
-    const activeIndex  = Math.round(scrollLeft / (cardWidth + gap));
-    dots.forEach((d, i) => d.classList.toggle('active', i === activeIndex));
-  }, { passive: true });
 }
 
 // ── Sub-Questions Drill-Down ─────────────────────────────────────────────────

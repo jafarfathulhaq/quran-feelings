@@ -21,6 +21,13 @@
   --shadow-card: 0 4px 20px rgba(10,15,30,0.08), 0 1px 4px rgba(10,15,30,0.05);
   --radius:     20px;
   --radius-sm:  14px;
+
+  /* Landing polish */
+  --bg-landing:     #F8F8FA;
+  --shadow-rest:    0 1px 3px rgba(0,0,0,0.04), 0 4px 14px rgba(0,0,0,0.06);
+  --shadow-hover:   0 2px 8px rgba(0,0,0,0.06), 0 8px 28px rgba(0,0,0,0.10);
+  --shadow-pressed: 0 1px 2px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+  --radius-lg:      18px;
 }
 
 html { scroll-behavior: smooth; }
@@ -51,108 +58,141 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════
-   LANDING VIEW — Mode Selection Carousel
+   LANDING VIEW — Apple-Minimal Stacked Cards
 ════════════════════════════════════════════════════════ */
+
+#landing-view {
+  background: var(--bg-landing);
+}
 
 .landing-header {
   text-align: center;
-  padding: 2.5rem 1rem 0;
+  padding: 48px 1rem 0;
+  animation: fadeInUp 0.5s ease-out 0.1s both;
 }
 
 .landing-headline {
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-size: 1.875rem;
+  font-weight: 700;
   color: var(--text-dark);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .landing-headline .highlight {
   color: var(--teal-dark);
 }
 
 .landing-divider {
-  width: 40px;
+  width: 36px;
   height: 2px;
   background: var(--teal-dark);
-  margin: 12px auto 24px;
+  margin: 14px auto 0;
+  border: none;
+  border-radius: 2px;
+  opacity: 0.6;
 }
 
-.landing-carousel {
+/* ── Stacked Card Container ─────────────────────────── */
+.landing-cards {
   display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  gap: 12px;
-  padding: 1rem 7.5%;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 20px 0;
 }
 
-.landing-carousel::-webkit-scrollbar {
-  display: none;
-}
-
+/* ── Card — borderless, shadow-depth ────────────────── */
 .landing-card {
-  flex: 0 0 85%;
-  scroll-snap-align: center;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-  padding: 2rem 1.5rem;
-  text-align: center;
+  background: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-rest);
+  padding: 28px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  text-align: left;
+  width: 100%;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
   font-family: 'Inter', sans-serif;
-}
-
-.landing-card:active {
-  transform: scale(0.97);
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .landing-card:hover {
-  box-shadow: 0 8px 32px rgba(10,15,30,0.14);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
 }
 
-.landing-card-emoji {
-  font-size: 2.5rem;
-  display: block;
-  margin-bottom: 0.75rem;
+.landing-card:active {
+  box-shadow: var(--shadow-pressed);
+  transform: scale(0.98);
+}
+
+/* Staggered entrance */
+.landing-card:first-child {
+  animation: fadeInUp 0.5s ease-out 0.2s both;
+}
+.landing-card:last-child {
+  animation: fadeInUp 0.5s ease-out 0.3s both;
+}
+
+/* ── Emoji Icon Circle ──────────────────────────────── */
+.landing-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.landing-card-icon.curhat {
+  background: rgba(42, 124, 111, 0.08);
+}
+
+.landing-card-icon.panduan {
+  background: rgba(196, 152, 59, 0.08);
+}
+
+/* ── Card Text ──────────────────────────────────────── */
+.landing-card-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .landing-card-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.0625rem;
+  font-weight: 600;
   color: var(--text-dark);
+  letter-spacing: -0.01em;
   display: block;
-  margin-bottom: 0.5rem;
 }
 
 .landing-card-desc {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.4;
+  margin-top: 3px;
 }
 
-.landing-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 0.5rem 0 0.75rem;
-}
-
-.landing-dots .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-  transition: background 0.2s ease;
-}
-
-.landing-dots .dot.active {
-  background: var(--gold);
-}
-
+/* ── Verse of the Day ───────────────────────────────── */
 .landing-votd {
   padding: 0 20px 48px;
+  animation: fadeInUp 0.5s ease-out 0.4s both;
+}
+
+/* ── Entrance Animation ─────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Mode Back Button (light background variant) ─────── */
