@@ -25,6 +25,9 @@ const VALID_EVENTS = new Set([
   'sub_question_selected',
   'tulis_sendiri_opened',
   'verse_swiped',
+  'jelajahi_preset',
+  'jelajahi_search',
+  'jelajahi_juz_surah_selected',
 ]);
 
 module.exports = async function handler(req, res) {

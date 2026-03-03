@@ -63,7 +63,8 @@ let _loadingStepTimer = null;
 function startLoadingSteps() {
   const el = document.getElementById('loading-step-text');
   if (!el) return;
-  const steps = currentMode === 'panduan' ? LOADING_STEPS_PANDUAN : LOADING_STEPS_CURHAT;
+  const steps = currentMode === 'jelajahi' ? LOADING_STEPS_JELAJAHI
+    : currentMode === 'panduan' ? LOADING_STEPS_PANDUAN : LOADING_STEPS_CURHAT;
   let i = 0;
   el.textContent = steps[0];
   el.classList.remove('ls-fade');
@@ -242,6 +243,154 @@ const PANDUAN_SUB_QUESTIONS = {
     "Bagaimana mengingat akhirat tanpa melupakan kehidupan dunia?",
   ],
 };
+
+// ── Surah Metadata (114 surahs — hardcoded, never changes) ──────────────────
+const SURAH_META = [
+  { number: 1, name: 'Al-Fatihah', name_arabic: 'الفاتحة', verses: 7, type: 'Makkiyyah' },
+  { number: 2, name: 'Al-Baqarah', name_arabic: 'البقرة', verses: 286, type: 'Madaniyyah' },
+  { number: 3, name: 'Ali Imran', name_arabic: 'آل عمران', verses: 200, type: 'Madaniyyah' },
+  { number: 4, name: 'An-Nisa', name_arabic: 'النساء', verses: 176, type: 'Madaniyyah' },
+  { number: 5, name: 'Al-Ma\'idah', name_arabic: 'المائدة', verses: 120, type: 'Madaniyyah' },
+  { number: 6, name: 'Al-An\'am', name_arabic: 'الأنعام', verses: 165, type: 'Makkiyyah' },
+  { number: 7, name: 'Al-A\'raf', name_arabic: 'الأعراف', verses: 206, type: 'Makkiyyah' },
+  { number: 8, name: 'Al-Anfal', name_arabic: 'الأنفال', verses: 75, type: 'Madaniyyah' },
+  { number: 9, name: 'At-Taubah', name_arabic: 'التوبة', verses: 129, type: 'Madaniyyah' },
+  { number: 10, name: 'Yunus', name_arabic: 'يونس', verses: 109, type: 'Makkiyyah' },
+  { number: 11, name: 'Hud', name_arabic: 'هود', verses: 123, type: 'Makkiyyah' },
+  { number: 12, name: 'Yusuf', name_arabic: 'يوسف', verses: 111, type: 'Makkiyyah' },
+  { number: 13, name: 'Ar-Ra\'d', name_arabic: 'الرعد', verses: 43, type: 'Madaniyyah' },
+  { number: 14, name: 'Ibrahim', name_arabic: 'إبراهيم', verses: 52, type: 'Makkiyyah' },
+  { number: 15, name: 'Al-Hijr', name_arabic: 'الحجر', verses: 99, type: 'Makkiyyah' },
+  { number: 16, name: 'An-Nahl', name_arabic: 'النحل', verses: 128, type: 'Makkiyyah' },
+  { number: 17, name: 'Al-Isra\'', name_arabic: 'الإسراء', verses: 111, type: 'Makkiyyah' },
+  { number: 18, name: 'Al-Kahf', name_arabic: 'الكهف', verses: 110, type: 'Makkiyyah' },
+  { number: 19, name: 'Maryam', name_arabic: 'مريم', verses: 98, type: 'Makkiyyah' },
+  { number: 20, name: 'Ta Ha', name_arabic: 'طه', verses: 135, type: 'Makkiyyah' },
+  { number: 21, name: 'Al-Anbiya', name_arabic: 'الأنبياء', verses: 112, type: 'Makkiyyah' },
+  { number: 22, name: 'Al-Hajj', name_arabic: 'الحج', verses: 78, type: 'Madaniyyah' },
+  { number: 23, name: 'Al-Mu\'minun', name_arabic: 'المؤمنون', verses: 118, type: 'Makkiyyah' },
+  { number: 24, name: 'An-Nur', name_arabic: 'النور', verses: 64, type: 'Madaniyyah' },
+  { number: 25, name: 'Al-Furqan', name_arabic: 'الفرقان', verses: 77, type: 'Makkiyyah' },
+  { number: 26, name: 'Asy-Syu\'ara\'', name_arabic: 'الشعراء', verses: 227, type: 'Makkiyyah' },
+  { number: 27, name: 'An-Naml', name_arabic: 'النمل', verses: 93, type: 'Makkiyyah' },
+  { number: 28, name: 'Al-Qasas', name_arabic: 'القصص', verses: 88, type: 'Makkiyyah' },
+  { number: 29, name: 'Al-\'Ankabut', name_arabic: 'العنكبوت', verses: 69, type: 'Makkiyyah' },
+  { number: 30, name: 'Ar-Rum', name_arabic: 'الروم', verses: 60, type: 'Makkiyyah' },
+  { number: 31, name: 'Luqman', name_arabic: 'لقمان', verses: 34, type: 'Makkiyyah' },
+  { number: 32, name: 'As-Sajdah', name_arabic: 'السجدة', verses: 30, type: 'Makkiyyah' },
+  { number: 33, name: 'Al-Ahzab', name_arabic: 'الأحزاب', verses: 73, type: 'Madaniyyah' },
+  { number: 34, name: 'Saba\'', name_arabic: 'سبأ', verses: 54, type: 'Makkiyyah' },
+  { number: 35, name: 'Fatir', name_arabic: 'فاطر', verses: 45, type: 'Makkiyyah' },
+  { number: 36, name: 'Ya Sin', name_arabic: 'يس', verses: 83, type: 'Makkiyyah' },
+  { number: 37, name: 'As-Saffat', name_arabic: 'الصافات', verses: 182, type: 'Makkiyyah' },
+  { number: 38, name: 'Sad', name_arabic: 'ص', verses: 88, type: 'Makkiyyah' },
+  { number: 39, name: 'Az-Zumar', name_arabic: 'الزمر', verses: 75, type: 'Makkiyyah' },
+  { number: 40, name: 'Ghafir', name_arabic: 'غافر', verses: 85, type: 'Makkiyyah' },
+  { number: 41, name: 'Fussilat', name_arabic: 'فصلت', verses: 54, type: 'Makkiyyah' },
+  { number: 42, name: 'Asy-Syura', name_arabic: 'الشورى', verses: 53, type: 'Makkiyyah' },
+  { number: 43, name: 'Az-Zukhruf', name_arabic: 'الزخرف', verses: 89, type: 'Makkiyyah' },
+  { number: 44, name: 'Ad-Dukhan', name_arabic: 'الدخان', verses: 59, type: 'Makkiyyah' },
+  { number: 45, name: 'Al-Jasiyah', name_arabic: 'الجاثية', verses: 37, type: 'Makkiyyah' },
+  { number: 46, name: 'Al-Ahqaf', name_arabic: 'الأحقاف', verses: 35, type: 'Makkiyyah' },
+  { number: 47, name: 'Muhammad', name_arabic: 'محمد', verses: 38, type: 'Madaniyyah' },
+  { number: 48, name: 'Al-Fath', name_arabic: 'الفتح', verses: 29, type: 'Madaniyyah' },
+  { number: 49, name: 'Al-Hujurat', name_arabic: 'الحجرات', verses: 18, type: 'Madaniyyah' },
+  { number: 50, name: 'Qaf', name_arabic: 'ق', verses: 45, type: 'Makkiyyah' },
+  { number: 51, name: 'Az-Zariyat', name_arabic: 'الذاريات', verses: 60, type: 'Makkiyyah' },
+  { number: 52, name: 'At-Tur', name_arabic: 'الطور', verses: 49, type: 'Makkiyyah' },
+  { number: 53, name: 'An-Najm', name_arabic: 'النجم', verses: 62, type: 'Makkiyyah' },
+  { number: 54, name: 'Al-Qamar', name_arabic: 'القمر', verses: 55, type: 'Makkiyyah' },
+  { number: 55, name: 'Ar-Rahman', name_arabic: 'الرحمن', verses: 78, type: 'Madaniyyah' },
+  { number: 56, name: 'Al-Waqi\'ah', name_arabic: 'الواقعة', verses: 96, type: 'Makkiyyah' },
+  { number: 57, name: 'Al-Hadid', name_arabic: 'الحديد', verses: 29, type: 'Madaniyyah' },
+  { number: 58, name: 'Al-Mujadilah', name_arabic: 'المجادلة', verses: 22, type: 'Madaniyyah' },
+  { number: 59, name: 'Al-Hasyr', name_arabic: 'الحشر', verses: 24, type: 'Madaniyyah' },
+  { number: 60, name: 'Al-Mumtahanah', name_arabic: 'الممتحنة', verses: 13, type: 'Madaniyyah' },
+  { number: 61, name: 'As-Saff', name_arabic: 'الصف', verses: 14, type: 'Madaniyyah' },
+  { number: 62, name: 'Al-Jumu\'ah', name_arabic: 'الجمعة', verses: 11, type: 'Madaniyyah' },
+  { number: 63, name: 'Al-Munafiqun', name_arabic: 'المنافقون', verses: 11, type: 'Madaniyyah' },
+  { number: 64, name: 'At-Tagabun', name_arabic: 'التغابن', verses: 18, type: 'Madaniyyah' },
+  { number: 65, name: 'At-Talaq', name_arabic: 'الطلاق', verses: 12, type: 'Madaniyyah' },
+  { number: 66, name: 'At-Tahrim', name_arabic: 'التحريم', verses: 12, type: 'Madaniyyah' },
+  { number: 67, name: 'Al-Mulk', name_arabic: 'الملك', verses: 30, type: 'Makkiyyah' },
+  { number: 68, name: 'Al-Qalam', name_arabic: 'القلم', verses: 52, type: 'Makkiyyah' },
+  { number: 69, name: 'Al-Haqqah', name_arabic: 'الحاقة', verses: 52, type: 'Makkiyyah' },
+  { number: 70, name: 'Al-Ma\'arij', name_arabic: 'المعارج', verses: 44, type: 'Makkiyyah' },
+  { number: 71, name: 'Nuh', name_arabic: 'نوح', verses: 28, type: 'Makkiyyah' },
+  { number: 72, name: 'Al-Jinn', name_arabic: 'الجن', verses: 28, type: 'Makkiyyah' },
+  { number: 73, name: 'Al-Muzzammil', name_arabic: 'المزمل', verses: 20, type: 'Makkiyyah' },
+  { number: 74, name: 'Al-Muddassir', name_arabic: 'المدثر', verses: 56, type: 'Makkiyyah' },
+  { number: 75, name: 'Al-Qiyamah', name_arabic: 'القيامة', verses: 40, type: 'Makkiyyah' },
+  { number: 76, name: 'Al-Insan', name_arabic: 'الإنسان', verses: 31, type: 'Madaniyyah' },
+  { number: 77, name: 'Al-Mursalat', name_arabic: 'المرسلات', verses: 50, type: 'Makkiyyah' },
+  { number: 78, name: 'An-Naba\'', name_arabic: 'النبأ', verses: 40, type: 'Makkiyyah' },
+  { number: 79, name: 'An-Nazi\'at', name_arabic: 'النازعات', verses: 46, type: 'Makkiyyah' },
+  { number: 80, name: '\'Abasa', name_arabic: 'عبس', verses: 42, type: 'Makkiyyah' },
+  { number: 81, name: 'At-Takwir', name_arabic: 'التكوير', verses: 29, type: 'Makkiyyah' },
+  { number: 82, name: 'Al-Infitar', name_arabic: 'الانفطار', verses: 19, type: 'Makkiyyah' },
+  { number: 83, name: 'Al-Mutaffifin', name_arabic: 'المطففين', verses: 36, type: 'Makkiyyah' },
+  { number: 84, name: 'Al-Insyiqaq', name_arabic: 'الانشقاق', verses: 25, type: 'Makkiyyah' },
+  { number: 85, name: 'Al-Buruj', name_arabic: 'البروج', verses: 22, type: 'Makkiyyah' },
+  { number: 86, name: 'At-Tariq', name_arabic: 'الطارق', verses: 17, type: 'Makkiyyah' },
+  { number: 87, name: 'Al-A\'la', name_arabic: 'الأعلى', verses: 19, type: 'Makkiyyah' },
+  { number: 88, name: 'Al-Gasyiyah', name_arabic: 'الغاشية', verses: 26, type: 'Makkiyyah' },
+  { number: 89, name: 'Al-Fajr', name_arabic: 'الفجر', verses: 30, type: 'Makkiyyah' },
+  { number: 90, name: 'Al-Balad', name_arabic: 'البلد', verses: 20, type: 'Makkiyyah' },
+  { number: 91, name: 'Asy-Syams', name_arabic: 'الشمس', verses: 15, type: 'Makkiyyah' },
+  { number: 92, name: 'Al-Lail', name_arabic: 'الليل', verses: 21, type: 'Makkiyyah' },
+  { number: 93, name: 'Ad-Duha', name_arabic: 'الضحى', verses: 11, type: 'Makkiyyah' },
+  { number: 94, name: 'Al-Insyirah', name_arabic: 'الشرح', verses: 8, type: 'Makkiyyah' },
+  { number: 95, name: 'At-Tin', name_arabic: 'التين', verses: 8, type: 'Makkiyyah' },
+  { number: 96, name: 'Al-\'Alaq', name_arabic: 'العلق', verses: 19, type: 'Makkiyyah' },
+  { number: 97, name: 'Al-Qadr', name_arabic: 'القدر', verses: 5, type: 'Makkiyyah' },
+  { number: 98, name: 'Al-Bayyinah', name_arabic: 'البينة', verses: 8, type: 'Madaniyyah' },
+  { number: 99, name: 'Az-Zalzalah', name_arabic: 'الزلزلة', verses: 8, type: 'Madaniyyah' },
+  { number: 100, name: 'Al-\'Adiyat', name_arabic: 'العاديات', verses: 11, type: 'Makkiyyah' },
+  { number: 101, name: 'Al-Qari\'ah', name_arabic: 'القارعة', verses: 11, type: 'Makkiyyah' },
+  { number: 102, name: 'At-Takasur', name_arabic: 'التكاثر', verses: 8, type: 'Makkiyyah' },
+  { number: 103, name: 'Al-\'Asr', name_arabic: 'العصر', verses: 3, type: 'Makkiyyah' },
+  { number: 104, name: 'Al-Humazah', name_arabic: 'الهمزة', verses: 9, type: 'Makkiyyah' },
+  { number: 105, name: 'Al-Fil', name_arabic: 'الفيل', verses: 5, type: 'Makkiyyah' },
+  { number: 106, name: 'Quraisy', name_arabic: 'قريش', verses: 4, type: 'Makkiyyah' },
+  { number: 107, name: 'Al-Ma\'un', name_arabic: 'الماعون', verses: 7, type: 'Makkiyyah' },
+  { number: 108, name: 'Al-Kausar', name_arabic: 'الكوثر', verses: 3, type: 'Makkiyyah' },
+  { number: 109, name: 'Al-Kafirun', name_arabic: 'الكافرون', verses: 6, type: 'Makkiyyah' },
+  { number: 110, name: 'An-Nasr', name_arabic: 'النصر', verses: 3, type: 'Madaniyyah' },
+  { number: 111, name: 'Al-Lahab', name_arabic: 'المسد', verses: 5, type: 'Makkiyyah' },
+  { number: 112, name: 'Al-Ikhlas', name_arabic: 'الإخلاص', verses: 4, type: 'Makkiyyah' },
+  { number: 113, name: 'Al-Falaq', name_arabic: 'الفلق', verses: 5, type: 'Makkiyyah' },
+  { number: 114, name: 'An-Nas', name_arabic: 'الناس', verses: 6, type: 'Makkiyyah' },
+];
+
+// ── Jelajahi Presets ──────────────────────────────────────────────────────────
+const JELAJAHI_PRESETS = [
+  { label: 'Al-Fatihah',   surah: 1,  type: 'surah' },
+  { label: 'Ya Sin',       surah: 36, type: 'surah' },
+  { label: 'Al-Kahf',      surah: 18, type: 'surah' },
+  { label: 'Ar-Rahman',    surah: 55, type: 'surah' },
+  { label: 'Al-Waqi\'ah', surah: 56, type: 'surah' },
+  { label: 'Al-Mulk',      surah: 67, type: 'surah' },
+  { label: 'Maryam',       surah: 19, type: 'surah' },
+  { label: 'Al-Insyirah',  surah: 94, type: 'surah' },
+  { label: 'Juz Amma',     juz: 30,   type: 'juz'   },
+  { label: 'Ayatul Kursi', surah: 2,  ayah: 255, type: 'ayat' },
+];
+
+const JUZ_30_SURAHS = SURAH_META.filter(s => s.number >= 78 && s.number <= 114);
+
+const LOADING_STEPS_JELAJAHI = [
+  'Membuka Al-Qur\'an...',
+  'Mencari ayat...',
+  'Mempersiapkan bacaan...',
+  'Hampir siap...',
+];
+
+const JELAJAHI_BATCH_SIZE = 15;
+let jelajahiAllVerses    = [];   // full verse array from API
+let jelajahiLoadedUpTo   = 0;    // how many verse slides rendered so far
+let jelajahiSurahInfo    = null; // { number, name, name_arabic, verses, type }
+let juzSurahListVisible  = false; // whether juz surah list overlay is showing
+let lastJuzSurahTapped   = null; // for back-nav from verses to juz list
 
 // ── Copy / Share ──────────────────────────────────────────────────────────────
 
@@ -654,18 +803,31 @@ function showLoading() {
   totalVerseCards  = 0;
 
   const carousel = document.getElementById('verses-carousel');
-  carousel.innerHTML = `
-    <div class="verse-slide">
-      <div class="intro-chat">
-        <div class="chat-thread">
-          <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
-          <div class="chat-bubble chat-bubble--app chat-bubble--typing">
-            <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
+
+  if (currentMode === 'jelajahi') {
+    // Jelajahi loading: simple centered spinner, no user chat bubble
+    carousel.innerHTML = `
+      <div class="verse-slide">
+        <div class="jelajahi-loading">
+          <span class="jl-icon">📜</span>
+          <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
+        </div>
+      </div>
+    `;
+  } else {
+    carousel.innerHTML = `
+      <div class="verse-slide">
+        <div class="intro-chat">
+          <div class="chat-thread">
+            <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
+            <div class="chat-bubble chat-bubble--app chat-bubble--typing">
+              <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  }
 
   document.getElementById('verses-dots').innerHTML = '';
   document.getElementById('verse-counter-text').textContent = '';
@@ -768,11 +930,20 @@ function onCarouselScroll() {
   currentCardIndex = newIndex;
   updateCounter();
   updateDots();
+  updateProgressBar();
 
   // Auto-pause audio when swiping away
   stopCurrentAudio();
 
   logEvent('verse_swiped', { slide_index: newIndex, total: totalVerseCards });
+
+  // Jelajahi lazy loading — load more when within 3 slides of end
+  if (currentMode === 'jelajahi' && jelajahiAllVerses.length > 0) {
+    const nearEnd = currentCardIndex >= jelajahiLoadedUpTo; // index includes intro card
+    if (nearEnd && jelajahiLoadedUpTo < jelajahiAllVerses.length) {
+      loadNextJelajahiBatch();
+    }
+  }
 
   // Show actions + feedback when reaching last card
   if (newIndex === totalVerseCards - 1) {
@@ -784,25 +955,48 @@ function showVerseActions() {
   const actionsEl  = document.getElementById('verse-actions');
   if (!actionsEl.classList.contains('hidden')) return; // already shown
 
-  const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
-  const moreLabel  = currentMode === 'panduan' ? 'Topik lain' : 'Perasaan lain';
-  actionsEl.innerHTML = `
-    <button class="va-refresh" id="refresh-btn">↺ Coba ayat lain</button>
-    <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
-  `;
-  actionsEl.classList.remove('hidden');
-  document.getElementById('refresh-btn')
-    .addEventListener('click', () => fetchAyat(currentFeeling, { ...currentSearchCtx, refresh: true }));
-  document.getElementById('find-more-btn')
-    .addEventListener('click', () => switchView(parentView));
+  const parentView = currentMode === 'jelajahi' ? 'jelajahi-view'
+    : currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
+  const moreLabel  = currentMode === 'jelajahi' ? 'Surah lain'
+    : currentMode === 'panduan' ? 'Topik lain' : 'Perasaan lain';
 
-  renderFeedback();
+  // Jelajahi doesn't have "try other verses" (no AI), just back button
+  if (currentMode === 'jelajahi') {
+    actionsEl.innerHTML = `
+      <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
+    `;
+    actionsEl.classList.remove('hidden');
+    document.getElementById('find-more-btn')
+      .addEventListener('click', () => {
+        if (lastJuzSurahTapped) {
+          switchView('jelajahi-view');
+          setTimeout(() => showJuzSurahList(), 50);
+        } else {
+          switchView(parentView);
+        }
+      });
+  } else {
+    actionsEl.innerHTML = `
+      <button class="va-refresh" id="refresh-btn">↺ Coba ayat lain</button>
+      <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
+    `;
+    actionsEl.classList.remove('hidden');
+    document.getElementById('refresh-btn')
+      .addEventListener('click', () => fetchAyat(currentFeeling, { ...currentSearchCtx, refresh: true }));
+    document.getElementById('find-more-btn')
+      .addEventListener('click', () => switchView(parentView));
+    renderFeedback();
+  }
 }
 
 function updateCounter() {
   const el = document.getElementById('verse-counter-text');
   if (currentCardIndex === 0) {
-    el.textContent = currentMode === 'panduan' ? 'Penjelasan' : 'Refleksi';
+    if (currentMode === 'jelajahi') {
+      el.textContent = jelajahiSurahInfo ? jelajahiSurahInfo.name : 'Info Surah';
+    } else {
+      el.textContent = currentMode === 'panduan' ? 'Penjelasan' : 'Refleksi';
+    }
   } else {
     el.textContent = `${currentCardIndex} / ${totalVerseCards - 1}`;
   }
@@ -814,9 +1008,20 @@ function updateCounter() {
   if (nextBtn) nextBtn.disabled = currentCardIndex === totalVerseCards - 1;
 }
 
+function useProgressBar() {
+  return currentMode === 'jelajahi' && totalVerseCards > 16; // > 15 verses + intro
+}
+
 function renderDots() {
   const dotsEl = document.getElementById('verses-dots');
   dotsEl.innerHTML = '';
+
+  if (useProgressBar()) {
+    dotsEl.innerHTML = `<div class="reading-progress"><div class="reading-progress-fill" id="reading-progress-fill"></div></div>`;
+    updateProgressBar();
+    return;
+  }
+
   for (let i = 0; i < totalVerseCards; i++) {
     const dot = document.createElement('span');
     dot.className = 'verse-dot' + (i === 0 ? ' active' : '');
@@ -825,8 +1030,16 @@ function renderDots() {
 }
 
 function updateDots() {
+  if (useProgressBar()) return; // handled by updateProgressBar
   const dots = document.querySelectorAll('#verses-dots .verse-dot');
   dots.forEach((d, i) => d.classList.toggle('active', i === currentCardIndex));
+}
+
+function updateProgressBar() {
+  const fill = document.getElementById('reading-progress-fill');
+  if (!fill) return;
+  const pct = totalVerseCards > 1 ? (currentCardIndex / (totalVerseCards - 1)) * 100 : 0;
+  fill.style.width = `${pct}%`;
 }
 
 // ── Feedback Section ──────────────────────────────────────────────────────────
@@ -898,40 +1111,61 @@ function showAppBubble(text, btnLabel, btnAction) {
   document.getElementById('verse-feedback').classList.add('hidden');
 
   const carousel = document.getElementById('verses-carousel');
-  carousel.innerHTML = `
-    <div class="verse-slide">
-      <div class="intro-chat">
-        <div class="chat-thread">
-          <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
-          <div class="chat-bubble chat-bubble--app">${text}</div>
-        </div>
-        <div style="text-align:center; margin-top:20px;">
-          <button class="cb-back-btn" id="error-back-btn">${btnLabel}</button>
+
+  if (currentMode === 'jelajahi') {
+    // Jelajahi error: simple centered message, no chat bubble
+    carousel.innerHTML = `
+      <div class="verse-slide">
+        <div class="jelajahi-loading">
+          <p style="font-size:1rem; color:var(--text-dark); text-align:center; padding:0 20px;">${text}</p>
+          <div style="text-align:center; margin-top:20px;">
+            <button class="cb-back-btn" id="error-back-btn">${btnLabel}</button>
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    carousel.innerHTML = `
+      <div class="verse-slide">
+        <div class="intro-chat">
+          <div class="chat-thread">
+            <div class="chat-bubble chat-bubble--user">${escapeHtml(currentFeeling)}</div>
+            <div class="chat-bubble chat-bubble--app">${text}</div>
+          </div>
+          <div style="text-align:center; margin-top:20px;">
+            <button class="cb-back-btn" id="error-back-btn">${btnLabel}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   document.getElementById('verses-dots').innerHTML = '';
   document.getElementById('verse-counter-text').textContent = '';
   carousel.querySelector('#error-back-btn').addEventListener('click', btnAction);
 }
 
+function getParentView() {
+  if (currentMode === 'jelajahi') return 'jelajahi-view';
+  if (currentMode === 'panduan')  return 'panduan-view';
+  return 'selection-view';
+}
+
 function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
-  const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
   showAppBubble(
     `😔 ${escapeHtml(message)}`,
     '← Coba Lagi',
-    () => switchView(parentView),
+    () => switchView(getParentView()),
   );
 }
 
 function showNotRelevant(message) {
-  const parentView = currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
-  const btnLabel   = currentMode === 'panduan' ? '← Ajukan pertanyaan lain' : '← Ceritakan perasaanmu';
+  const btnLabel = currentMode === 'jelajahi' ? '← Coba cari lagi'
+    : currentMode === 'panduan' ? '← Ajukan pertanyaan lain' : '← Ceritakan perasaanmu';
   showAppBubble(
     `🤔 ${escapeHtml(message)}`,
     btnLabel,
-    () => switchView(parentView),
+    () => switchView(getParentView()),
   );
 }
 
@@ -1266,7 +1500,9 @@ function renderVOTD(verse, container) {
 function selectMode(mode) {
   currentMode = mode;
   logEvent('mode_selected', { mode });
-  switchView(mode === 'panduan' ? 'panduan-view' : 'selection-view');
+  if (mode === 'jelajahi')     switchView('jelajahi-view');
+  else if (mode === 'panduan') switchView('panduan-view');
+  else                         switchView('selection-view');
 }
 
 // ── Landing Card Clicks ─────────────────────────────────────────────────
@@ -1398,6 +1634,286 @@ function showTulisSendiri(cardId) {
   });
 }
 
+// ── Jelajahi Cards ──────────────────────────────────────────────────────────
+
+function renderJelajahiCards() {
+  const grid = document.getElementById('jelajahi-grid');
+  if (!grid) return;
+
+  grid.innerHTML = JELAJAHI_PRESETS.map(p => {
+    const meta = SURAH_META[p.surah ? p.surah - 1 : 0];
+    const sub = p.type === 'juz' ? 'Juz 30 · 37 surah'
+      : p.type === 'ayat' ? `${meta.number}:${p.ayah} · 1 ayat`
+      : `${meta.number} · ${meta.verses} ayat`;
+    return `
+      <button class="jelajahi-card" data-preset-idx="${JELAJAHI_PRESETS.indexOf(p)}">
+        <span class="jc-label">${escapeHtml(p.label)}</span>
+        <span class="jc-sub">${sub}</span>
+      </button>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.jelajahi-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const p = JELAJAHI_PRESETS[parseInt(card.dataset.presetIdx, 10)];
+      handleJelajahiPreset(p);
+    });
+  });
+}
+
+function handleJelajahiPreset(preset) {
+  if (preset.type === 'juz') {
+    logEvent('jelajahi_preset', { type: 'juz', juz: preset.juz, name: preset.label });
+    showJuzSurahList();
+    return;
+  }
+
+  const intent = preset.type === 'ayat'
+    ? { type: 'ayat', surah: preset.surah, ayah_start: preset.ayah, ayah_end: preset.ayah }
+    : { type: 'surah', surah: preset.surah };
+
+  logEvent('jelajahi_preset', { type: preset.type, surah: preset.surah, name: preset.label });
+  lastJuzSurahTapped = null;
+  fetchJelajahi(null, intent);
+}
+
+function showJuzSurahList() {
+  juzSurahListVisible = true;
+  const container = document.getElementById('juz-surah-list');
+
+  container.innerHTML = `
+    <div class="juz-surah-inner">
+      <div class="juz-surah-header">
+        <button class="panduan-expanded-back" id="juz-back-btn">
+          ${BACK_ARROW_SVG} Kembali
+        </button>
+        <span class="juz-surah-title">Juz Amma</span>
+      </div>
+      <div class="juz-surah-rows">
+        ${JUZ_30_SURAHS.map(s => `
+          <button class="juz-surah-row" data-surah="${s.number}">
+            <span class="juz-surah-num">${s.number}</span>
+            <span class="juz-surah-name">${escapeHtml(s.name)}</span>
+            <span class="juz-surah-info">${s.verses} ayat</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  container.classList.remove('hidden');
+  container.classList.add('slide-up');
+  container.classList.remove('slide-down');
+
+  container.querySelector('#juz-back-btn').addEventListener('click', hideJuzSurahList);
+  container.querySelectorAll('.juz-surah-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const surahNum = parseInt(row.dataset.surah, 10);
+      const meta = SURAH_META[surahNum - 1];
+      logEvent('jelajahi_juz_surah_selected', { juz: 30, surah: surahNum, name: meta.name });
+      lastJuzSurahTapped = surahNum;
+      hideJuzSurahList();
+      fetchJelajahi(null, { type: 'surah', surah: surahNum });
+    });
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function hideJuzSurahList() {
+  const container = document.getElementById('juz-surah-list');
+  container.classList.remove('slide-up');
+  container.classList.add('slide-down');
+
+  container.addEventListener('animationend', function handler() {
+    container.removeEventListener('animationend', handler);
+    container.classList.add('hidden');
+    container.classList.remove('slide-down');
+    juzSurahListVisible = false;
+  });
+}
+
+// ── Jelajahi Search Input ──────────────────────────────────────────────────
+
+function initJelajahiSearch() {
+  const input     = document.getElementById('jelajahi-input');
+  const clearBtn  = document.getElementById('jelajahi-clear');
+  const submitBtn = document.getElementById('jelajahi-submit');
+  if (!input) return;
+
+  const triggerSearch = () => {
+    const val = input.value.trim();
+    if (val.length >= 2) {
+      logEvent('jelajahi_search', { query_length: val.length });
+      lastJuzSurahTapped = null;
+      fetchJelajahi(val, null);
+    }
+  };
+
+  input.addEventListener('input', () => {
+    const len = input.value.length;
+    clearBtn.classList.toggle('hidden', len === 0);
+    submitBtn.classList.toggle('hidden', len < 2);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) triggerSearch();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.classList.add('hidden');
+    submitBtn.classList.add('hidden');
+    input.focus();
+  });
+
+  submitBtn.addEventListener('click', triggerSearch);
+}
+
+// ── Jelajahi API Call ────────────────────────────────────────────────────────
+
+async function fetchJelajahi(queryText, presetIntent) {
+  currentMode = 'jelajahi';
+  currentFeeling = queryText || (presetIntent ? `Surah ${SURAH_META[(presetIntent.surah || 1) - 1].name}` : '');
+  currentSearchCtx = { method: presetIntent ? 'jelajahi_preset' : 'jelajahi_search' };
+
+  switchView('verses-view');
+  showLoading();
+
+  try {
+    const body = { mode: 'jelajahi' };
+    if (presetIntent) {
+      body.intent = presetIntent;
+    } else {
+      body.feeling = queryText;
+    }
+
+    const res = await fetch('/api/get-ayat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+
+    // Handle surah_list response (e.g. juz query from typed input)
+    if (data.type === 'surah_list') {
+      switchView('jelajahi-view');
+      // Render inline surah list similar to juz amma
+      showJuzSurahList();
+      return;
+    }
+
+    if (data.not_relevant) {
+      showNotRelevant(data.message || 'Tidak ditemukan ayat yang cocok.');
+      return;
+    }
+
+    // Normalize verse data from API
+    const verses = (data.ayat || data.verses || []).map(v => ({
+      id:                    v.id || `${v.surah_number || v.surah}:${v.verse_number || v.ayah}`,
+      ref:                   v.ref || `QS. ${SURAH_META[(v.surah_number || v.surah || 1) - 1].name} : ${v.verse_number || v.ayah}`,
+      surah_name:            v.surah_name || SURAH_META[(v.surah_number || v.surah || 1) - 1].name,
+      surah_number:          v.surah_number || v.surah,
+      verse_number:          v.verse_number || v.ayah,
+      arabic:                v.arabic || v.text_arabic,
+      translation:           v.translation || v.text_indonesian,
+      tafsir_summary:        v.tafsir_summary || null,
+      tafsir_kemenag:        v.tafsir_kemenag || null,
+      tafsir_ibnu_kathir:    v.tafsir_ibnu_kathir || null,
+      tafsir_ibnu_kathir_id: v.tafsir_ibnu_kathir_id || null,
+      asbabun_nuzul:         v.asbabun_nuzul || null,
+      asbabun_nuzul_id:      v.asbabun_nuzul_id || null,
+    }));
+
+    if (verses.length === 0) throw new Error('Tidak ditemukan ayat.');
+
+    // Store surah info
+    const firstSurah = verses[0].surah_number;
+    jelajahiSurahInfo = data.surah_info || SURAH_META[firstSurah - 1] || null;
+
+    renderJelajahiVerses(verses);
+
+  } catch (err) {
+    stopLoadingSteps();
+    showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+  }
+}
+
+// ── Jelajahi Verse Rendering ────────────────────────────────────────────────
+
+function renderJelajahiVerses(verses) {
+  jelajahiAllVerses  = verses;
+  jelajahiLoadedUpTo = 0;
+  currentAyat        = verses;
+  stopLoadingSteps();
+
+  const carousel = document.getElementById('verses-carousel');
+  carousel.innerHTML = '';
+
+  // Total includes intro + all verses (even if lazy loaded later)
+  totalVerseCards  = verses.length + 1;
+  currentCardIndex = 0;
+
+  // ── A: Build intro slide (static surah info) ────────────────────────────
+  const introSlide = document.createElement('div');
+  introSlide.className = 'verse-slide verse-slide-intro';
+
+  const info = jelajahiSurahInfo;
+  const totalVersesDisplay = info ? info.verses : verses.length;
+  const surahLabel = info
+    ? `Surah ke-${info.number}`
+    : '';
+  const typeLabel = info ? info.type : '';
+
+  introSlide.innerHTML = `
+    <div class="jelajahi-intro">
+      <span class="ji-emoji">📜</span>
+      ${info ? `<h2 class="ji-name">${escapeHtml(info.name)}</h2>` : ''}
+      ${info && info.name_arabic ? `<p class="ji-arabic-name">${info.name_arabic}</p>` : ''}
+      ${surahLabel ? `<p class="ji-meta">${surahLabel}</p>` : ''}
+      <p class="ji-meta">${totalVersesDisplay} Ayat${typeLabel ? ` · ${typeLabel}` : ''}</p>
+      <p class="ji-hint">Geser untuk mulai baca →</p>
+    </div>
+  `;
+  carousel.appendChild(introSlide);
+
+  // ── B: Build first batch of verse slides ──────────────────────────────
+  loadNextJelajahiBatch();
+
+  // ── C: Pagination dots or progress bar ────────────────────────────────
+  renderDots();
+  updateCounter();
+
+  // ── D: Scroll listener ────────────────────────────────────────────────
+  carousel.addEventListener('scroll', onCarouselScroll, { passive: true });
+
+  // ── E: Hide actions/feedback until last card ────────────────────────────
+  document.getElementById('verse-actions').classList.add('hidden');
+  document.getElementById('verse-feedback').classList.add('hidden');
+}
+
+function loadNextJelajahiBatch() {
+  const carousel = document.getElementById('verses-carousel');
+  const end = Math.min(jelajahiLoadedUpTo + JELAJAHI_BATCH_SIZE, jelajahiAllVerses.length);
+
+  for (let i = jelajahiLoadedUpTo; i < end; i++) {
+    const slide = document.createElement('div');
+    slide.className = 'verse-slide';
+    const card = buildVerseCard(jelajahiAllVerses[i], i);
+    card.classList.add('card-visible');
+    slide.appendChild(card);
+    carousel.appendChild(slide);
+  }
+
+  jelajahiLoadedUpTo = end;
+
+  // Update dots if new slides added (for short surahs with dots)
+  if (!useProgressBar()) {
+    // Dots were already rendered for all totalVerseCards, no update needed
+  }
+}
+
 // ── Verse Carousel Arrow Navigation ──────────────────────────────────────────
 
 function scrollCarouselTo(index) {
@@ -1408,10 +1924,17 @@ function scrollCarouselTo(index) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-// Verses-view back button → return to mode parent (or expanded card)
+// Verses-view back button → return to mode parent (or expanded card / juz list)
 document.getElementById('back-btn').addEventListener('click', () => {
-  if (currentMode === 'panduan' && expandedCardId) {
-    // Go back to panduan-view and re-expand the card
+  if (currentMode === 'jelajahi') {
+    if (lastJuzSurahTapped) {
+      // Go back to juz surah list
+      switchView('jelajahi-view');
+      setTimeout(() => showJuzSurahList(), 50);
+    } else {
+      switchView('jelajahi-view');
+    }
+  } else if (currentMode === 'panduan' && expandedCardId) {
     const cardToExpand = expandedCardId;
     switchView('panduan-view');
     setTimeout(() => expandPanduanCard(cardToExpand), 50);
@@ -1432,6 +1955,15 @@ document.getElementById('panduan-back-btn').addEventListener('click', () => {
   }
 });
 
+// Jelajahi back → landing (or close juz surah list)
+document.getElementById('jelajahi-back-btn').addEventListener('click', () => {
+  if (juzSurahListVisible) {
+    hideJuzSurahList();
+  } else {
+    switchView('landing-view');
+  }
+});
+
 // Verse carousel arrow buttons
 document.getElementById('verse-prev').addEventListener('click', () => {
   if (currentCardIndex > 0) scrollCarouselTo(currentCardIndex - 1);
@@ -1443,8 +1975,10 @@ document.getElementById('verse-next').addEventListener('click', () => {
 initLandingCarousel();
 renderEmotionCards();
 renderPanduanCards();
+renderJelajahiCards();
 initSearch();
 initPanduanSearch();
+initJelajahiSearch();
 initVOTD();
 
 // ── Service Worker ─────────────────────────────────────────────────────────────

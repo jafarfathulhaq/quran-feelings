@@ -318,6 +318,33 @@ const makeHyDE_need = (need) =>
   'Gunakan kosakata Islami yang tepat dan spesifik untuk tema ini. ' +
   'Tulis dalam Bahasa Indonesia. Jangan menyebut nama surah atau nomor ayat.';
 
+// ── Jelajahi Intent Parser Prompt ─────────────────────────────────────────────
+const PROMPT_JELAJAHI_INTENT = `You are a Quran reference parser. Given a user's natural language input in Indonesian or Arabic, extract their intent into structured JSON.
+
+Return ONLY valid JSON with this shape:
+{
+  "type": "surah" | "ayat" | "ayat_range" | "juz" | "famous_ayat",
+  "surah": <number 1-114 or null>,
+  "ayah_start": <number or null>,
+  "ayah_end": <number or null>,
+  "juz": <number 1-30 or null>,
+  "surah_name": "<name for display>"
+}
+
+Examples:
+- "surat yasin" → { "type": "surah", "surah": 36, "surah_name": "Ya Sin" }
+- "al baqarah ayat 255" → { "type": "ayat", "surah": 2, "ayah_start": 255, "ayah_end": 255, "surah_name": "Al-Baqarah" }
+- "al baqarah 255-260" → { "type": "ayat_range", "surah": 2, "ayah_start": 255, "ayah_end": 260, "surah_name": "Al-Baqarah" }
+- "juz 30" → { "type": "juz", "juz": 30, "surah_name": "Juz 30" }
+- "ayatul kursi" → { "type": "famous_ayat", "surah": 2, "ayah_start": 255, "ayah_end": 255, "surah_name": "Al-Baqarah" }
+- "surat yang dibaca malam jumat" → { "type": "surah", "surah": 18, "surah_name": "Al-Kahf" }
+- "al fatihah" → { "type": "surah", "surah": 1, "surah_name": "Al-Fatihah" }
+- "an nas" → { "type": "surah", "surah": 114, "surah_name": "An-Nas" }
+- "3 ayat terakhir al baqarah" → { "type": "ayat_range", "surah": 2, "ayah_start": 284, "ayah_end": 286, "surah_name": "Al-Baqarah" }
+
+If the input is not a valid Quran reference, return:
+{ "type": "unknown", "error": "Tidak bisa memahami permintaan. Coba ketik nama surah atau ayat." }`;
+
 // ── Result Cache ──────────────────────────────────────────────────────────────
 // In-memory, per container instance. Keyed on normalised feeling text.
 // A cache hit skips all three API calls (HyDE + embed + GPT selection),
@@ -330,6 +357,7 @@ const makeHyDE_need = (need) =>
 
 const RESULT_CACHE_MAX = 500;
 const RESULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const JELAJAHI_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days — Quran text is static
 
 const resultCache = new Map(); // normalised_feeling → { payload, expiresAt }
 
@@ -340,12 +368,12 @@ function getCached(key) {
   return entry.payload;
 }
 
-function setCached(key, payload) {
+function setCached(key, payload, ttl = RESULT_CACHE_TTL) {
   if (resultCache.size >= RESULT_CACHE_MAX) {
     // FIFO eviction: delete the first (oldest) key
     resultCache.delete(resultCache.keys().next().value);
   }
-  resultCache.set(key, { payload, expiresAt: Date.now() + RESULT_CACHE_TTL });
+  resultCache.set(key, { payload, expiresAt: Date.now() + ttl });
 }
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
@@ -404,8 +432,14 @@ module.exports = async function handler(req, res) {
   }
 
   // ── Input validation ────────────────────────────────────────────────────────
-  const { feeling, refresh, mode: rawMode } = req.body || {};
-  const mode = rawMode === 'panduan' ? 'panduan' : 'curhat'; // default curhat
+  const { feeling, refresh, mode: rawMode, intent: presetIntent } = req.body || {};
+  const mode = rawMode === 'panduan' ? 'panduan' : rawMode === 'jelajahi' ? 'jelajahi' : 'curhat';
+
+  // ── Jelajahi mode — completely different pipeline ─────────────────────────
+  if (mode === 'jelajahi') {
+    return handleJelajahi(req, res, { feeling, presetIntent, refresh, ip });
+  }
+
   if (!feeling || feeling.trim().length < 2) {
     return res.status(400).json({ error: mode === 'panduan'
       ? 'Tulis pertanyaan tentang panduan hidup.'
@@ -814,3 +848,197 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: error.message || 'Terjadi kesalahan. Silakan coba lagi.' });
   }
 };
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Jelajahi Handler ────────────────────────────────────────────────────────
+// Completely separate pipeline: intent parsing → DB query → return verses.
+// No embeddings, no vector search, no GPT-4o selection.
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) {
+  let intent = presetIntent || null;
+  const isPreset = !!intent;
+
+  // ── A: If typed query, parse intent with gpt-4o-mini (rate-limited) ────────
+  if (!intent) {
+    if (!feeling || feeling.trim().length < 2) {
+      return res.status(400).json({ error: 'Tulis nama surah, ayat, atau juz yang ingin kamu baca.' });
+    }
+    if (feeling.length > MAX_INPUT_LEN) {
+      return res.status(400).json({ error: `Input terlalu panjang (maks ${MAX_INPUT_LEN} karakter).` });
+    }
+
+    // Rate limit only typed queries (presets are free)
+    const rateLimitReset = checkRateLimit(ip);
+    if (rateLimitReset !== null) {
+      const minutes = Math.ceil((rateLimitReset - Date.now()) / 60_000);
+      return res.status(429).json({
+        error: `Terlalu banyak permintaan. Coba lagi dalam ${minutes} menit.`,
+      });
+    }
+
+    // Cache check
+    const cacheKey = `jelajahi:query:${feeling.trim().replace(/\s+/g, ' ').toLowerCase()}`;
+    if (!refresh) {
+      const cached = getCached(cacheKey);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.status(200).json(cached);
+      }
+    }
+
+    try {
+      const intentRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model:           'gpt-4o-mini',
+          messages:        [
+            { role: 'system', content: PROMPT_JELAJAHI_INTENT },
+            { role: 'user',   content: feeling.trim() },
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens:      150,
+          temperature:     0.1,
+        }),
+      });
+
+      if (!intentRes.ok) {
+        const err = await intentRes.json();
+        throw new Error(err.error?.message || 'Intent parsing failed');
+      }
+
+      const intentData = await intentRes.json();
+      intent = JSON.parse(intentData.choices?.[0]?.message?.content || '{}');
+
+      if (intent.type === 'unknown' || !intent.type) {
+        const notRelevantPayload = {
+          not_relevant: true,
+          message: intent.error || 'Tidak bisa memahami permintaan. Coba ketik nama surah atau ayat.',
+        };
+        setCached(cacheKey, notRelevantPayload, JELAJAHI_CACHE_TTL);
+        return res.status(200).json(notRelevantPayload);
+      }
+    } catch (error) {
+      console.error('Jelajahi intent parse error:', error.message);
+      return res.status(500).json({ error: 'Gagal memahami permintaan. Coba lagi.' });
+    }
+  }
+
+  // ── B: Build cache key from parsed intent ──────────────────────────────────
+  const intentCacheKey = intent.type === 'juz'
+    ? `jelajahi:juz:${intent.juz}`
+    : `jelajahi:${intent.type}:${intent.surah}:${intent.ayah_start || 'all'}`;
+
+  if (!refresh) {
+    const cached = getCached(intentCacheKey);
+    if (cached) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json(cached);
+    }
+  }
+
+  // ── C: Execute database query based on intent ──────────────────────────────
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    const headers = {
+      'Content-Type':  'application/json',
+      'apikey':        supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+    };
+
+    let dbUrl, verses;
+
+    switch (intent.type) {
+      case 'surah': {
+        dbUrl = `${supabaseUrl}/rest/v1/quran_verses` +
+          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
+          `&surah_number=eq.${intent.surah}&order=verse_number.asc`;
+        break;
+      }
+      case 'ayat':
+      case 'famous_ayat': {
+        dbUrl = `${supabaseUrl}/rest/v1/quran_verses` +
+          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
+          `&surah_number=eq.${intent.surah}&verse_number=eq.${intent.ayah_start}`;
+        break;
+      }
+      case 'ayat_range': {
+        dbUrl = `${supabaseUrl}/rest/v1/quran_verses` +
+          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
+          `&surah_number=eq.${intent.surah}&verse_number=gte.${intent.ayah_start}&verse_number=lte.${intent.ayah_end}&order=verse_number.asc`;
+        break;
+      }
+      case 'juz': {
+        // For juz queries, return a surah list instead of verses
+        // (Juz 30 = surahs 78–114; other juz need more complex mapping)
+        // For now, only handle Juz 30 (Juz Amma) server-side
+        const juzSurahListPayload = {
+          mode: 'jelajahi',
+          type: 'surah_list',
+          juz: intent.juz,
+        };
+        setCached(intentCacheKey, juzSurahListPayload, JELAJAHI_CACHE_TTL);
+        return res.status(200).json(juzSurahListPayload);
+      }
+      default:
+        return res.status(400).json({ error: 'Jenis permintaan tidak dikenali.' });
+    }
+
+    const dbRes = await fetch(dbUrl, { headers });
+    if (!dbRes.ok) {
+      const err = await dbRes.json();
+      throw new Error(err.message || 'Database query failed');
+    }
+
+    verses = await dbRes.json();
+
+    if (!Array.isArray(verses) || verses.length === 0) {
+      return res.status(200).json({
+        not_relevant: true,
+        message: 'Tidak ditemukan ayat yang cocok. Pastikan nama surah dan nomor ayat benar.',
+      });
+    }
+
+    // ── D: Build response ─────────────────────────────────────────────────────
+    const firstVerse = verses[0];
+    const surahInfo = {
+      number:          firstVerse.surah_number,
+      name:            firstVerse.surah_name || intent.surah_name || `Surah ${firstVerse.surah_number}`,
+      total_verses:    verses.length,
+    };
+
+    const ayat = verses.map(v => ({
+      id:                    v.id,
+      ref:                   `QS. ${v.surah_name || surahInfo.name} : ${v.verse_number}`,
+      surah_name:            v.surah_name || surahInfo.name,
+      surah_number:          v.surah_number,
+      verse_number:          v.verse_number,
+      arabic:                v.arabic,
+      translation:           v.translation,
+      tafsir_summary:        v.tafsir_summary || null,
+      tafsir_kemenag:        v.tafsir_kemenag || null,
+      tafsir_ibnu_kathir:    v.tafsir_ibnu_kathir || null,
+      tafsir_ibnu_kathir_id: v.tafsir_ibnu_kathir_id || null,
+      asbabun_nuzul:         v.asbabun_nuzul || null,
+      asbabun_nuzul_id:      v.asbabun_nuzul_id || null,
+    }));
+
+    const successPayload = {
+      mode: 'jelajahi',
+      surah_info: surahInfo,
+      ayat,
+    };
+
+    setCached(intentCacheKey, successPayload, JELAJAHI_CACHE_TTL);
+    return res.status(200).json(successPayload);
+
+  } catch (error) {
+    console.error('Jelajahi DB error:', error.message);
+    return res.status(500).json({ error: error.message || 'Terjadi kesalahan. Silakan coba lagi.' });
+  }
+}
