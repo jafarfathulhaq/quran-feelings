@@ -939,7 +939,7 @@ function onCarouselScroll() {
 
   // Jelajahi lazy loading — load more when within 3 slides of end
   if (currentMode === 'jelajahi' && jelajahiAllVerses.length > 0) {
-    const nearEnd = currentCardIndex >= jelajahiLoadedUpTo; // index includes intro card
+    const nearEnd = currentCardIndex >= jelajahiLoadedUpTo - 3; // preload 3 slides early
     if (nearEnd && jelajahiLoadedUpTo < jelajahiAllVerses.length) {
       loadNextJelajahiBatch();
     }
