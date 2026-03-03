@@ -482,7 +482,7 @@ body {
 .surah-browser-row:active { transform: scale(0.98); }
 
 /* ── Multi-Result Selection ─────────────────────────── */
-.jelajahi-multi { padding: 16px 0 40px; }
+.jelajahi-multi { padding: 16px 20px 40px; }
 .jelajahi-multi.hidden { display: none; }
 
 .multi-result-heading {
