@@ -1967,22 +1967,21 @@ function hideJuzSurahList() {
 
 // ── Jelajahi Multi-Result ─────────────────────────────────────────────────
 
+function toggleJelajahiLanding(show) {
+  const jView = document.getElementById('jelajahi-view');
+  const display = show ? '' : 'none';
+  ['.header', '.input-card', '.jelajahi-helper', '.jelajahi-chips', '.home-content'].forEach(sel => {
+    const el = jView.querySelector(sel);
+    if (el) el.style.display = display;
+  });
+}
+
 function showMultiResults(results) {
   jelajahiMultiResults = results;
   const container = document.getElementById('jelajahi-multi');
-  const jView = document.getElementById('jelajahi-view');
 
   // Hide landing content
-  const homeContent = jView.querySelector('.home-content');
-  const inputCard = jView.querySelector('.input-card');
-  const header = jView.querySelector('.header');
-  const helper = jView.querySelector('.jelajahi-helper');
-  const chips = jView.querySelector('.jelajahi-chips');
-  if (homeContent) homeContent.classList.add('hidden');
-  if (inputCard) inputCard.classList.add('hidden');
-  if (header) header.classList.add('hidden');
-  if (helper) helper.classList.add('hidden');
-  if (chips) chips.classList.add('hidden');
+  toggleJelajahiLanding(false);
 
   container.innerHTML = `
     <p class="multi-result-heading">Kami menemukan beberapa surat yang cocok:</p>
@@ -2009,17 +2008,7 @@ function showMultiResults(results) {
       // Hide multi UI but preserve results for back navigation
       container.classList.add('hidden');
       container.innerHTML = '';
-      const jView = document.getElementById('jelajahi-view');
-      const homeContent = jView.querySelector('.home-content');
-      const inputCard = jView.querySelector('.input-card');
-      const header = jView.querySelector('.header');
-      const helper = jView.querySelector('.jelajahi-helper');
-      const chips = jView.querySelector('.jelajahi-chips');
-      if (homeContent) homeContent.classList.remove('hidden');
-      if (inputCard) inputCard.classList.remove('hidden');
-      if (header) header.classList.remove('hidden');
-      if (helper) helper.classList.remove('hidden');
-      if (chips) chips.classList.remove('hidden');
+      toggleJelajahiLanding(true);
       fetchJelajahi(null, { type: 'surah', surah: chosen.surah });
     });
   });
@@ -2032,18 +2021,7 @@ function hideMultiResults() {
   container.classList.add('hidden');
   container.innerHTML = '';
   jelajahiMultiResults = null;
-
-  const jView = document.getElementById('jelajahi-view');
-  const homeContent = jView.querySelector('.home-content');
-  const inputCard = jView.querySelector('.input-card');
-  const header = jView.querySelector('.header');
-  const helper = jView.querySelector('.jelajahi-helper');
-  const chips = jView.querySelector('.jelajahi-chips');
-  if (homeContent) homeContent.classList.remove('hidden');
-  if (inputCard) inputCard.classList.remove('hidden');
-  if (header) header.classList.remove('hidden');
-  if (helper) helper.classList.remove('hidden');
-  if (chips) chips.classList.remove('hidden');
+  toggleJelajahiLanding(true);
 }
 
 // ── Jelajahi Search Input ──────────────────────────────────────────────────
