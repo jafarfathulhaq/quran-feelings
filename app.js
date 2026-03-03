@@ -42,6 +42,25 @@ let expandedCardId    = null;  // panduan card ID currently expanded, or null
 let currentCardIndex  = 0;     // carousel active slide index
 let totalVerseCards   = 0;     // total slides (intro + verses)
 
+// ── Bismillah Handling ───────────────────────────────────────────────────────
+// In the DB, verse 1 of every surah (except At-Tawbah/9) includes the
+// Bismillah as a prefix.  For Jelajahi we strip it from verse 1 and
+// display it on the intro card instead for a cleaner reading experience.
+// Al-Fatihah (1) keeps it because the Bismillah *is* verse 1.
+const BISMILLAH_AR = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+function stripBismillah(arabic, surahNumber) {
+  if (surahNumber === 1 || surahNumber === 9) return arabic;
+  // Handle possible BOM (\uFEFF) at start
+  const clean = arabic.replace(/^\uFEFF/, '');
+  if (clean.startsWith(BISMILLAH_AR)) {
+    return clean.slice(BISMILLAH_AR.length).trim();
+  }
+  return arabic;
+}
+function shouldShowBismillah(surahNumber) {
+  return surahNumber !== 1 && surahNumber !== 9;
+}
+
 // ── Loading Steps ─────────────────────────────────────────────────────────────
 
 const LOADING_STEPS_CURHAT = [
@@ -1855,6 +1874,12 @@ function renderJelajahiVerses(verses) {
   const carousel = document.getElementById('verses-carousel');
   carousel.innerHTML = '';
 
+  // Strip Bismillah from verse 1 (it lives on the intro card instead)
+  const surahNum = verses[0] ? (verses[0].surah_number || 0) : 0;
+  if (verses.length > 0 && verses[0].verse_number === 1) {
+    verses[0].arabic = stripBismillah(verses[0].arabic, surahNum);
+  }
+
   // Total includes intro + all verses (even if lazy loaded later)
   totalVerseCards  = verses.length + 1;
   currentCardIndex = 0;
@@ -1869,6 +1894,7 @@ function renderJelajahiVerses(verses) {
     ? `Surah ke-${info.number}`
     : '';
   const typeLabel = info ? info.type : '';
+  const showBismillah = shouldShowBismillah(surahNum);
 
   introSlide.innerHTML = `
     <div class="jelajahi-intro">
@@ -1877,6 +1903,7 @@ function renderJelajahiVerses(verses) {
       ${info && info.name_arabic ? `<p class="ji-arabic-name">${info.name_arabic}</p>` : ''}
       ${surahLabel ? `<p class="ji-meta">${surahLabel}</p>` : ''}
       <p class="ji-meta">${totalVersesDisplay} Ayat${typeLabel ? ` · ${typeLabel}` : ''}</p>
+      ${showBismillah ? `<p class="ji-bismillah">${BISMILLAH_AR}</p>` : ''}
       <p class="ji-hint">Geser untuk mulai baca →</p>
     </div>
   `;
