@@ -719,7 +719,7 @@ module.exports = async function handler(req, res) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model:           'gpt-4o',   // D: was gpt-4o-mini
+        model:           'gpt-4o-mini',
         messages:        [
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: rawFeeling },
