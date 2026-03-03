@@ -456,30 +456,119 @@ body {
 }
 
 /* ── Jelajahi Preset Grid (2-column) ─────────────────── */
-/* ── Surah Browser (114-surah list) ─────────────────── */
+/* ── Surah Browser (categorized accordion) ─────────── */
 .surah-browser { padding-bottom: 40px; }
 
-.surah-browser-row {
+/* Standalone surah rows (top 4) */
+.surah-standalone-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  background: transparent;
   width: 100%;
   text-align: left;
-  padding: 14px 16px;
-  background: var(--card-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+}
+.surah-standalone-row:active { background: rgba(0,0,0,0.03); }
+
+.sb-num {
+  width: 36px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  flex-shrink: 0;
+}
+.sb-name {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  padding-left: 8px;
+}
+.sb-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* Juz accordion groups */
+.juz-group { margin-bottom: 6px; }
+
+.juz-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  padding: 14px 16px;
+  background: rgba(0,0,0,0.02);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
 }
-.surah-browser-row:hover {
-  border-color: var(--teal-dark);
-  background: #EDF7F6;
+.juz-group-header:active { background: rgba(0,0,0,0.05); }
+
+.juz-group-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.surah-browser-row:active { transform: scale(0.98); }
+.juz-group-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+.juz-group-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.juz-group-arrow {
+  font-size: 1rem;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+.juz-group.expanded .juz-group-arrow {
+  transform: rotate(90deg);
+}
+
+/* Accordion content */
+.juz-group-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding: 0 8px;
+}
+.juz-group.expanded .juz-group-content {
+  max-height: 2000px;
+}
+
+/* Surah rows inside accordion */
+.sb-accordion-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+.sb-accordion-row:last-child { border-bottom: none; }
+.sb-accordion-row:active { background: rgba(0,0,0,0.03); }
 
 /* ── Multi-Result Selection ─────────────────────────── */
 .jelajahi-multi { padding: 16px 20px 40px; }

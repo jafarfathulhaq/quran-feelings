@@ -390,6 +390,22 @@ const SURAH_META = [
 
 const JUZ_30_SURAHS = SURAH_META.filter(s => s.number >= 78 && s.number <= 114);
 
+// ── Surah Browser Groupings ─────────────────────────────────────────────────
+const SURAH_BROWSER = {
+  standalone: [1, 2, 3, 4],
+  groups: [
+    { label: 'Juz 6 – 10',  surahs: [5, 6, 7, 8, 9] },
+    { label: 'Juz 11 – 15', surahs: [10, 11, 12, 13, 14, 15, 16, 17] },
+    { label: 'Juz 16 – 20', surahs: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29] },
+    { label: 'Juz 21 – 25', surahs: [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45] },
+    { label: 'Juz 26',      surahs: [46, 47, 48, 49, 50, 51] },
+    { label: 'Juz 27',      surahs: [52, 53, 54, 55, 56, 57] },
+    { label: 'Juz 28',      surahs: [58, 59, 60, 61, 62, 63, 64, 65, 66] },
+    { label: 'Juz 29',      surahs: [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77] },
+    { label: 'Juz 30',      surahs: [78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114] },
+  ]
+};
+
 const LOADING_STEPS_JELAJAHI = [
   'Membuka Al-Qur\'an...',
   'Mencari ayat...',
@@ -1825,26 +1841,98 @@ function showTulisSendiri(cardId) {
 
 // ── Jelajahi Cards ──────────────────────────────────────────────────────────
 
+function loadSurahFromBrowser(surahNum, source) {
+  const meta = SURAH_META[surahNum - 1];
+  logEvent('jelajahi_surah_browser', { surah: surahNum, name: meta.name, source });
+  lastJuzSurahTapped = null;
+  cameFromMultiResult = false;
+  fetchJelajahi(null, { type: 'surah', surah: surahNum });
+}
+
+function toggleJuzGroup(groupEl) {
+  const currentlyOpen = document.querySelector('.juz-group.expanded');
+  if (currentlyOpen && currentlyOpen !== groupEl) {
+    currentlyOpen.classList.remove('expanded');
+  }
+  groupEl.classList.toggle('expanded');
+
+  if (groupEl.classList.contains('expanded')) {
+    const label = groupEl.querySelector('.juz-group-label');
+    logEvent('jelajahi_juz_group_opened', { group: label ? label.textContent : '' });
+    setTimeout(() => {
+      groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
+}
+
 function renderSurahBrowser() {
   const container = document.getElementById('surah-browser');
   if (!container) return;
 
-  container.innerHTML = SURAH_META.map(s => `
-    <button class="surah-browser-row" data-surah="${s.number}">
-      <span class="juz-surah-num">${s.number}</span>
-      <span class="juz-surah-name">${escapeHtml(s.name)}</span>
-      <span class="juz-surah-info">${s.verses} ayat</span>
-    </button>
-  `).join('');
+  let html = '';
 
-  container.querySelectorAll('.surah-browser-row').forEach(row => {
+  // Standalone surahs (top 4)
+  SURAH_BROWSER.standalone.forEach(num => {
+    const s = SURAH_META[num - 1];
+    html += `
+      <button class="surah-standalone-row" data-surah="${num}">
+        <span class="sb-num">${num}</span>
+        <span class="sb-name">${escapeHtml(s.name)}</span>
+        <span class="sb-info">${s.verses} ayat</span>
+      </button>
+    `;
+  });
+
+  // Juz accordion groups
+  SURAH_BROWSER.groups.forEach((group, idx) => {
+    const surahRows = group.surahs.map(num => {
+      const s = SURAH_META[num - 1];
+      return `
+        <button class="sb-accordion-row" data-surah="${num}">
+          <span class="sb-num">${num}</span>
+          <span class="sb-name">${escapeHtml(s.name)}</span>
+          <span class="sb-info">${s.verses} ayat</span>
+        </button>
+      `;
+    }).join('');
+
+    html += `
+      <div class="juz-group" id="juz-group-${idx}">
+        <button class="juz-group-header">
+          <span class="juz-group-left">
+            <span class="juz-group-label">${group.label}</span>
+            <span class="juz-group-count">${group.surahs.length} surat</span>
+          </span>
+          <span class="juz-group-arrow">›</span>
+        </button>
+        <div class="juz-group-content">
+          ${surahRows}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  // Standalone row click handlers
+  container.querySelectorAll('.surah-standalone-row').forEach(row => {
     row.addEventListener('click', () => {
-      const surahNum = parseInt(row.dataset.surah, 10);
-      const meta = SURAH_META[surahNum - 1];
-      logEvent('jelajahi_surah_browser', { surah: surahNum, name: meta.name });
-      lastJuzSurahTapped = null;
-      cameFromMultiResult = false;
-      fetchJelajahi(null, { type: 'surah', surah: surahNum });
+      loadSurahFromBrowser(parseInt(row.dataset.surah, 10), 'standalone');
+    });
+  });
+
+  // Accordion header click handlers
+  container.querySelectorAll('.juz-group-header').forEach(header => {
+    header.addEventListener('click', () => {
+      toggleJuzGroup(header.parentElement);
+    });
+  });
+
+  // Accordion surah row click handlers
+  container.querySelectorAll('.sb-accordion-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const groupLabel = row.closest('.juz-group').querySelector('.juz-group-label').textContent;
+      loadSurahFromBrowser(parseInt(row.dataset.surah, 10), groupLabel);
     });
   });
 }

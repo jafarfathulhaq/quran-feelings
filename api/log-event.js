@@ -28,6 +28,7 @@ const VALID_EVENTS = new Set([
   'jelajahi_search',
   'jelajahi_juz_surah_selected',
   'jelajahi_surah_browser',
+  'jelajahi_juz_group_opened',
   'jelajahi_multi_selected',
   'share_sheet_opened',
   'share_theme_selected',
