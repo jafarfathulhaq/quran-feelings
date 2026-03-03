@@ -45,7 +45,6 @@ let totalVerseCards   = 0;     // total slides (intro + verses)
 // ── Share sheet state ──────────────────────────────────────────────────────
 let shareTheme           = 'light';   // 'light', 'dark', 'classic'
 let shareIncludeQuestion = false;
-let shareIncludeTafsir   = false;
 let shareActiveVerse     = null;      // verse object being shared
 let shareLastPlatform    = 'wa_chat'; // last selected platform (for preview aspect ratio)
 
@@ -455,7 +454,7 @@ const SHARE_THEME_BG = { light: '#FFFFFF', dark: '#1A1D2E', classic: '#F5EFE0' }
 
 // Build the off-screen share image HTML element
 function buildShareElement(verse, options) {
-  const { theme, width, height, includeQuestion, includeTafsir } = options;
+  const { theme, width, height, includeQuestion } = options;
   const el = document.createElement('div');
   el.className = `si-wrap si-theme-${theme}`;
   el.style.width  = width + 'px';
@@ -463,10 +462,19 @@ function buildShareElement(verse, options) {
   el.style.position = 'absolute';
   el.style.left = '-9999px';
 
-  // Build content
+  // Build content — branding header at top, then verse content centered
   let html = '';
 
-  // Optional question
+  // Branding header (top)
+  html += `
+    <div class="si-header">
+      <span class="si-header-brand">TemuQuran.com</span>
+      <span class="si-header-sub">Temukan Jawaban Dalam Al-Qur'an</span>
+      <div class="si-header-divider"></div>
+    </div>
+  `;
+
+  // Optional user feeling/question
   if (includeQuestion && verse._userQuestion) {
     html += `<p class="si-question">"${escapeHtml(verse._userQuestion)}"</p>`;
   }
@@ -479,23 +487,6 @@ function buildShareElement(verse, options) {
 
   // Surah reference
   html += `<span class="si-ref">${escapeHtml(verse.ref)}</span>`;
-
-  // Optional tafsir (truncated)
-  if (includeTafsir) {
-    const tafsirText = verse.tafsir_kemenag || verse.tafsir_summary || '';
-    if (tafsirText) {
-      const truncated = tafsirText.length > 100 ? tafsirText.slice(0, 100) + '...' : tafsirText;
-      html += `<p class="si-tafsir">${escapeHtml(truncated)}</p>`;
-    }
-  }
-
-  // Branding footer
-  html += `
-    <div class="si-footer">
-      <div class="si-footer-divider"></div>
-      <span class="si-footer-brand">TemuQuran.com</span>
-    </div>
-  `;
 
   el.innerHTML = html;
   return el;
@@ -519,7 +510,6 @@ async function generateShareImage(verse, platform) {
     width:           dims.width / 2, // render at half-size, html2canvas scale: 2 → full res
     height:          dims.height / 2,
     includeQuestion: shareIncludeQuestion,
-    includeTafsir:   shareIncludeTafsir,
   });
 
   const container = document.getElementById('share-render');
@@ -567,9 +557,7 @@ function openShareSheet(verse) {
 
   // Reset toggles
   document.getElementById('share-include-question').checked = false;
-  document.getElementById('share-include-tafsir').checked   = false;
   shareIncludeQuestion = false;
-  shareIncludeTafsir   = false;
 
   // Reset theme to light
   shareTheme = 'light';
@@ -619,38 +607,31 @@ function updateSharePreview() {
 
   let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;">`;
 
+  // Branding header (top)
+  html += `
+    <div class="si-header" style="padding-top:6%;">
+      <span class="si-header-brand" style="font-size:14px;">TemuQuran.com</span>
+      <span class="si-header-sub" style="font-size:8px;">Temukan Jawaban Dalam Al-Qur'an</span>
+      <div class="si-header-divider"></div>
+    </div>
+  `;
+
+  // Optional feeling/question
   if (shareIncludeQuestion && verse._userQuestion && currentMode !== 'jelajahi') {
-    html += `<p class="si-question" style="font-size:10px;">"${escapeHtml(verse._userQuestion)}"</p>`;
+    html += `<p class="si-question" style="font-size:9px;">"${escapeHtml(verse._userQuestion)}"</p>`;
   }
 
   // Arabic (smaller for preview)
-  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:12px;">${verse.arabic}</p>`;
+  html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:10px;">${verse.arabic}</p>`;
 
   // Translation
   const shortTrans = verse.translation.length > 80
     ? verse.translation.slice(0, 80) + '...'
     : verse.translation;
-  html += `<p class="si-translation" style="font-size:10px;line-height:1.6;margin-bottom:10px;">"${escapeHtml(shortTrans)}"</p>`;
+  html += `<p class="si-translation" style="font-size:9px;line-height:1.6;margin-bottom:8px;">"${escapeHtml(shortTrans)}"</p>`;
 
   // Ref
-  html += `<span class="si-ref" style="font-size:8px;padding:4px 10px;">${escapeHtml(verse.ref)}</span>`;
-
-  // Tafsir
-  if (shareIncludeTafsir) {
-    const tafsirText = verse.tafsir_kemenag || verse.tafsir_summary || '';
-    if (tafsirText) {
-      const t = tafsirText.length > 60 ? tafsirText.slice(0, 60) + '...' : tafsirText;
-      html += `<p class="si-tafsir" style="font-size:8px;line-height:1.5;">${escapeHtml(t)}</p>`;
-    }
-  }
-
-  // Footer
-  html += `
-    <div class="si-footer">
-      <div class="si-footer-divider"></div>
-      <span class="si-footer-brand" style="font-size:10px;">TemuQuran.com</span>
-    </div>
-  `;
+  html += `<span class="si-ref" style="font-size:7px;padding:3px 8px;">${escapeHtml(verse.ref)}</span>`;
 
   html += '</div>';
   preview.innerHTML = html;
@@ -669,7 +650,7 @@ async function shareToPlatform(platform) {
     platform,
     theme: shareTheme,
     include_question: shareIncludeQuestion,
-    include_tafsir: shareIncludeTafsir,
+    include_question: shareIncludeQuestion,
   });
 
   showToast('Membuat gambar...');
@@ -797,7 +778,7 @@ let activePlayBtn = null;
 function stopCurrentAudio() {
   if (activeAudio)   { activeAudio.pause(); activeAudio = null; }
   if (activePlayBtn) {
-    activePlayBtn.innerHTML = PLAY_ICON + ' Dengar Audio';
+    activePlayBtn.innerHTML = PLAY_ICON + ' Dengarkan ayat';
     activePlayBtn.classList.remove('playing');
     activePlayBtn = null;
   }
@@ -924,7 +905,7 @@ function buildVerseCard(verse, index) {
       ${tafsirHtml}
       ${asbabHtml}
       <button class="vc-share-btn-full">Bagikan Gambar Ayat ini ke Socmed / WA</button>
-      <button class="vc-audio-btn-secondary">${PLAY_ICON} Dengar Audio</button>
+      <button class="vc-audio-btn-secondary">${PLAY_ICON} Dengarkan ayat</button>
     </div>
   `;
 
@@ -2215,11 +2196,6 @@ document.getElementById('share-include-question').addEventListener('change', e =
   shareIncludeQuestion = e.target.checked;
   updateSharePreview();
 });
-document.getElementById('share-include-tafsir').addEventListener('change', e => {
-  shareIncludeTafsir = e.target.checked;
-  updateSharePreview();
-});
-
 // Platform buttons
 document.querySelectorAll('.share-platform-btn').forEach(btn => {
   btn.addEventListener('click', () => {

@@ -2266,9 +2266,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   font-family: 'Inter', sans-serif;
-  padding: 8% 10% 0;
+  padding: 6% 10% 5%;
   position: relative;
 }
 .si-question {
@@ -2305,64 +2305,61 @@ body {
   margin-bottom: 16px;
   display: inline-block;
 }
-.si-tafsir {
-  font-size: 13px;
-  line-height: 1.7;
-  text-align: center;
-  margin-bottom: 20px;
-  max-width: 85%;
-}
-.si-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 10%;
+/* ── Share image header (branding at top) ── */
+.si-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  margin-bottom: 28px;
+  width: 100%;
 }
-.si-footer-divider {
-  width: 60%;
-  height: 1px;
-  margin-bottom: 14px;
-}
-.si-footer-brand {
-  font-size: 3%;
-  font-weight: 600;
+.si-header-brand {
+  font-size: 22px;
+  font-weight: 700;
   letter-spacing: 0.3px;
+}
+.si-header-sub {
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 4px;
+  letter-spacing: 0.2px;
+}
+.si-header-divider {
+  width: 40px;
+  height: 2px;
+  border-radius: 1px;
+  margin-top: 16px;
 }
 
 /* ── Share image theme: Light ── */
 .si-theme-light { background: #FFFFFF; }
+.si-theme-light .si-header-brand { color: #2A7C6F; }
+.si-theme-light .si-header-sub { color: #AAAAAA; }
+.si-theme-light .si-header-divider { background: rgba(42,124,111,0.25); }
 .si-theme-light .si-question { color: #4A4A4A; }
 .si-theme-light .si-arabic { color: #1A1A1A; }
 .si-theme-light .si-translation { color: #1A1A1A; }
 .si-theme-light .si-ref { color: var(--teal-dark); background: rgba(42,124,111,0.08); }
-.si-theme-light .si-tafsir { color: #8E8E93; }
-.si-theme-light .si-footer-divider { background: rgba(0,0,0,0.08); }
-.si-theme-light .si-footer-brand { color: #AAAAAA; }
 
 /* ── Share image theme: Dark ── */
 .si-theme-dark { background: #1A1D2E; }
+.si-theme-dark .si-header-brand { color: #C9A84C; }
+.si-theme-dark .si-header-sub { color: rgba(255,255,255,0.4); }
+.si-theme-dark .si-header-divider { background: rgba(201,168,76,0.3); }
 .si-theme-dark .si-question { color: #C0C0D0; }
 .si-theme-dark .si-arabic { color: #FFFFFF; }
 .si-theme-dark .si-translation { color: #F0F0F0; }
 .si-theme-dark .si-ref { color: #C9A84C; background: rgba(196,152,59,0.12); }
-.si-theme-dark .si-tafsir { color: #808090; }
-.si-theme-dark .si-footer-divider { background: rgba(255,255,255,0.10); }
-.si-theme-dark .si-footer-brand { color: rgba(255,255,255,0.4); }
 
 /* ── Share image theme: Classic ── */
 .si-theme-classic { background: #F5EFE0; }
+.si-theme-classic .si-header-brand { color: #8B6F47; }
+.si-theme-classic .si-header-sub { color: rgba(61,50,37,0.4); }
+.si-theme-classic .si-header-divider { background: rgba(139,111,71,0.25); }
 .si-theme-classic .si-question { color: #5C4E3E; }
 .si-theme-classic .si-arabic { color: #2A1F14; }
 .si-theme-classic .si-translation { color: #3D3225; }
 .si-theme-classic .si-ref { color: #8B6F47; background: rgba(139,111,71,0.10); }
-.si-theme-classic .si-tafsir { color: #8B7D6B; }
-.si-theme-classic .si-footer-divider { background: rgba(61,50,37,0.12); }
-.si-theme-classic .si-footer-brand { color: rgba(61,50,37,0.35); }
 
 /* ════════════════════════════════════════════════════════
    SHARE BUTTON REDESIGN (full-width CTA)
@@ -2388,14 +2385,13 @@ body {
   transform: scale(0.98);
 }
 
-/* Audio button as secondary (ghost style) */
+/* Audio button as secondary (ghost style, left-aligned) */
 .vc-audio-btn-secondary {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
   width: auto;
-  margin: 10px auto 0;
+  margin: 10px 0 0;
   padding: 8px 18px;
   border-radius: 20px;
   background: transparent;
