@@ -88,7 +88,8 @@ Valid event types:
 `mode_selected`, `search_started`, `search_completed`, `search_cached`, `mood_feedback`,
 `verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
 `asbabun_nuzul_opened`, `card_expanded`, `sub_question_selected`, `tulis_sendiri_opened`, `verse_swiped`,
-`jelajahi_preset`, `jelajahi_search`, `jelajahi_juz_surah_selected`
+`jelajahi_preset`, `jelajahi_search`, `jelajahi_juz_surah_selected`,
+`share_sheet_opened`, `share_theme_selected`, `share_completed`
 
 To query analytics:
 ```sql
@@ -119,6 +120,7 @@ GROUP BY event_type ORDER BY count DESC;
 - `jelajahiSurahInfo` — surah metadata for the intro card
 - `juzSurahListVisible` — whether the juz surah list overlay is showing
 - `lastJuzSurahTapped` — surah number if user came from juz list (for back nav)
+- `shareTheme` / `shareIncludeQuestion` / `shareIncludeTafsir` / `shareActiveVerse` / `shareLastPlatform` — share sheet state
 
 ### Key data constants
 - `SURAH_META` — 114 entries with `{ number, name, name_arabic, verses, type }` (~5KB)
@@ -159,12 +161,24 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - Pagination dots (≤16 cards) or progress bar (>16 cards) + counter arrows in `.verses-header`
 - Actions/feedback appear on reaching last card
 
+### Share feature
+- **Share button**: Full-width teal CTA ("Bagikan Gambar Ayat ini ke Socmed / WA") on every verse card, primary action. Audio button is secondary ghost-style below it.
+- **Bottom sheet**: Opens `#share-sheet` with overlay (`#share-overlay`). Slides up with 300ms animation, dismissible by overlay tap.
+- **Live preview**: CSS-styled preview thumbnail (~60% width) updates in real-time when theme or toggles change. NOT canvas-rendered — uses the same `.si-wrap` / `.si-theme-*` classes at reduced font sizes.
+- **3 themes**: Light (#FFFFFF bg), Dark (#1A1D2E deep navy), Classic (#F5EFE0 parchment). Theme picker is horizontal pill buttons. Theme colors defined as `.si-theme-light`, `.si-theme-dark`, `.si-theme-classic` CSS classes.
+- **Content toggles**: "Sertakan pertanyaan" (curhat/panduan only, hidden in jelajahi) and "Sertakan tafsir" (all modes). Both unchecked by default.
+- **Platform buttons**: 2×2 grid — IG Story (1080×1920), WA Status (1080×1920), WA Chat (1080×1080), Download (1080×1080). Preview aspect ratio changes when story platforms selected.
+- **Image generation**: `buildShareElement()` creates an off-screen div in `#share-render`, styled per theme. `html2canvas` renders at `scale: 2` for crisp output. Branding footer "TemuQuran.com" on every image.
+- **Share flow**: Web Share API (`navigator.share({files})`) if supported, fallback to download. In-app browsers (Instagram/Facebook/TikTok/LINE) show toast warning.
+- **In-app browser detection**: `IS_IN_APP_BROWSER` flag set from user-agent regex at startup.
+
 ### Other features
 - **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 mode-specific Indonesian messages every 1.8s. Jelajahi uses a simpler spinner.
 - **Typewriter**: reflection/explanation text types at 3 chars / 15 ms on intro slide; "Geser untuk mulai →" hint after completion (curhat/panduan only)
 - **Verse of the Day**: collapsed by default (tap to expand) on landing-view. Loaded from `/api/verse-of-day`, silently hidden on failure.
-- **html2canvas**: lazy-loaded (~200 KB) only on first "Bagikan" tap
+- **html2canvas**: lazy-loaded (~200 KB) only on first share tap. Used by the share sheet image generation.
 - **Audio**: Alafasy recitation via `cdn.islamic.network`, global ayah number computed from `SURAH_VERSE_COUNTS` cumulative sum. Auto-paused on carousel swipe.
+- **OG image**: `og-image.png` (1200×630) + `og-image.html` template in project root. Clean design: "Temukan dalam Al-Qur'an" headline, teal divider, 3 mode indicators, "TemuQuran.com" branding.
 
 ---
 
@@ -190,3 +204,5 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - **Bismillah stripping** — uses NFC Unicode normalization because DB diacritics ordering differs from hardcoded constant. Only applies in Jelajahi mode.
 - **Juz surah list animation** — `showJuzSurahList()` clones the container node to prevent stale `animationend` handlers from re-hiding the list after a view switch interrupts the hide animation.
 - **Jelajahi lazy loading** — triggers 3 slides before the loaded boundary for smooth UX. `jelajahiAllVerses` holds the full array; slides are appended in batches of 15.
+- **Share image themes** — `.si-theme-*` classes in `style.css` define colors for the off-screen share render element AND the live preview. Both share the same class hierarchy (`si-wrap`, `si-arabic`, `si-translation`, `si-ref`, `si-tafsir`, `si-footer`).
+- **OG meta tags** — title is "TemuQuran — Temukan dalam Al-Qur'an", description mentions all 3 modes + privacy + no ads. Theme color is `#2A7C6F` (teal).
