@@ -1828,9 +1828,9 @@ async function fetchJelajahi(queryText, presetIntent) {
 
     if (verses.length === 0) throw new Error('Tidak ditemukan ayat.');
 
-    // Store surah info
+    // Store surah info — prefer SURAH_META (has all fields) over API surah_info
     const firstSurah = verses[0].surah_number;
-    jelajahiSurahInfo = data.surah_info || SURAH_META[firstSurah - 1] || null;
+    jelajahiSurahInfo = SURAH_META[firstSurah - 1] || data.surah_info || null;
 
     renderJelajahiVerses(verses);
 
