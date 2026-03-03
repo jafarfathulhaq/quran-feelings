@@ -1679,7 +1679,11 @@ function handleJelajahiPreset(preset) {
 
 function showJuzSurahList() {
   juzSurahListVisible = true;
-  const container = document.getElementById('juz-surah-list');
+  // Clone node to drop any stale animationend listeners from a prior
+  // hideJuzSurahList that never fired (view switched away mid-animation).
+  const old = document.getElementById('juz-surah-list');
+  const container = old.cloneNode(false);
+  old.parentNode.replaceChild(container, old);
 
   container.innerHTML = `
     <div class="juz-surah-inner">
