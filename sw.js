@@ -3,7 +3,7 @@
 // Only cache icons & manifest — things that NEVER change.
 // app.js, style.css, and HTML are always fetched fresh from the network
 // so every deploy is instantly visible with zero manual cache busting.
-const CACHE_NAME    = 'ayat-static-v1';
+const CACHE_NAME    = 'temuquran-static-v2';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icons/icon-192.png',
