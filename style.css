@@ -2231,6 +2231,149 @@ body.tafsir-locked { overflow: hidden; }
 }
 
 /* ════════════════════════════════════════════════════════
+   ABOUT / FAQ OVERLAY
+════════════════════════════════════════════════════════ */
+
+/* Trigger link at bottom of landing page */
+.about-trigger {
+  display: block;
+  margin: 16px auto 24px;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 8px 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.about-trigger:active {
+  color: var(--text-muted);
+}
+
+/* Full-screen overlay */
+.about-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  overflow-y: auto;
+}
+.about-overlay.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+body.about-locked { overflow: hidden; }
+
+/* Header */
+.ao-header {
+  padding: 16px 20px 0;
+}
+.ao-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--teal-dark);
+  cursor: pointer;
+  padding: 8px 4px 8px 0;
+}
+
+/* Content area */
+.ao-content {
+  padding: 16px 24px 40px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+.ao-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+.ao-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+
+/* Accordion */
+.ao-accordion {
+  margin-top: 0;
+}
+.ao-item {
+  border-bottom: 1px solid var(--border);
+}
+.ao-item:first-child {
+  border-top: 1px solid var(--border);
+}
+.ao-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 2px;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  cursor: pointer;
+  text-align: left;
+}
+.ao-toggle svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-soft);
+  transition: transform 0.25s ease;
+}
+.ao-toggle.open svg {
+  transform: rotate(180deg);
+}
+.ao-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.ao-answer.open {
+  max-height: 600px;
+}
+.ao-body {
+  padding: 0 2px 20px;
+  font-size: 0.8125rem;
+  line-height: 1.8;
+  color: var(--text-mid);
+}
+
+/* Tafsir source badges */
+.source-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  margin: 3px 4px 3px 0;
+}
+
+/* ════════════════════════════════════════════════════════
    VERSE OF THE DAY
 ════════════════════════════════════════════════════════ */
 .votd-section { margin-top: 8px; }

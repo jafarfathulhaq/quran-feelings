@@ -110,6 +110,8 @@
         <span class="a2hs-text">Simpan TemuQuran di Layar Utama</span>
         <button class="a2hs-btn" id="a2hsBtn">Pasang</button>
       </div>
+
+      <button class="about-trigger" onclick="openAbout()">Tentang TemuQuran</button>
     </section>
 
     <!-- ── Selection View (Curhat mode) ──────────────── -->
@@ -372,6 +374,148 @@
 
   <!-- Tafsir summary overlay (populated dynamically by app.js) -->
   <div id="tafsir-overlay" class="tafsir-overlay" aria-hidden="true"></div>
+
+  <!-- About / FAQ overlay -->
+  <div id="aboutOverlay" class="about-overlay" aria-hidden="true">
+    <div class="ao-header">
+      <button class="ao-back" onclick="closeAbout()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Kembali
+      </button>
+    </div>
+    <div class="ao-content">
+      <h2 class="ao-title">Tentang TemuQuran</h2>
+      <p class="ao-subtitle">Proyek amal jariyah oleh Jafar Fathul Haq, diluncurkan di bulan Ramadan 1447H / 2026.</p>
+
+      <div class="ao-accordion">
+        <!-- 1. Apa itu TemuQuran? -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="apa_itu">
+            Apa itu TemuQuran?
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              TemuQuran membantu kamu menemukan ayat Al-Qur'an yang relevan dengan perasaan, pertanyaan hidup, atau topik yang ingin kamu pelajari.
+              <br><br>
+              Proyek ini dibuat oleh <strong>Jafar Fathul Haq</strong> sebagai <strong>amal jariyah</strong> di bulan Ramadan 2026 — dengan harapan setiap orang yang menemukan ketenangan melalui ayat Al-Qur'an di sini menjadi pahala yang terus mengalir.
+              <br><br>
+              TemuQuran gratis dan tanpa iklan.
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Bagaimana cara kerjanya? -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="cara_kerja">
+            Bagaimana cara kerjanya?
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              TemuQuran menggunakan teknologi AI untuk mencocokkan perasaan atau pertanyaanmu dengan ayat-ayat Al-Qur'an yang paling relevan.
+              <br><br>
+              AI hanya bertugas <strong>mencari dan mencocokkan</strong> — bukan menafsirkan. Semua tafsir yang ditampilkan berasal langsung dari sumber-sumber tafsir terpercaya, bukan hasil buatan AI.
+              <br><br>
+              Mode Jelajahi tidak menggunakan AI sama sekali — kamu langsung membaca ayat Al-Qur'an.
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Sumber tafsir -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="sumber">
+            Sumber tafsir apa yang digunakan?
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              TemuQuran menampilkan tafsir dari sumber-sumber berikut:
+              <br><br>
+              <span class="source-badge">Tafsir Kemenag</span>
+              <span class="source-badge">Tafsir Ibnu Katsir</span>
+              <span class="source-badge">Quraish Shihab</span>
+              <span class="source-badge">Al-Wahidi (Asbab al-Nuzul)</span>
+              <br><br>
+              Tafsir Quraish Shihab yang ditampilkan adalah Tafsir Muntakhab (ringkasan), bukan Tafsir Al-Mishbah (versi lengkap 15 jilid).
+              <br><br>
+              Ringkasan tafsir dibuat berdasarkan keempat sumber di atas. Tidak ada informasi tambahan dari luar sumber-sumber ini.
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Privasi -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="privasi">
+            Bagaimana dengan privasi saya?
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              <strong>TemuQuran tidak menyimpan teks yang kamu ketik.</strong> Perasaan, pertanyaan, dan curhatmu tidak pernah disimpan di server kami.
+              <br><br>
+              Tidak ada akun, tidak ada login, tidak ada tracking personal. Kami hanya mencatat data anonim untuk meningkatkan layanan.
+              <br><br>
+              Tidak ada iklan. Tidak ada data yang dijual.
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Akurasi tafsir -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="akurasi">
+            Apakah tafsirnya akurat?
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              Tafsir yang ditampilkan diambil langsung dari sumber-sumber terpercaya tanpa diubah. Ringkasan tafsir dibuat berdasarkan sumber-sumber tersebut dengan aturan ketat: tidak menambahkan informasi dari luar.
+              <br><br>
+              Namun, untuk pemahaman yang lebih mendalam, kami selalu menyarankan untuk membaca tafsir lengkap dan berkonsultasi dengan ulama.
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Dukung -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="dukung">
+            Dukung TemuQuran
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              TemuQuran adalah proyek amal jariyah yang dikelola secara mandiri. Dengan mendukung, kamu juga menjadi bagian dari amal jariyah ini. Beberapa cara untuk mendukung:
+              <br><br>
+              🤲 <strong>Doakan</strong> — doakan agar proyek ini bermanfaat bagi banyak orang dan menjadi amal jariyah yang diterima.
+              <br><br>
+              📤 <strong>Bagikan</strong> — ceritakan TemuQuran ke teman, keluarga, atau grup WhatsApp. Setiap orang yang terbantu menjadi pahala bersama.
+              <br><br>
+              💛 <strong>Sedekah</strong> — bantu biaya maintenance website (server, API, dan pengembangan) melalui QRIS.
+              <br><br>
+              <em>QRIS segera tersedia</em>
+              <br><br>
+              💬 <strong>Beri masukan</strong> — punya ide atau menemukan kesalahan? Hubungi salam@temuquran.com
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Masukan -->
+        <div class="ao-item">
+          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="masukan">
+            Masukan atau pertanyaan?
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="ao-answer">
+            <div class="ao-body">
+              TemuQuran masih baru dan terus dikembangkan. Kami sangat menghargai setiap masukan untuk menjadikannya lebih baik.
+              <br><br>
+              Hubungi kami melalui <a href="mailto:salam@temuquran.com" style="color: var(--teal-dark); text-decoration: underline;">salam@temuquran.com</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Share image render target (off-screen, captured by html2canvas) -->
   <div id="share-render" class="share-render" aria-hidden="true"></div>

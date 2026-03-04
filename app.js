@@ -872,11 +872,59 @@ function closeTafsirOverlay() {
 
 // Close tafsir overlay on browser back button
 window.addEventListener('popstate', () => {
-  const overlay = document.getElementById('tafsir-overlay');
-  if (overlay && overlay.classList.contains('active')) {
+  const tafsirOv = document.getElementById('tafsir-overlay');
+  if (tafsirOv && tafsirOv.classList.contains('active')) {
     closeTafsirOverlay();
+    return;
+  }
+  const aboutOv = document.getElementById('aboutOverlay');
+  if (aboutOv && aboutOv.classList.contains('active')) {
+    closeAbout();
   }
 });
+
+// ── About / FAQ Overlay ───────────────────────────────────────────────────────
+function openAbout() {
+  const overlay = document.getElementById('aboutOverlay');
+  if (!overlay) return;
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('about-locked');
+  history.pushState({ about: true }, '');
+  logEvent('about_opened', {});
+}
+
+function closeAbout() {
+  const overlay = document.getElementById('aboutOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('about-locked');
+  // Collapse any open accordion item
+  overlay.querySelectorAll('.ao-toggle.open').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling.classList.remove('open');
+  });
+}
+
+function toggleAboutItem(btn) {
+  const answer = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  const faqKey = btn.getAttribute('data-faq');
+
+  // Close all open items (single-open behavior)
+  document.querySelectorAll('#aboutOverlay .ao-toggle.open').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling.classList.remove('open');
+  });
+
+  // Toggle the clicked item
+  if (!isOpen) {
+    btn.classList.add('open');
+    answer.classList.add('open');
+    if (faqKey) logEvent('about_faq_tapped', { item: faqKey });
+  }
+}
 
 // Update the live preview thumbnail (CSS-styled, not canvas)
 function updateSharePreview() {
