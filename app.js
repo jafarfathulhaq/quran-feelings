@@ -124,6 +124,7 @@ let currentMode       = null;  // 'curhat' or 'panduan'
 let expandedCardId    = null;  // panduan card ID currently expanded, or null
 let currentCardIndex  = 0;     // carousel active slide index
 let totalVerseCards   = 0;     // total slides (intro + verses)
+let _swipeHintTimers  = [];    // timers for peek nudge + auto-advance
 
 // ── Share sheet state ──────────────────────────────────────────────────────
 let shareTheme           = 'light';   // 'light', 'dark', 'classic'
@@ -1535,7 +1536,7 @@ function renderVerses(data) {
           <span class="cb-text" id="intro-typewriter"></span>
         </div>
       </div>
-      <p class="intro-swipe-hint" id="intro-swipe-hint" style="display:none;">Geser untuk menemukan ayat →</p>
+      <div class="swipe-hint-pill" id="intro-swipe-hint" style="display:none;">Geser untuk menemukan ayat <span class="swipe-hint-arrow">→</span></div>
     </div>
   `;
   carousel.appendChild(introSlide);
@@ -1571,9 +1572,10 @@ function renderVerses(data) {
       const appBubble = introTextEl.closest('.chat-bubble--app');
       if (appBubble) appBubble.classList.remove('chat-bubble--typing-active');
       typewriterActive = false;
-      // Show swipe hint
+      // Show swipe hint + start hint sequence
       const hint = document.getElementById('intro-swipe-hint');
       if (hint) hint.style.display = '';
+      startSwipeHintSequence();
     }
   }
 
@@ -1583,6 +1585,7 @@ function renderVerses(data) {
     typewriterActive = false;
     const hint = document.getElementById('intro-swipe-hint');
     if (hint) hint.style.display = '';
+    startSwipeHintSequence();
   }
 
   // ── E: Scroll listener for carousel ─────────────────────────────────────────
@@ -1591,6 +1594,41 @@ function renderVerses(data) {
   // ── F: Hide actions/feedback until last card ────────────────────────────────
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
+}
+
+// ── Swipe hint sequence (pill → peek → auto-advance) ─────────────────────────
+
+function startSwipeHintSequence() {
+  // Cancel any previous hint timers
+  _swipeHintTimers.forEach(clearTimeout);
+  _swipeHintTimers = [];
+
+  const carousel = document.getElementById('verses-carousel');
+  if (!carousel || totalVerseCards < 2) return;
+
+  // 1. Peek nudge after 1.5s — reveal edge of next card
+  _swipeHintTimers.push(setTimeout(() => {
+    if (currentCardIndex !== 0) return;
+    carousel.scrollTo({ left: 50, behavior: 'smooth' });
+    setTimeout(() => {
+      if (currentCardIndex === 0) carousel.scrollTo({ left: 0, behavior: 'smooth' });
+    }, 600);
+  }, 1500));
+
+  // 2. Auto-advance to first verse after 5s
+  _swipeHintTimers.push(setTimeout(() => {
+    if (currentCardIndex !== 0) return;
+    const slideWidth = carousel.offsetWidth;
+    carousel.scrollTo({ left: slideWidth, behavior: 'smooth' });
+  }, 5000));
+}
+
+function clearSwipeHints() {
+  _swipeHintTimers.forEach(clearTimeout);
+  _swipeHintTimers = [];
+  document.querySelectorAll('.swipe-hint-pill').forEach(el => {
+    el.classList.add('hint-faded');
+  });
 }
 
 // ── Carousel Helpers ──────────────────────────────────────────────────────────
@@ -1606,6 +1644,9 @@ function onCarouselScroll() {
   updateCounter();
   updateDots();
   updateProgressBar();
+
+  // Clear swipe hints on first move away from intro
+  if (newIndex > 0 && _swipeHintTimers.length > 0) clearSwipeHints();
 
   // Auto-pause audio when swiping away
   stopCurrentAudio();
@@ -2669,7 +2710,7 @@ function renderJelajahiVerses(verses) {
       ${surahLabel ? `<p class="ji-meta">${surahLabel}</p>` : ''}
       <p class="ji-meta">${totalVersesDisplay} Ayat${typeLabel ? ` · ${typeLabel}` : ''}</p>
       ${showBismillah ? `<p class="ji-bismillah">${BISMILLAH_AR}</p>` : ''}
-      <p class="ji-hint">Geser untuk mulai baca →</p>
+      <div class="swipe-hint-pill ji-hint-pill">Geser untuk mulai baca <span class="swipe-hint-arrow">→</span></div>
     </div>
   `;
   carousel.appendChild(introSlide);
@@ -2687,6 +2728,9 @@ function renderJelajahiVerses(verses) {
   // ── E: Hide actions/feedback until last card ────────────────────────────
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
+
+  // ── F: Start swipe hint sequence ──────────────────────────────────────
+  startSwipeHintSequence();
 }
 
 function loadNextJelajahiBatch() {

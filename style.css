@@ -815,13 +815,7 @@ body {
 }
 
 .ji-hint,
-.jelajahi-intro-hint {
-  margin-top: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.35);
-  animation: hintPulse 2s ease-in-out infinite;
-}
+.jelajahi-intro-hint { display: none; /* legacy, replaced by .swipe-hint-pill */ }
 
 /* ── Jelajahi Loading State ─────────────────────────── */
 .jelajahi-loading {
@@ -1408,17 +1402,41 @@ body {
   gap: 10px;
 }
 
-.intro-swipe-hint {
+.intro-swipe-hint { display: none; /* legacy, replaced by .swipe-hint-pill */ }
+
+/* Swipe hint pill — teal pill with bouncing arrow */
+.swipe-hint-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 20px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.35);
-  animation: hintPulse 2s ease-in-out infinite;
+  padding: 10px 20px;
+  background: var(--teal-dark);
+  color: #fff;
+  border-radius: 24px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  animation: hintPillIn 0.4s ease-out;
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
-@keyframes hintPulse {
-  0%, 100% { opacity: 0.5; }
-  50%      { opacity: 1; }
+.swipe-hint-pill.hint-faded {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+.ji-hint-pill { margin-top: 16px; }
+.swipe-hint-arrow {
+  display: inline-block;
+  animation: hintArrowBounce 1s ease-in-out infinite;
+}
+@keyframes hintPillIn {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes hintArrowBounce {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(5px); }
 }
 
 /* Verse cards inside carousel — no entrance animation */
