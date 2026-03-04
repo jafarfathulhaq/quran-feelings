@@ -783,8 +783,12 @@ function openTafsirOverlay(verse) {
         <svg class="to-ref-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="to-ref-expand" id="to-ref-expand">
-        <p class="to-ref-arabic">${escapeHtml(verse.arabic)}</p>
-        <p class="to-ref-translation">"${escapeHtml(verse.translation)}"</p>
+        <div class="to-ref-card">
+          <div class="to-ref-arabic-wrap">
+            <p class="to-ref-arabic">${escapeHtml(verse.arabic)}</p>
+          </div>
+          <p class="to-ref-translation">"${escapeHtml(verse.translation)}"</p>
+        </div>
       </div>
       <div class="to-ref-divider"></div>
     </div>
