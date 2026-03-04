@@ -111,7 +111,7 @@
         <button class="a2hs-btn" id="a2hsBtn">Pasang</button>
       </div>
 
-      <button class="about-trigger" onclick="openAbout()">Tentang TemuQuran</button>
+      <button class="about-trigger" id="aboutTrigger">Tentang TemuQuran</button>
     </section>
 
     <!-- ── Selection View (Curhat mode) ──────────────── -->
@@ -378,7 +378,7 @@
   <!-- About / FAQ overlay -->
   <div id="aboutOverlay" class="about-overlay" aria-hidden="true">
     <div class="ao-header">
-      <button class="ao-back" onclick="closeAbout()">
+      <button class="ao-back" id="aboutBack">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         Kembali
       </button>
@@ -390,7 +390,7 @@
       <div class="ao-accordion">
         <!-- 1. Apa itu TemuQuran? -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="apa_itu">
+          <button class="ao-toggle" data-faq="apa_itu">
             Apa itu TemuQuran?
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -407,7 +407,7 @@
 
         <!-- 2. Bagaimana cara kerjanya? -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="cara_kerja">
+          <button class="ao-toggle" data-faq="cara_kerja">
             Bagaimana cara kerjanya?
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -424,7 +424,7 @@
 
         <!-- 3. Sumber tafsir -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="sumber">
+          <button class="ao-toggle" data-faq="sumber">
             Sumber tafsir apa yang digunakan?
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -446,7 +446,7 @@
 
         <!-- 4. Privasi -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="privasi">
+          <button class="ao-toggle" data-faq="privasi">
             Bagaimana dengan privasi saya?
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -463,7 +463,7 @@
 
         <!-- 5. Akurasi tafsir -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="akurasi">
+          <button class="ao-toggle" data-faq="akurasi">
             Apakah tafsirnya akurat?
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -478,7 +478,7 @@
 
         <!-- 6. Dukung -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="dukung">
+          <button class="ao-toggle" data-faq="dukung">
             Dukung TemuQuran
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -501,7 +501,7 @@
 
         <!-- 7. Masukan -->
         <div class="ao-item">
-          <button class="ao-toggle" onclick="toggleAboutItem(this)" data-faq="masukan">
+          <button class="ao-toggle" data-faq="masukan">
             Masukan atau pertanyaan?
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>

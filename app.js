@@ -907,23 +907,36 @@ function closeAbout() {
   });
 }
 
-function toggleAboutItem(btn) {
-  const answer = btn.nextElementSibling;
-  const isOpen = btn.classList.contains('open');
-  const faqKey = btn.getAttribute('data-faq');
+function initAbout() {
+  // Trigger button
+  const trigger = document.getElementById('aboutTrigger');
+  if (trigger) trigger.addEventListener('click', openAbout);
 
-  // Close all open items (single-open behavior)
-  document.querySelectorAll('#aboutOverlay .ao-toggle.open').forEach(b => {
-    b.classList.remove('open');
-    b.nextElementSibling.classList.remove('open');
+  // Back button
+  const back = document.getElementById('aboutBack');
+  if (back) back.addEventListener('click', closeAbout);
+
+  // Accordion toggles (single-open behavior)
+  document.querySelectorAll('#aboutOverlay .ao-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const answer = btn.nextElementSibling;
+      const isOpen = btn.classList.contains('open');
+      const faqKey = btn.getAttribute('data-faq');
+
+      // Close all open items
+      document.querySelectorAll('#aboutOverlay .ao-toggle.open').forEach(b => {
+        b.classList.remove('open');
+        b.nextElementSibling.classList.remove('open');
+      });
+
+      // Toggle the clicked item
+      if (!isOpen) {
+        btn.classList.add('open');
+        answer.classList.add('open');
+        if (faqKey) logEvent('about_faq_tapped', { item: faqKey });
+      }
+    });
   });
-
-  // Toggle the clicked item
-  if (!isOpen) {
-    btn.classList.add('open');
-    answer.classList.add('open');
-    if (faqKey) logEvent('about_faq_tapped', { item: faqKey });
-  }
 }
 
 // Update the live preview thumbnail (CSS-styled, not canvas)
@@ -2705,6 +2718,7 @@ initPanduanSearch();
 initJelajahiSearch();
 initVOTD();
 initA2HS();
+initAbout();
 
 // ── Service Worker ─────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
