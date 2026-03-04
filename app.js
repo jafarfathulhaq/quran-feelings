@@ -1,5 +1,14 @@
 'use strict';
 
+// ── Google Analytics (GA4) ────────────────────────────────────────────────────
+// gtag.js is loaded async via <script> in index.html.
+// We initialise the dataLayer + config here so everything stays in one JS file
+// (no inline <script> needed — required by our CSP: script-src 'self').
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-NWKWSKTNS0');
+
 // ── In-App Browser Detection ───────────────────────────────────────────────────
 // Instagram, Facebook, TikTok, and LINE ship their own WebView that blocks
 // navigator.share({files}) and blob URL downloads — the two mechanisms the
@@ -69,11 +78,17 @@ const SESSION_ID = (() => {
 })();
 
 function logEvent(eventType, properties = {}) {
+  // ── Supabase analytics (existing) ──────────────────────────────────────────
   fetch('/api/log-event', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ event_type: eventType, properties: { ...properties, session_id: SESSION_ID } }),
   }).catch(() => {}); // silently ignore network failures
+
+  // ── GA4 (Google Analytics) ─────────────────────────────────────────────────
+  if (typeof gtag === 'function') {
+    gtag('event', eventType, properties);
+  }
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
