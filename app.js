@@ -736,12 +736,11 @@ function openTafsirOverlay(verse) {
 
   // ── Build full tafsir tabs ───────────────────────────────────────────────
   const fullTafsirSources = [];
-  if (verse.tafsir_quraish_shihab) fullTafsirSources.push({ id: 'qs',     label: 'Quraish Shihab', text: verse.tafsir_quraish_shihab });
-  if (verse.tafsir_kemenag)        fullTafsirSources.push({ id: 'kemenag', label: 'Kemenag',        text: verse.tafsir_kemenag });
+  if (verse.tafsir_kemenag)        fullTafsirSources.push({ id: 'kemenag', label: 'Kemenag',        text: verse.tafsir_kemenag, isMarkdown: false });
   const ikText = verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir;
-  if (ikText)                      fullTafsirSources.push({ id: 'ik',      label: 'Ibnu Katsir',    text: ikText });
+  if (ikText)                      fullTafsirSources.push({ id: 'ik',      label: 'Ibnu Katsir',    text: ikText, isMarkdown: true });
   const asbabFullText = verse.asbabun_nuzul_id || verse.asbabun_nuzul;
-  if (asbabFullText)               fullTafsirSources.push({ id: 'asbab',   label: 'Asbabun Nuzul',  text: asbabFullText });
+  if (asbabFullText)               fullTafsirSources.push({ id: 'asbab',   label: 'Asbabun Nuzul',  text: asbabFullText, isMarkdown: true });
 
   const fullTabsHtml = fullTafsirSources.length > 0 ? `
     <div class="to-full-section">
@@ -750,12 +749,19 @@ function openTafsirOverlay(verse) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="to-full-content" id="to-full-content">
-        <div class="to-full-tabs" id="to-full-tabs">
-          ${fullTafsirSources.map((s, i) =>
-            `<button class="to-full-tab${i === 0 ? ' active' : ''}" data-tab-id="${s.id}">${s.label}</button>`
-          ).join('')}
-        </div>
-        <div class="to-full-body" id="to-full-body"></div>
+        ${fullTafsirSources.map((s, i) => `
+          <div class="tfl-item">
+            <button class="tfl-toggle${i === 0 ? ' open' : ''}" data-tfl-id="${s.id}">
+              <span>${s.label}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="tfl-answer${i === 0 ? ' open' : ''}">
+              <div class="tfl-body vc-tafsir-md">
+                ${s.isMarkdown ? renderMarkdown(s.text) : '<p>' + escapeHtml(s.text).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>'}
+              </div>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>` : '';
 
@@ -830,12 +836,8 @@ function openTafsirOverlay(verse) {
   // ── Full tafsir expand/collapse ──────────────────────────────────────────
   const fullBtn     = document.getElementById('to-full-btn');
   const fullContent = document.getElementById('to-full-content');
-  const fullBody    = document.getElementById('to-full-body');
 
   if (fullBtn && fullContent && fullTafsirSources.length > 0) {
-    // Set initial tab content
-    fullBody.textContent = fullTafsirSources[0].text;
-
     fullBtn.addEventListener('click', () => {
       const isExpanded = fullContent.classList.toggle('expanded');
       fullBtn.classList.toggle('expanded', isExpanded);
@@ -851,13 +853,25 @@ function openTafsirOverlay(verse) {
       }
     });
 
-    // Tab switching
-    document.querySelectorAll('#to-full-tabs .to-full-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('#to-full-tabs .to-full-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const src = fullTafsirSources.find(s => s.id === tab.dataset.tabId);
-        if (src) fullBody.textContent = src.text;
+    // Accordion toggles (single-open behavior)
+    fullContent.querySelectorAll('.tfl-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const answer = btn.closest('.tfl-item').querySelector('.tfl-answer');
+        const isOpen = btn.classList.contains('open');
+
+        // Close all open items
+        fullContent.querySelectorAll('.tfl-toggle.open').forEach(t => {
+          t.classList.remove('open');
+          t.closest('.tfl-item').querySelector('.tfl-answer').classList.remove('open');
+        });
+
+        // If clicked item wasn't open, open it
+        if (!isOpen) {
+          btn.classList.add('open');
+          answer.classList.add('open');
+        }
+
+        logEvent('tafsir_full_tab_switched', { source: btn.dataset.tflId });
       });
     });
   }
