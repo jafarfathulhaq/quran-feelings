@@ -3,7 +3,7 @@
 /**
  * build-verses.js
  * Fetches Arabic + Indonesian translation for each seed verse from alquran.cloud,
- * merges with our manually curated themes + tafsir_summary,
+ * merges with our manually curated themes + tafsir_quraish_shihab,
  * and writes the result to data/verses.json.
  *
  * Run once locally:  node scripts/build-verses.js
@@ -417,7 +417,7 @@ async function build() {
         arabic:        v.arabic,
         translation:   v.translation,
         themes:        item.themes,
-        tafsir_summary: item.tafsir,
+        tafsir_quraish_shihab: item.tafsir,
       });
       console.log('✓');
       ok++;

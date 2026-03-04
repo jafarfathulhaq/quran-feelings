@@ -3,7 +3,7 @@
 reembed.py
 ──────────
 Re-embeds all verses using richer text:
-  translation + tafsir_summary (Quraish Shihab)
+  translation + tafsir_quraish_shihab (Quraish Shihab)
             + tafsir_kemenag[:600]
             + tafsir_ibnu_kathir_id[:600]
 
@@ -77,7 +77,7 @@ def fetch_all_verses():
     while True:
         url = (
             f"{SUPABASE_URL}/rest/v1/quran_verses"
-            f"?select=id,translation,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir_id"
+            f"?select=id,translation,tafsir_quraish_shihab,tafsir_kemenag,tafsir_ibnu_kathir_id"
             f"&order=id"
             f"&offset={offset}&limit={FETCH_BATCH}"
         )
@@ -102,7 +102,7 @@ def build_embed_text(v):
     Layer               Typical chars   Adds to vector
     ──────────────────  ─────────────   ─────────────────────────────────────
     translation (EN)        ~100        Literal meaning
-    tafsir_summary          ~300        Emotional / contextual resonance (QS)
+    tafsir_quraish_shihab          ~300        Emotional / contextual resonance (QS)
     tafsir_kemenag[:600]    ~600        Broad official Indonesian commentary
     tafsir_ibnu_kathir_id   ~600        Classical depth: hadith, asbabun nuzul
 
@@ -110,8 +110,8 @@ def build_embed_text(v):
     populated (e.g. IK translation still pending) it is simply skipped.
     """
     text = v["translation"] or ""
-    if v.get("tafsir_summary"):
-        text += " " + v["tafsir_summary"]
+    if v.get("tafsir_quraish_shihab"):
+        text += " " + v["tafsir_quraish_shihab"]
     if v.get("tafsir_kemenag"):
         text += " " + v["tafsir_kemenag"][:600]
     if v.get("tafsir_ibnu_kathir_id"):
@@ -188,7 +188,7 @@ def main():
 
     print("\n── Phase 1: Fetching all verses from Supabase ───────────────────────────")
     verses = fetch_all_verses()
-    has_qs  = sum(1 for v in verses if v.get("tafsir_summary"))
+    has_qs  = sum(1 for v in verses if v.get("tafsir_quraish_shihab"))
     has_km  = sum(1 for v in verses if v.get("tafsir_kemenag"))
     has_ik  = sum(1 for v in verses if v.get("tafsir_ibnu_kathir_id"))
     print(f"  ✓ Fetched {len(verses)} verses")

@@ -3,17 +3,17 @@
 update_tafsir.py
 ────────────────
 Fetches Tafsir Muntakhab (Muhammad Quraish Shihab et al.) for all 6,236
-verses from alquran.cloud and updates the tafsir_summary column in Supabase.
+verses from alquran.cloud and updates the tafsir_quraish_shihab column in Supabase.
 
 The verses + embeddings are already in the DB — this script only patches
-the tafsir_summary column, leaving everything else untouched.
+the tafsir_quraish_shihab column, leaving everything else untouched.
 
 Run once from the project root:
 
   python3 scripts/update_tafsir.py
 
 Reads credentials from .env (same file used by seed_quran.py).
-Re-running is safe: upsert on primary key just overwrites tafsir_summary.
+Re-running is safe: upsert on primary key just overwrites tafsir_quraish_shihab.
 """
 
 import json, os, sys, time, urllib.request, urllib.error
@@ -91,7 +91,7 @@ def update_all():
             for ayah in ayahs:
                 all_rows.append({
                     "id":             f"{n}:{ayah['numberInSurah']}",
-                    "tafsir_summary": ayah["text"],
+                    "tafsir_quraish_shihab": ayah["text"],
                 })
             print(f"✓ ({len(ayahs)} ayat)")
         except Exception as e:
@@ -100,7 +100,7 @@ def update_all():
 
     print(f"\n  ✓ Fetched tafsir for {len(all_rows)} verses\n")
 
-    print("── Upserting tafsir_summary into Supabase ───────────────────────────────")
+    print("── Upserting tafsir_quraish_shihab into Supabase ───────────────────────────────")
     total     = len(all_rows)
     updated   = 0
     failed    = 0
@@ -120,7 +120,7 @@ def update_all():
 
     print(f"\n  ✓ Updated {updated} rows  ({failed} failed)\n")
     print("── Done ─────────────────────────────────────────────────────────────────")
-    print(f"  tafsir_summary (Quraish Shihab) now set for {updated} verses.")
+    print(f"  tafsir_quraish_shihab (Quraish Shihab) now set for {updated} verses.")
 
 if __name__ == "__main__":
     update_all()

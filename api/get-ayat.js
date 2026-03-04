@@ -735,7 +735,7 @@ module.exports = async function handler(req, res) {
       surah_name:     v.surah_name,
       verse_number:   v.verse_number,
       translation:    v.translation,
-      tafsir_summary: v.tafsir_summary || null,
+      tafsir_quraish_shihab: v.tafsir_quraish_shihab || null,
     }));
 
     const promptTemplate = mode === 'panduan' ? PROMPT_PANDUAN : PROMPT_CURHAT;
@@ -814,16 +814,18 @@ module.exports = async function handler(req, res) {
       });
 
     // Fetch tafsir + asbabun nuzul fields for selected verse ids in one REST call
-    let kemenagMap       = {};
-    let ibnuKathirMap    = {};
-    let ibnuKathirIdMap  = {};
-    let asbabunNuzulMap    = {};
-    let asbabunNuzulIdMap  = {};
+    let kemenagMap             = {};
+    let ibnuKathirMap          = {};
+    let ibnuKathirIdMap        = {};
+    let asbabunNuzulMap        = {};
+    let asbabunNuzulIdMap      = {};
+    let tafsirQuraishShihabMap = {};
+    let tafsirSummaryJsonbMap  = {};
     if (selectedBase.length > 0) {
       const ids = selectedBase.map(v => v.id).join(',');
       const kRes = await fetch(
         `${process.env.SUPABASE_URL}/rest/v1/quran_verses` +
-        `?select=id,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id&id=in.(${encodeURIComponent(ids)})`,
+        `?select=id,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id,tafsir_quraish_shihab,tafsir_summary&id=in.(${encodeURIComponent(ids)})`,
         {
           headers: {
             'apikey':        process.env.SUPABASE_ANON_KEY,
@@ -833,11 +835,13 @@ module.exports = async function handler(req, res) {
       );
       if (kRes.ok) {
         const kRows = await kRes.json();
-        kemenagMap        = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
-        ibnuKathirMap     = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir]));
-        ibnuKathirIdMap   = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir_id]));
-        asbabunNuzulMap   = Object.fromEntries(kRows.map(r => [r.id, r.asbabun_nuzul]));
-        asbabunNuzulIdMap = Object.fromEntries(kRows.map(r => [r.id, r.asbabun_nuzul_id]));
+        kemenagMap             = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_kemenag]));
+        ibnuKathirMap          = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir]));
+        ibnuKathirIdMap        = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_ibnu_kathir_id]));
+        asbabunNuzulMap        = Object.fromEntries(kRows.map(r => [r.id, r.asbabun_nuzul]));
+        asbabunNuzulIdMap      = Object.fromEntries(kRows.map(r => [r.id, r.asbabun_nuzul_id]));
+        tafsirQuraishShihabMap = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_quraish_shihab]));
+        tafsirSummaryJsonbMap  = Object.fromEntries(kRows.map(r => [r.id, r.tafsir_summary]));
       }
     }
 
@@ -857,13 +861,14 @@ module.exports = async function handler(req, res) {
       verse_number:          v.verse_number,
       arabic:                v.arabic,
       translation:           v.translation,
-      [perVerseField]:       perVerseMap[v.id]           || null,
-      tafsir_summary:        v.tafsir_summary            || null,
-      tafsir_kemenag:        kemenagMap[v.id]             || null,
-      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]          || null,
-      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]        || null,
-      asbabun_nuzul:         asbabunNuzulMap[v.id]        || null,
-      asbabun_nuzul_id:      asbabunNuzulIdMap[v.id]      || null,
+      [perVerseField]:       perVerseMap[v.id]              || null,
+      tafsir_quraish_shihab: tafsirQuraishShihabMap[v.id]  || v.tafsir_quraish_shihab || null,
+      tafsir_summary:        tafsirSummaryJsonbMap[v.id]   || null,
+      tafsir_kemenag:        kemenagMap[v.id]               || null,
+      tafsir_ibnu_kathir:    ibnuKathirMap[v.id]            || null,
+      tafsir_ibnu_kathir_id: ibnuKathirIdMap[v.id]          || null,
+      asbabun_nuzul:         asbabunNuzulMap[v.id]          || null,
+      asbabun_nuzul_id:      asbabunNuzulIdMap[v.id]        || null,
     }));
 
     if (ayat.length === 0) {
@@ -1007,20 +1012,20 @@ async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) 
     switch (intent.type) {
       case 'surah': {
         dbUrl = `${supabaseUrl}/rest/v1/quran_verses` +
-          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
+          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_quraish_shihab,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
           `&surah_number=eq.${intent.surah}&order=verse_number.asc`;
         break;
       }
       case 'ayat':
       case 'famous_ayat': {
         dbUrl = `${supabaseUrl}/rest/v1/quran_verses` +
-          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
+          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_quraish_shihab,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
           `&surah_number=eq.${intent.surah}&verse_number=eq.${intent.ayah_start}`;
         break;
       }
       case 'ayat_range': {
         dbUrl = `${supabaseUrl}/rest/v1/quran_verses` +
-          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
+          `?select=id,surah_number,verse_number,arabic,translation,surah_name,tafsir_quraish_shihab,tafsir_summary,tafsir_kemenag,tafsir_ibnu_kathir,tafsir_ibnu_kathir_id,asbabun_nuzul,asbabun_nuzul_id` +
           `&surah_number=eq.${intent.surah}&verse_number=gte.${intent.ayah_start}&verse_number=lte.${intent.ayah_end}&order=verse_number.asc`;
         break;
       }
@@ -1071,6 +1076,7 @@ async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) 
       verse_number:          v.verse_number,
       arabic:                v.arabic,
       translation:           v.translation,
+      tafsir_quraish_shihab: v.tafsir_quraish_shihab || null,
       tafsir_summary:        v.tafsir_summary || null,
       tafsir_kemenag:        v.tafsir_kemenag || null,
       tafsir_ibnu_kathir:    v.tafsir_ibnu_kathir || null,

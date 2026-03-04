@@ -83,13 +83,13 @@ def http_get(url):
 # ── Phase 1: Fetch all verses ─────────────────────────────────────────────────
 
 def load_tafsir_map():
-    """Load tafsir_summary for the 64 curated verses."""
+    """Load tafsir_quraish_shihab for the 64 curated verses."""
     path = os.path.join(os.path.dirname(__file__), "../data/verses.json")
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as f:
         curated = json.load(f)
-    return {v["id"]: v.get("tafsir_summary") for v in curated}
+    return {v["id"]: v.get("tafsir_quraish_shihab") for v in curated}
 
 def fetch_surah(n):
     url  = f"https://api.alquran.cloud/v1/surah/{n}/editions/quran-simple,id.indonesian"
@@ -115,7 +115,7 @@ def fetch_all_verses(tafsir_map):
                     "verse_number":   ar["numberInSurah"],
                     "arabic":         ar["text"],
                     "translation":    id_["text"],
-                    "tafsir_summary": tafsir_map.get(verse_id),
+                    "tafsir_quraish_shihab": tafsir_map.get(verse_id),
                 })
             print(f"✓ ({len(arabic_ayahs)} ayat)")
         except Exception as e:
@@ -128,8 +128,8 @@ def fetch_all_verses(tafsir_map):
 def build_embed_text(v):
     text = f"{v['surah_name']} ayat {v['verse_number']}. {v['translation']}"
     # For curated verses, append tafsir so their embeddings are richer
-    if v.get("tafsir_summary"):
-        text += f" {v['tafsir_summary']}"
+    if v.get("tafsir_quraish_shihab"):
+        text += f" {v['tafsir_quraish_shihab']}"
     return text
 
 # ── Phase 3: Embed in batches ─────────────────────────────────────────────────
@@ -188,7 +188,7 @@ def insert_all(verses, embeddings):
             "verse_number":   v["verse_number"],
             "arabic":         v["arabic"],
             "translation":    v["translation"],
-            "tafsir_summary": v["tafsir_summary"],
+            "tafsir_quraish_shihab": v["tafsir_quraish_shihab"],
             "embedding":      emb,
         })
 
@@ -215,7 +215,7 @@ def main():
 
     print("\n── Phase 1: Fetching verses from alquran.cloud ─────────────────────────")
     tafsir_map = load_tafsir_map()
-    print(f"  Loaded tafsir_summary for {len(tafsir_map)} curated verses")
+    print(f"  Loaded tafsir_quraish_shihab for {len(tafsir_map)} curated verses")
     verses = fetch_all_verses(tafsir_map)
     print(f"\n  ✓ Fetched {len(verses)} verses across 114 surahs\n")
 

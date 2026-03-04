@@ -127,7 +127,7 @@ def build():
                 "arabic":        arabic,
                 "translation":   translation,
                 "themes":        item["themes"],
-                "tafsir_summary": item["tafsir"],
+                "tafsir_quraish_shihab": item["tafsir"],
             })
             print("✓")
             ok += 1

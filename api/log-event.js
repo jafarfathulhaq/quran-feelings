@@ -33,6 +33,10 @@ const VALID_EVENTS = new Set([
   'share_sheet_opened',
   'share_theme_selected',
   'share_completed',
+  'tafsir_summary_opened',
+  'tafsir_summary_swiped',
+  'tafsir_full_opened',
+  'tafsir_overlay_closed',
 ]);
 
 module.exports = async function handler(req, res) {

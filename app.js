@@ -610,6 +610,229 @@ function closeShareSheet() {
   shareActiveVerse = null;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// TAFSIR SUMMARY OVERLAY — Full-Screen Study Mode
+// ══════════════════════════════════════════════════════════════════════════════
+
+const TAFSIR_CARD_LABELS = {
+  makna_utama:        'Makna Utama',
+  hidup_kita:         'Makna Untuk Hidup Kita',
+  konteks_turun:      'Kenapa Ayat Ini Turun',
+  penjelasan_penting: 'Penjelasan Penting',
+};
+
+const TAFSIR_SOURCE_NAMES = {
+  kemenag:        'Tafsir Kemenag',
+  ibnu_kathir:    'Ibnu Katsir',
+  quraish_shihab: 'Quraish Shihab',
+  asbabun_nuzul:  'Asbabun Nuzul',
+};
+
+function formatTafsirSources(sources) {
+  if (!Array.isArray(sources) || sources.length === 0) return '';
+  const names = sources.map(s => TAFSIR_SOURCE_NAMES[s] || s);
+  if (names.length === 1) return names[0];
+  return names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1];
+}
+
+let _tafsirOverlayVerse    = null; // verse currently shown in overlay
+let _tafsirLastCardViewed  = 0;    // 0-based index of last card swiped to
+
+function openTafsirOverlay(verse) {
+  const overlay  = document.getElementById('tafsir-overlay');
+  const summary  = verse.tafsir_summary;
+  if (!overlay || !summary || !summary.makna_utama) return;
+
+  _tafsirOverlayVerse   = verse;
+  _tafsirLastCardViewed = 0;
+
+  // ── Determine which cards exist ──────────────────────────────────────────
+  const cardKeys = ['makna_utama', 'hidup_kita', 'konteks_turun', 'penjelasan_penting'];
+  const cards = cardKeys.filter(k => summary[k] && summary[k].text);
+  const totalCards = cards.length;
+
+  // ── Build carousel slides ────────────────────────────────────────────────
+  const slidesHtml = cards.map(key => {
+    const card = summary[key];
+    const sources = formatTafsirSources(card.sources);
+    return `
+      <div class="to-slide">
+        <div class="to-card">
+          <div class="to-label-wrap">
+            <span class="to-label-line"></span>
+            <span class="to-label">${TAFSIR_CARD_LABELS[key]}</span>
+            <span class="to-label-line"></span>
+          </div>
+          <div class="to-text">${escapeHtml(card.text)}</div>
+          <div class="to-source">Ringkasan berdasarkan: ${escapeHtml(sources)}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // ── Build dots ───────────────────────────────────────────────────────────
+  const dotsHtml = cards.map((_, i) =>
+    `<div class="to-dot${i === 0 ? ' active' : ''}"></div>`
+  ).join('');
+
+  // ── Build full tafsir tabs ───────────────────────────────────────────────
+  const fullTafsirSources = [];
+  if (verse.tafsir_quraish_shihab) fullTafsirSources.push({ id: 'qs',     label: 'Quraish Shihab', text: verse.tafsir_quraish_shihab });
+  if (verse.tafsir_kemenag)        fullTafsirSources.push({ id: 'kemenag', label: 'Kemenag',        text: verse.tafsir_kemenag });
+  const ikText = verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir;
+  if (ikText)                      fullTafsirSources.push({ id: 'ik',      label: 'Ibnu Katsir',    text: ikText });
+  const asbabFullText = verse.asbabun_nuzul_id || verse.asbabun_nuzul;
+  if (asbabFullText)               fullTafsirSources.push({ id: 'asbab',   label: 'Asbabun Nuzul',  text: asbabFullText });
+
+  const fullTabsHtml = fullTafsirSources.length > 0 ? `
+    <div class="to-full-section">
+      <button class="to-full-btn" id="to-full-btn">
+        Baca tafsir lengkap
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="to-full-content" id="to-full-content">
+        <div class="to-full-tabs" id="to-full-tabs">
+          ${fullTafsirSources.map((s, i) =>
+            `<button class="to-full-tab${i === 0 ? ' active' : ''}" data-tab-id="${s.id}">${s.label}</button>`
+          ).join('')}
+        </div>
+        <div class="to-full-body" id="to-full-body"></div>
+      </div>
+    </div>` : '';
+
+  // ── Verse reference ──────────────────────────────────────────────────────
+  const verseRef = `${verse.surah_name}: ${verse.verse_number}`;
+
+  // ── Assemble overlay HTML ────────────────────────────────────────────────
+  overlay.innerHTML = `
+    <div class="to-header">
+      <button class="to-back" id="to-back-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Kembali
+      </button>
+      <span class="to-counter" id="to-counter">1 / ${totalCards}</span>
+    </div>
+    <div class="to-ref">
+      <div class="to-ref-text">${escapeHtml(verseRef)}</div>
+      <div class="to-ref-divider"></div>
+    </div>
+    <div class="to-carousel" id="to-carousel">${slidesHtml}</div>
+    <div class="to-dots-section">
+      <div class="to-dots" id="to-dots">${dotsHtml}</div>
+      <div class="to-hint" id="to-hint">
+        Geser untuk lanjut
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+    ${fullTabsHtml}
+  `;
+
+  // ── Show overlay ─────────────────────────────────────────────────────────
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('tafsir-locked');
+  history.pushState({ tafsirOverlay: true }, '');
+
+  // ── Carousel scroll → update dots + counter ──────────────────────────────
+  const carousel = document.getElementById('to-carousel');
+  const dots     = document.getElementById('to-dots');
+  const counter  = document.getElementById('to-counter');
+  const hint     = document.getElementById('to-hint');
+  let scrollTimer;
+
+  carousel.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const idx = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+      _tafsirLastCardViewed = Math.max(_tafsirLastCardViewed, idx);
+      // Update dots
+      Array.from(dots.children).forEach((d, i) => d.classList.toggle('active', i === idx));
+      // Update counter
+      counter.textContent = `${idx + 1} / ${totalCards}`;
+      // Hide hint after first swipe
+      if (idx > 0 && hint) hint.classList.add('faded');
+      // Log swipe
+      if (idx > 0) {
+        logEvent('tafsir_summary_swiped', {
+          mode: currentMode, surah: verse.surah_name,
+          ayah: verse.verse_number, to_card: idx + 1,
+        });
+      }
+    }, 50);
+  });
+
+  // ── Back button ──────────────────────────────────────────────────────────
+  document.getElementById('to-back-btn').addEventListener('click', () => {
+    closeTafsirOverlay();
+    // Go back in history to match the pushState
+    if (history.state && history.state.tafsirOverlay) history.back();
+  });
+
+  // ── Full tafsir expand/collapse ──────────────────────────────────────────
+  const fullBtn     = document.getElementById('to-full-btn');
+  const fullContent = document.getElementById('to-full-content');
+  const fullBody    = document.getElementById('to-full-body');
+
+  if (fullBtn && fullContent && fullTafsirSources.length > 0) {
+    // Set initial tab content
+    fullBody.textContent = fullTafsirSources[0].text;
+
+    fullBtn.addEventListener('click', () => {
+      const isExpanded = fullContent.classList.toggle('expanded');
+      fullBtn.classList.toggle('expanded', isExpanded);
+      if (isExpanded) {
+        logEvent('tafsir_full_opened', {
+          mode: currentMode, surah: verse.surah_name, ayah: verse.verse_number,
+        });
+      }
+    });
+
+    // Tab switching
+    document.querySelectorAll('#to-full-tabs .to-full-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('#to-full-tabs .to-full-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const src = fullTafsirSources.find(s => s.id === tab.dataset.tabId);
+        if (src) fullBody.textContent = src.text;
+      });
+    });
+  }
+}
+
+function closeTafsirOverlay() {
+  const overlay = document.getElementById('tafsir-overlay');
+  if (!overlay) return;
+
+  overlay.classList.remove('active');
+  document.body.classList.remove('tafsir-locked');
+
+  // Log close event
+  if (_tafsirOverlayVerse) {
+    logEvent('tafsir_overlay_closed', {
+      mode: currentMode,
+      surah: _tafsirOverlayVerse.surah_name,
+      ayah: _tafsirOverlayVerse.verse_number,
+      last_card_viewed: _tafsirLastCardViewed + 1,
+    });
+  }
+
+  // Clear after transition
+  setTimeout(() => {
+    overlay.innerHTML = '';
+    overlay.setAttribute('aria-hidden', 'true');
+  }, 300);
+
+  _tafsirOverlayVerse   = null;
+  _tafsirLastCardViewed = 0;
+}
+
+// Close tafsir overlay on browser back button
+window.addEventListener('popstate', () => {
+  const overlay = document.getElementById('tafsir-overlay');
+  if (overlay && overlay.classList.contains('active')) {
+    closeTafsirOverlay();
+  }
+});
+
 // Update the live preview thumbnail (CSS-styled, not canvas)
 function updateSharePreview() {
   if (!shareActiveVerse) return;
@@ -827,7 +1050,7 @@ function buildVerseCard(verse, index) {
 
   // ── Build tafsir tabs (only include tabs that have content) ──────────────
   const tafsirTabs = [];
-  if (verse.tafsir_summary)     tafsirTabs.push({ id: 'quraish', label: 'Quraish Shihab', text: verse.tafsir_summary,     note: 'Tafsir M. Quraish Shihab' });
+  if (verse.tafsir_quraish_shihab) tafsirTabs.push({ id: 'quraish', label: 'Quraish Shihab', text: verse.tafsir_quraish_shihab, note: 'Tafsir M. Quraish Shihab' });
   if (verse.tafsir_kemenag)     tafsirTabs.push({ id: 'kemenag', label: 'Kemenag RI',     text: verse.tafsir_kemenag,     note: 'Tafsir Kemenag RI' });
   if (verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir) {
     const ikIsId = !!verse.tafsir_ibnu_kathir_id;
@@ -840,7 +1063,8 @@ function buildVerseCard(verse, index) {
     });
   }
 
-  const tafsirHtml = tafsirTabs.length > 0 ? `
+  // ── Build tafsir collapsible (fallback when no JSONB summary) ────────────
+  const fallbackTafsirHtml = tafsirTabs.length > 0 ? `
     <button class="vc-tafsir-btn vc-tafsir-toggle">
       <span>${EXPAND_ICON} Baca Tafsir</span>
       <span class="vc-tafsir-btn-arrow">${EXPAND_ICON}</span>
@@ -868,10 +1092,10 @@ function buildVerseCard(verse, index) {
     </div>
   ` : '';
 
-  // ── Build asbabun nuzul section (only if data exists) ───────────────────
+  // ── Build asbabun nuzul section (fallback) ────────────────────────────
   const asbabText = verse.asbabun_nuzul_id || verse.asbabun_nuzul;
   const asbabIsId = !!verse.asbabun_nuzul_id;
-  const asbabHtml = asbabText ? (() => {
+  const fallbackAsbabHtml = asbabText ? (() => {
     const long    = asbabText.length > 400;
     const content = asbabIsId
       ? `<div class="vc-tafsir-md">${renderMarkdown(asbabText)}</div>`
@@ -893,6 +1117,32 @@ function buildVerseCard(verse, index) {
   `;
   })() : '';
 
+  // ── Tafsir Summary teaser (replaces collapsibles when JSONB exists) ────
+  const summaryData = verse.tafsir_summary; // JSONB from pre-generated AI summaries
+  const CHEVRON_RIGHT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>`;
+  let teaserHtml = '';
+  let cardCount  = 0;
+
+  if (summaryData && typeof summaryData === 'object' && summaryData.makna_utama) {
+    cardCount = [summaryData.makna_utama, summaryData.hidup_kita,
+      summaryData.konteks_turun, summaryData.penjelasan_penting].filter(Boolean).length;
+    const previewText = summaryData.makna_utama.text || '';
+    teaserHtml = `
+      <div class="tafsir-teaser" data-verse-id="${verse.id}">
+        <div class="tafsir-teaser-header">
+          <span class="tafsir-teaser-icon">📖</span>
+          <span class="tafsir-teaser-label">Ringkasan Tafsir</span>
+        </div>
+        <div class="tafsir-teaser-preview">${escapeHtml(previewText)}</div>
+        <div class="tafsir-teaser-cta">Baca ${cardCount} poin ${CHEVRON_RIGHT}</div>
+      </div>`;
+  }
+
+  // Use teaser if available, otherwise fall back to collapsibles
+  const tafsirSectionHtml = teaserHtml
+    ? teaserHtml
+    : (fallbackTafsirHtml + fallbackAsbabHtml);
+
   const perVerseText = verse.relevance || verse.resonance || '';
   const perVerseClass = verse.relevance ? 'vc-relevance' : 'vc-resonance';
   const resonanceHtml = perVerseText
@@ -913,8 +1163,7 @@ function buildVerseCard(verse, index) {
     <div class="vc-content">
       <p class="vc-translation">"${escapeHtml(verse.translation)}"</p>
       ${resonanceHtml}
-      ${tafsirHtml}
-      ${asbabHtml}
+      ${tafsirSectionHtml}
       <button class="vc-share-btn-full">Bagikan Gambar Ayat ini ke Socmed / WA</button>
       <button class="vc-audio-btn-secondary">${PLAY_ICON} Dengarkan ayat</button>
     </div>
@@ -923,7 +1172,19 @@ function buildVerseCard(verse, index) {
   card.querySelector('.vc-audio-btn-secondary').addEventListener('click', e => playAudio(verse, e.currentTarget));
   card.querySelector('.vc-share-btn-full').addEventListener('click', () => openShareSheet(verse));
 
-  // ── Tafsir accordion toggle ──────────────────────────────────────────────
+  // ── Tafsir Summary teaser click → open overlay ─────────────────────────
+  const teaser = card.querySelector('.tafsir-teaser');
+  if (teaser) {
+    teaser.addEventListener('click', () => {
+      openTafsirOverlay(verse);
+      logEvent('tafsir_summary_opened', {
+        mode: currentMode, surah: verse.surah_name,
+        ayah: verse.verse_number, card_count: cardCount,
+      });
+    });
+  }
+
+  // ── Tafsir accordion toggle (fallback only) ────────────────────────────
   const tafsirToggle = card.querySelector('.vc-tafsir-toggle');
   if (tafsirToggle) {
     const panel = card.querySelector('.vc-tafsir-panel');
@@ -2133,6 +2394,7 @@ async function fetchJelajahi(queryText, presetIntent) {
       verse_number:          v.verse_number || v.ayah,
       arabic:                v.arabic || v.text_arabic,
       translation:           v.translation || v.text_indonesian,
+      tafsir_quraish_shihab: v.tafsir_quraish_shihab || null,
       tafsir_summary:        v.tafsir_summary || null,
       tafsir_kemenag:        v.tafsir_kemenag || null,
       tafsir_ibnu_kathir:    v.tafsir_ibnu_kathir || null,

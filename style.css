@@ -9,6 +9,7 @@
   --indigo:     #0D3B6E;
   --teal-dark:  #0A5C7A;
   --teal:       #0D7A7A;
+  --teal-light: #E6F3F1;
   --gold:       #C9A84C;
   --gold-light: #E8C96A;
   --bg:         #F0F4F8;
@@ -1771,6 +1772,387 @@ body {
 .vc-asbab-body {
   padding: 14px 14px 12px;
 }
+
+/* ═══════════════════════════════════════════════════════ */
+/*  TAFSIR SUMMARY — Teaser Button                       */
+/* ═══════════════════════════════════════════════════════ */
+
+.tafsir-teaser {
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #F8F9FC 0%, #F3F5F9 100%);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.tafsir-teaser::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--teal-dark);
+  border-radius: 0 2px 2px 0;
+}
+
+.tafsir-teaser:active { transform: scale(0.985); }
+
+.tafsir-teaser-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.tafsir-teaser-icon { font-size: 0.875rem; }
+
+.tafsir-teaser-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal-dark);
+}
+
+.tafsir-teaser-preview {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--text-mid);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.tafsir-teaser-cta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--teal-dark);
+}
+
+.tafsir-teaser-cta svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.tafsir-teaser:hover .tafsir-teaser-cta svg { transform: translateX(2px); }
+
+
+/* ═══════════════════════════════════════════════════════ */
+/*  TAFSIR SUMMARY — Full-Screen Overlay                 */
+/* ═══════════════════════════════════════════════════════ */
+
+.tafsir-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.tafsir-overlay.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+body.tafsir-locked { overflow: hidden; }
+
+
+/* ── Overlay Header ──────────────────────────────────── */
+
+.to-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+
+.to-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--teal-dark);
+  cursor: pointer;
+  padding: 8px 4px 8px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.to-back svg { width: 18px; height: 18px; }
+
+.to-counter {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 4px;
+}
+
+.to-ref {
+  padding: 12px 24px 0;
+  flex-shrink: 0;
+}
+
+.to-ref-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.to-ref-divider {
+  height: 1px;
+  background: var(--border);
+  margin-top: 16px;
+}
+
+
+/* ── Carousel ────────────────────────────────────────── */
+
+.to-carousel {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+.to-carousel::-webkit-scrollbar { display: none; }
+
+.to-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px 20px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.to-slide::-webkit-scrollbar { display: none; }
+
+
+/* ── Summary Card ────────────────────────────────────── */
+
+.to-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+  padding: 32px 24px 24px;
+}
+
+.to-label-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.to-label-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  max-width: 36px;
+}
+
+.to-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-dark);
+  white-space: nowrap;
+}
+
+.to-text {
+  font-size: 1rem;
+  line-height: 1.9;
+  color: var(--text-dark);
+  text-align: center;
+  max-width: 330px;
+  margin: 0 auto;
+}
+
+.to-source {
+  font-size: 0.6875rem;
+  color: var(--text-soft);
+  text-align: center;
+  margin-top: auto;
+  padding-top: 36px;
+  letter-spacing: 0.02em;
+}
+
+
+/* ── Dots + Swipe Hint ───────────────────────────────── */
+
+.to-dots-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0 8px;
+  flex-shrink: 0;
+}
+
+.to-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.to-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.to-dot.active {
+  background: var(--teal-dark);
+  transform: scale(1.2);
+}
+
+.to-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-soft);
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+
+.to-hint.faded { opacity: 0; }
+
+.to-hint svg {
+  width: 12px;
+  height: 12px;
+  animation: hintBounce 1.4s ease infinite;
+}
+
+@keyframes hintBounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+
+/* ── Baca Tafsir Lengkap (inside overlay) ────────────── */
+
+.to-full-section {
+  flex-shrink: 0;
+  padding: 8px 24px 32px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+}
+
+.to-full-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--teal-light);
+  border: 1.5px solid rgba(10,92,122,0.15);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--teal-dark);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.to-full-btn:active { background: rgba(0,0,0,0.02); }
+
+.to-full-btn svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.25s ease;
+}
+
+.to-full-btn.expanded svg { transform: rotate(180deg); }
+
+.to-full-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.to-full-content.expanded {
+  max-height: 8000px;
+  overflow-y: auto;
+}
+
+.to-full-tabs {
+  display: flex;
+  gap: 0;
+  margin: 16px 0 0;
+  border-bottom: 1.5px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.to-full-tabs::-webkit-scrollbar { display: none; }
+
+.to-full-tab {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.to-full-tab.active {
+  color: var(--teal-dark);
+  border-bottom-color: var(--teal-dark);
+}
+
+.to-full-body {
+  padding: 20px 0 8px;
+  font-size: 0.875rem;
+  line-height: 1.85;
+  color: var(--text-mid);
+  white-space: pre-line;
+}
+
 
 /* ── Verse Action Row ─────────────────────────────────── */
 .vc-actions {
