@@ -37,6 +37,8 @@ const VALID_EVENTS = new Set([
   'tafsir_summary_swiped',
   'tafsir_full_opened',
   'tafsir_overlay_closed',
+  'a2hs_tapped',
+  'a2hs_installed',
 ]);
 
 module.exports = async function handler(req, res) {

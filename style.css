@@ -73,9 +73,9 @@ body {
 }
 
 .landing-headline {
-  font-size: 1.875rem;
+  font-size: 1.625rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--teal-dark);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -2192,6 +2192,42 @@ body.tafsir-locked { overflow: hidden; }
   color: var(--teal-dark);
   border-color: var(--teal-dark);
   background: rgba(10,92,122,0.08);
+}
+
+/* ════════════════════════════════════════════════════════
+   ADD TO HOME SCREEN
+════════════════════════════════════════════════════════ */
+.a2hs-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  margin-top: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.a2hs-text {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1.4;
+}
+.a2hs-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.a2hs-btn:active {
+  transform: scale(0.95);
 }
 
 /* ════════════════════════════════════════════════════════

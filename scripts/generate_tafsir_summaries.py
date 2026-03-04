@@ -276,8 +276,10 @@ def openai_request(method, path, body=None, file_upload=None):
         data = None
 
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    # Use longer timeout for file uploads (102MB JSONL)
+    req_timeout = 600 if file_upload else 120
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=req_timeout) as resp:
             raw = resp.read()
             content_type = resp.headers.get("Content-Type", "")
             if "application/json" in content_type:
@@ -571,27 +573,27 @@ def update_supabase(valid_results):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
-def main():
-    check_env()
+# OpenAI gpt-4o-mini batch enqueued token limit is 2M.
+# Each verse request is ~3-5k tokens (tafsir content), so ~350 verses per chunk.
+CHUNK_SIZE = 350
 
-    # Phase 1: Fetch
-    verses = fetch_verses()
-    if not verses:
-        print("  Nothing to process — all verses already have tafsir_summary.")
-        print("── Done ─────────────────────────────────────────────────────────────────")
-        return
+def process_chunk(chunk_verses, chunk_num, total_chunks):
+    """Process a single chunk of verses through the batch pipeline."""
+    print(f"\n{'='*72}")
+    print(f"  CHUNK {chunk_num}/{total_chunks}  ({len(chunk_verses)} verses)")
+    print(f"{'='*72}")
 
-    # Phase 2: Build JSONL
-    jsonl_bytes, jsonl_path, timestamp = build_jsonl(verses)
+    # Build JSONL for this chunk
+    jsonl_bytes, jsonl_path, timestamp = build_jsonl(chunk_verses)
 
-    # Phase 3: Upload & run batch
+    # Upload & run batch
     output_file_id, error_file_id = upload_and_run_batch(jsonl_bytes)
 
-    # Phase 4: Download results
+    # Download results
     results = download_results(output_file_id, error_file_id, timestamp)
 
-    # Phase 5: Validate
-    print("── Phase 5: Validating results ─────────────────────────────────────────")
+    # Validate
+    print("── Validating results ──────────────────────────────────────────────────")
     valid_results = []
     invalid_count = 0
     warn_count = 0
@@ -617,23 +619,47 @@ def main():
 
     print(f"  ✓ Valid: {len(valid_results)}  Invalid: {invalid_count}  Warnings: {warn_count}\n")
 
-    # Phase 6: Update Supabase
+    # Update Supabase
+    updated, update_failed = 0, 0
     if valid_results:
         updated, update_failed = update_supabase(valid_results)
     else:
-        updated, update_failed = 0, 0
         print("  No valid results to update.\n")
 
-    # Report
-    print("── Report ─────────────────────────────────────────────────────────────")
+    return len(valid_results), invalid_count + update_failed
+
+
+def main():
+    check_env()
+
+    # Phase 1: Fetch
+    verses = fetch_verses()
+    if not verses:
+        print("  Nothing to process — all verses already have tafsir_summary.")
+        print("── Done ─────────────────────────────────────────────────────────────────")
+        return
+
+    # Split into chunks to stay under 2M enqueued token limit
+    chunks = [verses[i:i + CHUNK_SIZE] for i in range(0, len(verses), CHUNK_SIZE)]
+    total_chunks = len(chunks)
+    print(f"\n  Splitting {len(verses)} verses into {total_chunks} chunks of ≤{CHUNK_SIZE}")
+
+    total_ok = 0
+    total_fail = 0
+
+    for i, chunk in enumerate(chunks, 1):
+        ok, fail = process_chunk(chunk, i, total_chunks)
+        total_ok += ok
+        total_fail += fail
+
+    # Final report
+    print(f"\n{'='*72}")
+    print("── FINAL REPORT ────────────────────────────────────────────────────────")
     print(f"  Total fetched:       {len(verses)}")
-    print(f"  Batch submitted:     {len(verses)}")
-    print(f"  Results received:    {len(results)}")
-    print(f"  Validated (ok):      {len(valid_results)}")
-    print(f"  Updated in DB:       {updated}")
-    print(f"  Failed (total):      {invalid_count + update_failed}")
-    print(f"\n  Request file:  {jsonl_path}")
-    print(f"  Results dir:   {BATCH_OUTPUT_DIR}")
+    print(f"  Chunks processed:    {total_chunks}")
+    print(f"  Updated in DB:       {total_ok}")
+    print(f"  Failed (total):      {total_fail}")
+    print(f"  Results dir:         {BATCH_OUTPUT_DIR}")
     print("── Done ─────────────────────────────────────────────────────────────────")
 
 if __name__ == "__main__":

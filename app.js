@@ -7,6 +7,51 @@
 
 const IS_IN_APP_BROWSER = /Instagram|FBAN|FBAV|TikTok|Line\//i.test(navigator.userAgent);
 
+// ── A2HS (Add to Home Screen) ─────────────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+function initA2HS() {
+  const card = document.getElementById('a2hsCard');
+  const btn  = document.getElementById('a2hsBtn');
+  if (!card || !btn) return;
+
+  // Already installed as PWA → hide card
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) {
+    card.style.display = 'none';
+    return;
+  }
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  btn.addEventListener('click', () => {
+    if (deferredPrompt) {
+      // Android / Chrome — native prompt
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((result) => {
+        if (result.outcome === 'accepted') {
+          card.style.display = 'none';
+          logEvent('a2hs_installed', {});
+        }
+        deferredPrompt = null;
+      });
+      logEvent('a2hs_tapped', { platform: 'android' });
+    } else if (isIOS) {
+      // iOS — show manual instructions
+      alert('Tap ikon Share (\u2B06\uFE0F) di Safari, lalu pilih "Add to Home Screen"');
+      logEvent('a2hs_tapped', { platform: 'ios' });
+    } else {
+      alert('Buka TemuQuran di browser Chrome, lalu tekan menu \u22EE \u2192 "Add to Home Screen"');
+      logEvent('a2hs_tapped', { platform: 'other' });
+    }
+  });
+}
+
 // ── Analytics ──────────────────────────────────────────────────────────────────
 // Fire-and-forget: never blocks UI, never throws, never logs user input text.
 // session_id: random ID per browser tab session (sessionStorage), no PII.
@@ -2611,6 +2656,7 @@ initSearch();
 initPanduanSearch();
 initJelajahiSearch();
 initVOTD();
+initA2HS();
 
 // ── Service Worker ─────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {

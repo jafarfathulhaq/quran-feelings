@@ -4,8 +4,8 @@
   "description": "Tulis apa yang kamu rasakan dan temukan ayat Al-Qur'an yang relevan untukmu.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F0F4F8",
-  "theme_color": "#0A0F1E",
+  "background_color": "#2A7C6F",
+  "theme_color": "#2A7C6F",
   "lang": "id",
   "dir": "ltr",
   "icons": [
