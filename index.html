@@ -170,8 +170,30 @@
 
       <!-- Add to Home Screen -->
       <div class="a2hs-card" id="a2hsCard">
-        <span class="a2hs-text">Simpan TemuQuran di Layar Utama</span>
+        <span class="a2hs-text">Jadikan TemuQuran aplikasi di HP kamu</span>
         <button class="a2hs-btn" id="a2hsBtn">Pasang</button>
+      </div>
+
+      <!-- iOS A2HS Guide -->
+      <div class="a2hs-guide-overlay hidden" id="a2hsGuide" aria-hidden="true">
+        <div class="a2hs-guide">
+          <div class="a2hs-guide-title">Pasang TemuQuran di iPhone</div>
+          <div class="a2hs-guide-steps">
+            <div class="a2hs-step">
+              <span class="a2hs-step-num">1</span>
+              <span>Tap ikon <strong>Share</strong> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal-dark)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> di bawah layar Safari</span>
+            </div>
+            <div class="a2hs-step">
+              <span class="a2hs-step-num">2</span>
+              <span>Scroll ke bawah, tap <strong>"Tambahkan ke Layar Utama"</strong></span>
+            </div>
+            <div class="a2hs-step">
+              <span class="a2hs-step-num">3</span>
+              <span>Tap <strong>"Tambah"</strong> di pojok kanan atas</span>
+            </div>
+          </div>
+          <button class="a2hs-guide-close" id="a2hsGuideClose">Mengerti</button>
+        </div>
       </div>
 
       <button class="about-trigger" id="aboutTrigger">Tentang TemuQuran</button>

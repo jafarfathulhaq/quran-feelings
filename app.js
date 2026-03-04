@@ -38,6 +38,29 @@ function initA2HS() {
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+  // iOS guide overlay helpers
+  const guide      = document.getElementById('a2hsGuide');
+  const guideClose = document.getElementById('a2hsGuideClose');
+
+  function showA2HSGuide() {
+    if (!guide) return;
+    guide.classList.remove('hidden');
+    guide.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => guide.classList.add('visible'));
+  }
+  function hideA2HSGuide() {
+    if (!guide) return;
+    guide.classList.remove('visible');
+    setTimeout(() => {
+      guide.classList.add('hidden');
+      guide.setAttribute('aria-hidden', 'true');
+    }, 300);
+  }
+  if (guideClose) guideClose.addEventListener('click', hideA2HSGuide);
+  if (guide) guide.addEventListener('click', (e) => {
+    if (e.target === guide) hideA2HSGuide();
+  });
+
   btn.addEventListener('click', () => {
     if (deferredPrompt) {
       // Android / Chrome — native prompt
@@ -51,11 +74,11 @@ function initA2HS() {
       });
       logEvent('a2hs_tapped', { platform: 'android' });
     } else if (isIOS) {
-      // iOS — show manual instructions
-      alert('Tap ikon Share (\u2B06\uFE0F) di Safari, lalu pilih "Add to Home Screen"');
+      // iOS — show step-by-step guide overlay
+      showA2HSGuide();
       logEvent('a2hs_tapped', { platform: 'ios' });
     } else {
-      alert('Buka TemuQuran di browser Chrome, lalu tekan menu \u22EE \u2192 "Add to Home Screen"');
+      showA2HSGuide();
       logEvent('a2hs_tapped', { platform: 'other' });
     }
   });

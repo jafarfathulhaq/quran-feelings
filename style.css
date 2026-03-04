@@ -200,7 +200,7 @@ body {
 
 /* ── Verse of the Day ───────────────────────────────── */
 .landing-votd {
-  padding: 0 20px 48px;
+  padding: 0 20px 12px;
   animation: fadeInUp 0.5s ease-out 0.5s both;
 }
 
@@ -2243,7 +2243,7 @@ body.tafsir-locked { overflow: hidden; }
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
-  margin: 20px 20px 0;
+  margin: 0 20px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -2270,6 +2270,79 @@ body.tafsir-locked { overflow: hidden; }
 .a2hs-btn:active {
   transform: scale(0.95);
 }
+
+/* iOS A2HS step-by-step guide */
+.a2hs-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.a2hs-guide-overlay.visible { opacity: 1; }
+.a2hs-guide-overlay.hidden { display: none; }
+.a2hs-guide {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px 22px 20px;
+  transform: translateY(30px);
+  transition: transform 0.3s ease;
+}
+.a2hs-guide-overlay.visible .a2hs-guide { transform: translateY(0); }
+.a2hs-guide-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 18px;
+  text-align: center;
+}
+.a2hs-guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.a2hs-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.8125rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+.a2hs-step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal-dark);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.a2hs-guide-close {
+  width: 100%;
+  padding: 12px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.a2hs-guide-close:active { transform: scale(0.98); }
 
 /* ════════════════════════════════════════════════════════
    ABOUT / FAQ OVERLAY
