@@ -2289,9 +2289,10 @@ body.tafsir-locked { overflow: hidden; }
 .a2hs-guide {
   width: 100%;
   max-width: 380px;
-  background: var(--bg-card);
+  background: #ffffff;
   border-radius: 16px;
   padding: 24px 22px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
   transform: translateY(30px);
   transition: transform 0.3s ease;
 }
