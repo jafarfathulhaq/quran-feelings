@@ -777,8 +777,15 @@ function openTafsirOverlay(verse) {
       </button>
       <span class="to-counter" id="to-counter">1 / ${totalCards}</span>
     </div>
-    <div class="to-ref">
-      <div class="to-ref-text">${escapeHtml(verseRef)}</div>
+    <div class="to-ref" id="to-ref">
+      <button class="to-ref-toggle" id="to-ref-toggle">
+        <span class="to-ref-text">${escapeHtml(verseRef)}</span>
+        <svg class="to-ref-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="to-ref-expand" id="to-ref-expand">
+        <p class="to-ref-arabic">${escapeHtml(verse.arabic)}</p>
+        <p class="to-ref-translation">"${escapeHtml(verse.translation)}"</p>
+      </div>
       <div class="to-ref-divider"></div>
     </div>
     <div class="to-carousel" id="to-carousel">${slidesHtml}</div>
@@ -832,6 +839,16 @@ function openTafsirOverlay(verse) {
     // Go back in history to match the pushState
     if (history.state && history.state.tafsirOverlay) history.back();
   });
+
+  // ── Verse ref expand/collapse ────────────────────────────────────────────
+  const refToggle = document.getElementById('to-ref-toggle');
+  const refExpand = document.getElementById('to-ref-expand');
+  if (refToggle && refExpand) {
+    refToggle.addEventListener('click', () => {
+      const isOpen = refExpand.classList.toggle('open');
+      refToggle.classList.toggle('open', isOpen);
+    });
+  }
 
   // ── Full tafsir expand/collapse ──────────────────────────────────────────
   const fullBtn     = document.getElementById('to-full-btn');

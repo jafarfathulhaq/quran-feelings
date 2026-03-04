@@ -1913,8 +1913,24 @@ body.tafsir-locked { overflow: hidden; }
 }
 
 .to-ref {
-  padding: 12px 24px 0;
+  padding: 0 24px;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+}
+
+.to-ref-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .to-ref-text {
@@ -1923,10 +1939,50 @@ body.tafsir-locked { overflow: hidden; }
   color: var(--text-dark);
 }
 
+.to-ref-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-soft);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.to-ref-toggle.open .to-ref-chevron {
+  transform: rotate(180deg);
+}
+
+.to-ref-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.to-ref-expand.open {
+  max-height: 400px;
+}
+
+.to-ref-arabic {
+  font-family: 'Amiri', 'Traditional Arabic', serif;
+  font-size: 1.25rem;
+  line-height: 2.2;
+  color: var(--text-dark);
+  text-align: right;
+  direction: rtl;
+  margin: 12px 0 8px;
+}
+
+.to-ref-translation {
+  font-size: 0.8125rem;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--text-mid);
+  margin: 0;
+}
+
 .to-ref-divider {
   height: 1px;
   background: var(--border);
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 
