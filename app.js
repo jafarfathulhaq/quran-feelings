@@ -779,7 +779,7 @@ function openTafsirOverlay(verse) {
     <div class="to-dots-section">
       <div class="to-dots" id="to-dots">${dotsHtml}</div>
       <div class="to-hint" id="to-hint">
-        Geser untuk lanjut
+        <span>Geser untuk lanjut</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
       </div>
     </div>
@@ -840,6 +840,11 @@ function openTafsirOverlay(verse) {
       const isExpanded = fullContent.classList.toggle('expanded');
       fullBtn.classList.toggle('expanded', isExpanded);
       if (isExpanded) {
+        // Scroll the full-tafsir section into view so user can read it
+        setTimeout(() => {
+          const section = fullBtn.closest('.to-full-section');
+          if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
         logEvent('tafsir_full_opened', {
           mode: currentMode, surah: verse.surah_name, ayah: verse.verse_number,
         });

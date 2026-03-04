@@ -1861,6 +1861,8 @@ body {
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;                       /* allow vertical scroll when full tafsir is open */
+  -webkit-overflow-scrolling: touch;
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -1937,7 +1939,7 @@ body.tafsir-locked { overflow: hidden; }
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  min-height: 0;
+  min-height: 40vh;                        /* prevent collapse when overlay scrolls */
 }
 
 .to-carousel::-webkit-scrollbar { display: none; }
@@ -2048,6 +2050,7 @@ body.tafsir-locked { overflow: hidden; }
   padding: 8px 0 0;
   font-size: 0.6875rem;
   color: var(--text-soft);
+  white-space: nowrap;
   opacity: 1;
   transition: opacity 0.6s ease;
 }
