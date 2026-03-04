@@ -1774,80 +1774,26 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════ */
-/*  TAFSIR SUMMARY — Teaser Button                       */
+/*  TAFSIR CTA — Subtle inline link                      */
 /* ═══════════════════════════════════════════════════════ */
 
-.tafsir-teaser {
-  padding: 18px 20px;
-  background: linear-gradient(135deg, #F8F9FC 0%, #F3F5F9 100%);
-  border: 1px solid rgba(0,0,0,0.04);
-  border-radius: var(--radius-sm);
+.tafsir-cta-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  background: rgba(10, 92, 122, 0.04);
+  border-radius: 10px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 14px;
 }
-
-.tafsir-teaser::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--teal-dark);
-  border-radius: 0 2px 2px 0;
-}
-
-.tafsir-teaser:active { transform: scale(0.985); }
-
-.tafsir-teaser-header {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 10px;
-}
-
-.tafsir-teaser-icon { font-size: 0.875rem; }
-
-.tafsir-teaser-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--teal-dark);
-}
-
-.tafsir-teaser-preview {
-  font-size: 0.8125rem;
-  line-height: 1.65;
-  color: var(--text-mid);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.tafsir-teaser-cta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--teal-dark);
-}
-
-.tafsir-teaser-cta svg {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.2s ease;
-}
-
-.tafsir-teaser:hover .tafsir-teaser-cta svg { transform: translateX(2px); }
+.tafsir-cta-link:active { transform: scale(0.985); background: rgba(10, 92, 122, 0.08); }
+.tafsir-cta-icon { font-size: 0.8125rem; line-height: 1; }
+.tafsir-cta-text { flex: 1; font-size: 0.8125rem; font-weight: 600; color: var(--teal-dark); }
+.tafsir-cta-link svg { width: 14px; height: 14px; color: var(--teal-dark); flex-shrink: 0; transition: transform 0.2s ease; }
+.tafsir-cta-link:hover svg { transform: translateX(2px); }
 
 
 /* ═══════════════════════════════════════════════════════ */
@@ -3138,50 +3084,34 @@ body.about-locked { overflow: hidden; }
 .si-theme-classic .si-ref { color: #8B6F47; background: rgba(139,111,71,0.10); }
 
 /* ════════════════════════════════════════════════════════
-   SHARE BUTTON REDESIGN (full-width CTA)
+   VERSE ACTION ROW — side-by-side share + audio buttons
 ════════════════════════════════════════════════════════ */
-.vc-share-btn-full {
-  display: block;
-  width: 100%;
-  padding: 14px 20px;
-  border-radius: var(--radius-sm);
-  background: var(--teal-dark);
-  color: #FFFFFF;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  text-align: center;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+.vc-action-row {
+  display: flex;
+  gap: 10px;
   margin-top: 16px;
-  line-height: 1.4;
 }
-.vc-share-btn-full:active {
-  opacity: 0.85;
-  transform: scale(0.98);
-}
-
-/* Audio button as secondary (ghost style, left-aligned) */
-.vc-audio-btn-secondary {
+.vc-action-btn {
+  flex: 1;
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
+  justify-content: center;
   gap: 6px;
-  width: auto;
-  margin: 10px 0 0;
-  padding: 8px 18px;
-  border-radius: 20px;
+  padding: 10px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
   background: transparent;
-  border: 1px solid var(--border);
   color: var(--text-muted);
+  font-family: var(--font-body);
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.vc-audio-btn-secondary:active {
-  background: rgba(0,0,0,0.04);
-}
+.vc-action-btn:active { transform: scale(0.97); background: rgba(0,0,0,0.03); }
+.vc-action-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.vc-action-btn.playing { color: var(--teal-dark); border-color: var(--teal-dark); background: rgba(10,92,122,0.06); }
 
 /* ════════════════════════════════════════════════════════
    SCROLLBAR
