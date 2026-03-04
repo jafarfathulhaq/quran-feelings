@@ -489,8 +489,8 @@ const SURAH_BROWSER = [
 ];
 
 const LOADING_STEPS_JELAJAHI = [
-  'Membuka Al-Qur\'an...',
-  'Mencari ayat...',
+  'Membuka surah...',
+  'Menyiapkan ayat-ayat...',
   'Mempersiapkan bacaan...',
   'Hampir siap...',
 ];

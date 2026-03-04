@@ -832,6 +832,9 @@ body {
   font-size: 2.5rem;
   animation: hintPulse 2s ease-in-out infinite;
 }
+.jelajahi-loading .ls-step-text {
+  color: var(--text-mid);
+}
 
 /* ── Per-verse Relevance (panduan mode) ──────────────── */
 .vc-relevance {
