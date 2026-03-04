@@ -1,13 +1,14 @@
 {
-  "name": "TemuQuran — Temukan Ayat Al-Qur'an",
+  "name": "TemuQuran — Temukan Al-Qur'an",
   "short_name": "TemuQuran",
-  "description": "Tulis apa yang kamu rasakan dan temukan ayat Al-Qur'an yang relevan untukmu.",
+  "description": "Curhat, cari panduan hidup, atau jelajahi ayat Al-Qur'an. Privasi terjaga, tanpa iklan.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#2A7C6F",
   "theme_color": "#2A7C6F",
   "lang": "id",
   "dir": "ltr",
+  "categories": ["education", "lifestyle"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -19,6 +20,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TemuQuran — Temukan Al-Qur'an"
     }
   ]
 }

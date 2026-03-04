@@ -9,6 +9,8 @@
   <meta name="title" content="TemuQuran — Temukan Al-Qur'an" />
   <meta name="description" content="Curhat, cari panduan hidup, atau jelajahi ayat Al-Qur'an. Privasi terjaga, tanpa iklan." />
   <link rel="canonical" href="https://temuquran.com/" />
+  <meta name="robots" content="index, follow" />
+  <link rel="alternate" hreflang="id" href="https://temuquran.com/" />
 
   <!-- Open Graph (WhatsApp, Instagram DM, Facebook, Telegram) -->
   <meta property="og:type"         content="website" />
@@ -50,6 +52,12 @@
     "applicationCategory": "ReligiousApp",
     "operatingSystem": "All",
     "inLanguage": "id",
+    "image": "https://temuquran.com/og-image.png",
+    "datePublished": "2026-03-01",
+    "author": {
+      "@type": "Person",
+      "name": "Jafar Fathul Haq"
+    },
     "offers": {
       "@type": "Offer",
       "price": "0",
@@ -57,9 +65,58 @@
     }
   }
   </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Apa itu TemuQuran?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TemuQuran membantu kamu menemukan ayat Al-Qur'an yang relevan dengan perasaan, pertanyaan hidup, atau topik yang ingin kamu pelajari. Proyek ini dibuat oleh Jafar Fathul Haq sebagai amal jariyah di bulan Ramadan 2026. TemuQuran gratis dan tanpa iklan."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Bagaimana cara kerja TemuQuran?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TemuQuran menggunakan teknologi AI untuk mencocokkan perasaan atau pertanyaanmu dengan ayat-ayat Al-Qur'an yang paling relevan. AI hanya bertugas mencari dan mencocokkan — bukan menafsirkan. Semua tafsir berasal langsung dari sumber-sumber tafsir terpercaya."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Sumber tafsir apa yang digunakan?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TemuQuran menampilkan tafsir dari Tafsir Kemenag, Tafsir Ibnu Katsir, Quraish Shihab (Tafsir Muntakhab), dan Al-Wahidi (Asbab al-Nuzul). Ringkasan tafsir dibuat berdasarkan keempat sumber ini tanpa informasi tambahan dari luar."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Bagaimana dengan privasi saya?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TemuQuran tidak menyimpan teks yang kamu ketik. Perasaan, pertanyaan, dan curhatmu tidak pernah disimpan di server kami. Tidak ada akun, tidak ada login, tidak ada tracking personal. Tidak ada iklan dan tidak ada data yang dijual."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Apakah tafsirnya akurat?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Tafsir yang ditampilkan diambil langsung dari sumber-sumber terpercaya tanpa diubah. Ringkasan tafsir dibuat dengan aturan ketat: tidak menambahkan informasi dari luar. Untuk pemahaman lebih mendalam, kami menyarankan membaca tafsir lengkap dan berkonsultasi dengan ulama."
+        }
+      }
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://cdn.islamic.network" />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <!-- Vercel Web Analytics — privacy-friendly, no cookies, no fingerprinting -->
@@ -67,6 +124,7 @@
 </head>
 <body>
   <div class="app">
+  <main>
 
     <!-- ── Landing View (mode selection) ─────────────── -->
     <section id="landing-view" class="view active">
@@ -75,7 +133,7 @@
         <div class="landing-divider"></div>
       </div>
 
-      <div class="landing-cards" id="landing-cards">
+      <nav class="landing-cards" id="landing-cards" aria-label="Mode pencarian">
         <button class="landing-card" data-mode="curhat">
           <div class="landing-card-icon curhat">🤲</div>
           <div class="landing-card-text">
@@ -97,7 +155,7 @@
             <span class="landing-card-desc">Cari surat pilihanmu dan pelajari ayatnya</span>
           </div>
         </button>
-      </div>
+      </nav>
 
       <hr class="landing-section-divider" />
 
@@ -119,8 +177,8 @@
 
       <!-- Back button -->
       <div class="mode-back-wrap">
-        <button class="back-btn-light" id="curhat-back-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button class="back-btn-light" id="curhat-back-btn" aria-label="Kembali ke beranda">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
           Kembali
@@ -131,7 +189,7 @@
       <header class="header">
         <div class="hero">
           <p class="hero-ornament">✦ &nbsp;CURHAT &amp; TEMUKAN AYAT&nbsp; ✦</p>
-          <h1 class="hero-title">Biarkan firman<br/><span>Allah menuntunmu</span></h1>
+          <h2 class="hero-title">Biarkan firman<br/><span>Allah menuntunmu</span></h2>
         </div>
         <div class="hero-wave"></div>
       </header>
@@ -147,14 +205,14 @@
             rows="4"
           ></textarea>
           <button id="feeling-clear" class="search-clear hidden" aria-label="Hapus">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
         <p class="search-helper">Kami tidak menyimpan curhatmu. Apa yang kamu tulis tetap <strong>bersifat pribadi</strong>.</p>
         <button id="feeling-submit" class="search-submit-btn hidden">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           Cari Ayat
         </button>
       </div>
@@ -172,8 +230,8 @@
 
       <!-- Back button -->
       <div class="mode-back-wrap">
-        <button class="back-btn-light" id="panduan-back-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button class="back-btn-light" id="panduan-back-btn" aria-label="Kembali ke beranda">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
           Kembali
@@ -184,7 +242,7 @@
       <header class="header">
         <div class="hero hero-panduan">
           <p class="hero-ornament">✦ &nbsp;PANDUAN HIDUP&nbsp; ✦</p>
-          <h1 class="hero-title">Temukan panduan<br/><span>dari Al-Qur'an</span></h1>
+          <h2 class="hero-title">Temukan panduan<br/><span>dari Al-Qur'an</span></h2>
         </div>
         <div class="hero-wave"></div>
       </header>
@@ -200,14 +258,14 @@
             rows="4"
           ></textarea>
           <button id="panduan-clear" class="search-clear hidden" aria-label="Hapus">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
         <p class="search-helper">Kami tidak menyimpan pertanyaanmu. Apa yang kamu tulis tetap <strong>bersifat pribadi</strong>.</p>
         <button id="panduan-submit" class="search-submit-btn hidden">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           Cari Panduan
         </button>
       </div>
@@ -228,8 +286,8 @@
 
       <!-- Back button -->
       <div class="mode-back-wrap">
-        <button class="back-btn-light" id="jelajahi-back-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button class="back-btn-light" id="jelajahi-back-btn" aria-label="Kembali ke beranda">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
           Kembali
@@ -240,7 +298,7 @@
       <header class="header">
         <div class="hero hero-jelajahi">
           <p class="hero-ornament">✦ &nbsp;JELAJAHI AL-QUR'AN&nbsp; ✦</p>
-          <h1 class="hero-title">Pelajari ayat di surat<br/><span>pilihanmu</span></h1>
+          <h2 class="hero-title">Pelajari ayat di surat<br/><span>pilihanmu</span></h2>
         </div>
         <div class="hero-wave"></div>
       </header>
@@ -256,13 +314,13 @@
             rows="2"
           ></textarea>
           <button id="jelajahi-clear" class="search-clear hidden" aria-label="Hapus">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
         <button id="jelajahi-submit" class="search-submit-btn hidden">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           Cari
         </button>
       </div>
@@ -286,8 +344,8 @@
 
       <!-- Light sticky header with back + counter arrows -->
       <div class="verses-header">
-        <button id="back-btn" class="back-btn-light">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button id="back-btn" class="back-btn-light" aria-label="Kembali">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
           Kembali
@@ -318,6 +376,7 @@
 
     </section>
 
+  </main>
   </div>
 
   <!-- Share Bottom Sheet -->
