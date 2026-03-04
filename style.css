@@ -2393,7 +2393,7 @@ body.about-locked { overflow: hidden; }
   transition: max-height 0.3s ease;
 }
 .ao-answer.open {
-  max-height: 600px;
+  max-height: 1200px;
 }
 .ao-body {
   padding: 0 2px 20px;
@@ -2401,6 +2401,40 @@ body.about-locked { overflow: hidden; }
   line-height: 1.8;
   color: var(--text-mid);
 }
+
+/* QRIS support section */
+.qris-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 0 4px;
+  gap: 12px;
+}
+.qris-img {
+  width: 220px;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.qris-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.qris-save-btn:active { transform: scale(0.97); background: rgba(0,0,0,0.03); }
+.qris-save-btn svg { flex-shrink: 0; }
 
 /* Tafsir source badges */
 .source-badge {

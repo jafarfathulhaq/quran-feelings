@@ -41,6 +41,7 @@ const VALID_EVENTS = new Set([
   'a2hs_installed',
   'about_opened',
   'about_faq_tapped',
+  'qris_saved',
 ]);
 
 module.exports = async function handler(req, res) {

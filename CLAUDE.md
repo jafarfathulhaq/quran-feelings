@@ -89,7 +89,8 @@ Valid event types:
 `verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
 `asbabun_nuzul_opened`, `card_expanded`, `sub_question_selected`, `tulis_sendiri_opened`, `verse_swiped`,
 `jelajahi_search`, `jelajahi_juz_surah_selected`, `jelajahi_surah_browser`, `jelajahi_juz_group_opened`, `jelajahi_multi_selected`,
-`share_sheet_opened`, `share_theme_selected`, `share_completed`
+`share_sheet_opened`, `share_theme_selected`, `share_completed`,
+`tafsir_summary_opened`
 
 To query analytics:
 ```sql
@@ -161,9 +162,18 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - Pagination dots (≤16 cards) or progress bar (>16 cards) + counter arrows in `.verses-header`
 - Actions/feedback appear on reaching last card
 
+### Verse card bottom section
+Each verse card has three elements below the translation + resonance text:
+- **Tafsir CTA**: Subtle tinted row — "📖 Pahami ayat ini lebih dalam →" (`.tafsir-cta-link`). Tapping opens the tafsir overlay (`openTafsirOverlay`). Only shown for verses with `tafsir_summary`; others fall back to collapsible accordions.
+- **Action row** (`.vc-action-row`): Two equal-width side-by-side outline buttons:
+  - **Dengarkan** (`.vc-audio-btn`): Play icon + "Dengarkan". Toggles to teal highlighted "Jeda" while playing (`.playing` class).
+  - **Bagikan Ayat** (`.vc-share-btn`): "Bagikan Ayat" + inline IG and WA SVG icons. Opens the share sheet.
+- Icon constants: `PLAY_ICON`, `PAUSE_ICON`, `WA_ICON`, `IG_ICON`, `CHEVRON_RIGHT` defined near top of card-building code.
+
 ### Share feature
-- **Share button**: Full-width teal CTA ("Bagikan Gambar Ayat ini ke Socmed / WA") on every verse card, primary action. Audio button is secondary ghost-style below it.
-- **Bottom sheet**: Opens `#share-sheet` with overlay (`#share-overlay`). Slides up with 300ms animation, dismissible by overlay tap.
+- **Bottom sheet**: Opens `#share-sheet` with overlay (`#share-overlay`). Slides up with 300ms animation. Dismissible by: (1) overlay tap, (2) X close button in header, (3) swipe-down gesture.
+- **Swipe-down dismiss**: Touch handlers on `#share-sheet` track drag distance. `touchmove` uses `{ passive: false }` + `e.preventDefault()` to block browser pull-to-refresh. Threshold: 80px drag = dismiss. Only activates when `sheet.scrollTop === 0`.
+- **X close button**: `#share-sheet-close` in `.share-sheet-header`, positioned absolute top-right next to the drag handle.
 - **Live preview**: CSS-styled preview thumbnail (~60% width) updates in real-time when theme or toggles change. NOT canvas-rendered — uses the same `.si-wrap` / `.si-theme-*` classes at reduced font sizes.
 - **3 themes**: Light (#FFFFFF bg), Dark (#1A1D2E deep navy), Classic (#F5EFE0 parchment). Theme picker is horizontal pill buttons. Theme colors defined as `.si-theme-light`, `.si-theme-dark`, `.si-theme-classic` CSS classes.
 - **Content toggles**: "Sertakan pertanyaan" (curhat/panduan only, hidden in jelajahi) and "Sertakan tafsir" (all modes). Both unchecked by default.
@@ -171,6 +181,11 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - **Image generation**: `buildShareElement()` creates an off-screen div in `#share-render`, styled per theme. `html2canvas` renders at `scale: 2` for crisp output. Branding footer "TemuQuran.com" on every image.
 - **Share flow**: Web Share API (`navigator.share({files})`) if supported, fallback to download. In-app browsers (Instagram/Facebook/TikTok/LINE) show toast warning.
 - **In-app browser detection**: `IS_IN_APP_BROWSER` flag set from user-agent regex at startup.
+
+### Tafsir overlay
+- **Overlay**: Full-screen overlay (`openTafsirOverlay(verse)`) with tafsir summary, asbabun nuzul, and "Baca Tafsir Lengkap" accordion.
+- **Sticky verse reference**: Expandable bar at top showing surah name + ayah number. Collapses to a compact sticky header when scrolled past. Tap to expand/collapse. Shows Arabic text + translation when expanded. Uses `position: sticky; top: 0; z-index: 10;` within the overlay's scrollable container.
+- **Tafsir lengkap accordion**: Three sources — Kemenag, Ibnu Katsir (ID), Ibnu Katsir (EN). All start **collapsed** (user sees source options before choosing). Each source is a `.tfl-toggle` / `.tfl-answer` pair using `max-height` transition for smooth expand/collapse.
 
 ### Other features
 - **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 mode-specific Indonesian messages every 1.8s. Jelajahi uses a simpler spinner.
@@ -248,6 +263,7 @@ API error responses never expose raw OpenAI/Supabase error details. Internal err
 - **Bismillah stripping** — uses NFC Unicode normalization because DB diacritics ordering differs from hardcoded constant. Only applies in Jelajahi mode.
 - **Juz surah list animation** — `showJuzSurahList()` clones the container node to prevent stale `animationend` handlers from re-hiding the list after a view switch interrupts the hide animation.
 - **Jelajahi lazy loading** — triggers 3 slides before the loaded boundary for smooth UX. `jelajahiAllVerses` holds the full array; slides are appended in batches of 15.
+- **Share sheet close** — `closeShareSheet()` must reset inline `transform` and `transition` styles set by the swipe-down drag gesture before removing the `visible` class.
 - **Share image themes** — `.si-theme-*` classes in `style.css` define colors for the off-screen share render element AND the live preview. Both share the same class hierarchy (`si-wrap`, `si-arabic`, `si-translation`, `si-ref`, `si-tafsir`, `si-footer`).
 - **OG meta tags** — title is "TemuQuran — Temukan dalam Al-Qur'an", description mentions all 3 modes + privacy + no ads. Theme color is `#2A7C6F` (teal).
 - **CSP changes** — if you add a new CDN script or connect to a new external API from the frontend, update the CSP in `vercel.json` or the browser will block it.

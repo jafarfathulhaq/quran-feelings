@@ -994,6 +994,30 @@ function initAbout() {
       }
     });
   });
+
+  // QRIS save button — blob download for reliable mobile support
+  const qrisBtn = document.getElementById('qrisSaveBtn');
+  if (qrisBtn) {
+    qrisBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const resp = await fetch('qris.png');
+        const blob = await resp.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url;
+        a.download = 'QRIS-TemuQuran.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch {
+        // Fallback: open image in new tab
+        window.open('qris.png', '_blank');
+      }
+      logEvent('qris_saved');
+    });
+  }
 }
 
 // Update the live preview thumbnail (CSS-styled, not canvas)
