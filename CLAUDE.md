@@ -90,7 +90,8 @@ Valid event types:
 `asbabun_nuzul_opened`, `card_expanded`, `sub_question_selected`, `tulis_sendiri_opened`, `verse_swiped`,
 `jelajahi_search`, `jelajahi_juz_surah_selected`, `jelajahi_surah_browser`, `jelajahi_juz_group_opened`, `jelajahi_multi_selected`,
 `share_sheet_opened`, `share_theme_selected`, `share_completed`,
-`tafsir_summary_opened`
+`tafsir_summary_opened`, `tafsir_summary_swiped`, `tafsir_full_opened`, `tafsir_full_tab_switched`, `tafsir_overlay_closed`,
+`a2hs_tapped`, `a2hs_installed`, `about_opened`, `about_faq_tapped`, `qris_saved`
 
 To query analytics:
 ```sql

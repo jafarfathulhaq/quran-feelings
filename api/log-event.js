@@ -42,6 +42,7 @@ const VALID_EVENTS = new Set([
   'about_opened',
   'about_faq_tapped',
   'qris_saved',
+  'tafsir_full_tab_switched',
 ]);
 
 module.exports = async function handler(req, res) {
