@@ -657,6 +657,8 @@ function closeShareSheet() {
   const overlay = document.getElementById('share-overlay');
   const sheet   = document.getElementById('share-sheet');
 
+  sheet.style.transition = '';
+  sheet.style.transform = '';
   overlay.classList.remove('visible');
   sheet.classList.remove('visible');
 
@@ -751,11 +753,11 @@ function openTafsirOverlay(verse) {
       <div class="to-full-content" id="to-full-content">
         ${fullTafsirSources.map((s, i) => `
           <div class="tfl-item">
-            <button class="tfl-toggle${i === 0 ? ' open' : ''}" data-tfl-id="${s.id}">
+            <button class="tfl-toggle" data-tfl-id="${s.id}">
               <span>${s.label}</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
             </button>
-            <div class="tfl-answer${i === 0 ? ' open' : ''}">
+            <div class="tfl-answer">
               <div class="tfl-body vc-tafsir-md">
                 ${s.isMarkdown ? renderMarkdown(s.text) : '<p>' + escapeHtml(s.text).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>'}
               </div>
@@ -2730,6 +2732,54 @@ document.getElementById('verse-next').addEventListener('click', () => {
 
 // Close sheet on overlay tap
 document.getElementById('share-overlay').addEventListener('click', closeShareSheet);
+
+// Close sheet on X button
+document.getElementById('share-sheet-close').addEventListener('click', closeShareSheet);
+
+// Swipe-down to dismiss share sheet
+{
+  const sheet = document.getElementById('share-sheet');
+  let startY = 0, currentY = 0, isDragging = false;
+
+  sheet.addEventListener('touchstart', e => {
+    // Only start drag if at scroll top (so inner scroll still works)
+    if (sheet.scrollTop > 0) return;
+    startY = e.touches[0].clientY;
+    currentY = startY;
+    isDragging = true;
+    sheet.style.transition = 'none';
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    currentY = e.touches[0].clientY;
+    const dy = currentY - startY;
+    if (dy > 0) {
+      // Dragging down — prevent pull-to-refresh and translate sheet
+      e.preventDefault();
+      sheet.style.transform = `translateY(${dy}px)`;
+    } else {
+      // Dragging up — allow normal scroll, cancel drag
+      isDragging = false;
+      sheet.style.transition = '';
+      sheet.style.transform = '';
+    }
+  }, { passive: false });
+
+  sheet.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const dy = currentY - startY;
+    sheet.style.transition = '';
+    if (dy > 80) {
+      // Dragged far enough → close
+      closeShareSheet();
+    } else {
+      // Snap back
+      sheet.style.transform = '';
+    }
+  });
+}
 
 // Theme picker
 document.getElementById('share-theme-picker').addEventListener('click', e => {

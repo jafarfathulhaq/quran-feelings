@@ -2859,14 +2859,36 @@ body.about-locked { overflow: hidden; }
 .share-sheet.visible { transform: translateY(0); }
 .share-sheet.hidden { display: none; }
 
-/* Drag handle */
+/* Sheet header (handle + close) */
+.share-sheet-header {
+  position: relative;
+  padding-bottom: 8px;
+}
 .share-sheet-handle {
   width: 36px;
   height: 4px;
   background: var(--border);
   border-radius: 2px;
-  margin: 0 auto 16px;
+  margin: 0 auto;
 }
+.share-sheet-close {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-sheet-close:active { background: rgba(0,0,0,0.06); }
 
 /* Live preview */
 .share-preview-wrap {
