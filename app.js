@@ -1050,7 +1050,7 @@ function updateSharePreview() {
   const verse   = shareActiveVerse;
   const preview = document.getElementById('share-preview');
 
-  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;height:100%;position:relative;padding:8% 12%;justify-content:center;">`;
+  let html = `<div class="si-wrap si-theme-${shareTheme}" style="width:100%;position:relative;padding:8% 12%;">`;
 
   // Branding header (top)
   html += `
@@ -1069,14 +1069,14 @@ function updateSharePreview() {
   // Arabic (smaller for preview)
   html += `<p class="si-arabic" style="font-size:18px;line-height:1.9;margin-bottom:10px;max-width:92%;">${escapeHtml(verse.arabic)}</p>`;
 
-  // Translation
-  const shortTrans = verse.translation.length > 80
-    ? verse.translation.slice(0, 80) + '...'
-    : verse.translation;
-  html += `<p class="si-translation" style="font-size:9px;line-height:1.6;margin-bottom:8px;">"${escapeHtml(shortTrans)}"</p>`;
+  // Translation — full text, no truncation
+  html += `<p class="si-translation" style="font-size:9px;line-height:1.6;margin-bottom:8px;">"${escapeHtml(verse.translation)}"</p>`;
 
   // Ref
   html += `<span class="si-ref" style="font-size:7px;padding:3px 8px;">${escapeHtml(verse.ref)}</span>`;
+
+  // Footer
+  html += `<div class="si-footer" style="font-size:7px;margin-top:12px;">TemuQuran.com</div>`;
 
   html += '</div>';
   preview.innerHTML = html;

@@ -3034,14 +3034,13 @@ body.about-locked { overflow: hidden; }
 }
 .share-preview {
   width: 60%;
-  aspect-ratio: 1 / 1;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.10);
   overflow: hidden;
   position: relative;
   background: #FFFFFF;
 }
-.share-preview.ratio-story { aspect-ratio: 9 / 16; width: 40%; }
+.share-preview.ratio-story { width: 40%; }
 .share-preview img {
   width: 100%;
   height: 100%;
