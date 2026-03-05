@@ -969,9 +969,9 @@ async function handleAjarkan(req, res, { feeling, ip }) {
         return res.status(200).json(cached);
       }
 
-      // Query ajarkan_queries table
+      // Query ajarkan_queries table (use service key server-side to bypass RLS)
       const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_ANON_KEY;
+      const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
       const queryRes = await fetch(
         `${supabaseUrl}/rest/v1/ajarkan_queries?question_id=eq.${encodeURIComponent(questionId)}&age_group=eq.${encodeURIComponent(ageGroup)}&select=*`,
@@ -1096,41 +1096,72 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
       return res.status(500).json({ error: 'Gagal memproses hasil.' });
     }
 
-    if (!categoryMatch.matched_subcategories || categoryMatch.matched_subcategories.length === 0) {
+    // Sanitize GPT subcategory slugs: trim, lowercase, validate against known set
+    const VALID_SUBCATEGORIES = new Set([
+      'siapa-allah', 'quran-wahyu', 'malaikat', 'nabi-rasul', 'hari-kiamat',
+      'sholat', 'puasa-ramadan', 'doa', 'zakat-sedekah', 'haji-umrah',
+      'kejujuran', 'sabar-syukur', 'rendah-hati-ikhlas', 'tanggung-jawab',
+      'ujian-cobaan', 'emosi-perasaan',
+      'keluarga-hubungan', 'situasi-sosial-anak',
+      'alam-ciptaan', 'rasa-ingin-tahu',
+    ]);
+
+    // Map category names to their subcategories (in case GPT returns category instead of subcategory)
+    const CATEGORY_TO_SUBCATEGORIES = {
+      'aqidah': ['siapa-allah', 'quran-wahyu', 'malaikat', 'nabi-rasul', 'hari-kiamat'],
+      'ibadah': ['sholat', 'puasa-ramadan', 'doa', 'zakat-sedekah', 'haji-umrah'],
+      'akhlak': ['kejujuran', 'sabar-syukur', 'rendah-hati-ikhlas', 'tanggung-jawab'],
+      'kehidupan-takdir': ['ujian-cobaan', 'emosi-perasaan'],
+      'keluarga-sosial': ['keluarga-hubungan', 'situasi-sosial-anak'],
+      'alam-rasa-ingin-tahu': ['alam-ciptaan', 'rasa-ingin-tahu'],
+    };
+
+    let matchedSlugs = (categoryMatch.matched_subcategories || [])
+      .map(s => String(s).trim().toLowerCase())
+      .flatMap(s => {
+        if (VALID_SUBCATEGORIES.has(s)) return [s];
+        // If GPT returned a category name, expand to all its subcategories
+        if (CATEGORY_TO_SUBCATEGORIES[s]) return CATEGORY_TO_SUBCATEGORIES[s];
+        return [];
+      });
+    // Deduplicate
+    matchedSlugs = [...new Set(matchedSlugs)];
+
+    if (matchedSlugs.length === 0) {
+      console.error('Ajarkan: no valid subcategory slugs from GPT:', JSON.stringify(categoryMatch));
       return res.status(200).json({
         error: 'not_available',
         message: 'Maaf, kami belum punya jawaban untuk pertanyaan ini. Coba pilih dari kategori yang tersedia.',
       });
     }
 
+    console.error('Ajarkan freeform: query="%s", GPT matched slugs=%j, confidence=%s',
+      feeling, matchedSlugs, categoryMatch.confidence);
+
     // Step 2: Get all questions from matched subcategories and ask GPT to pick the best match
-    // We need to load the questions from the frontend constants, but since this is serverless,
-    // we'll send the subcategory slugs and let GPT pick from a provided list.
-    // For this to work, we need the questions list. We'll query the DB for available questions.
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
-    const subcatFilter = categoryMatch.matched_subcategories
-      .map(s => `subcategory.eq.${encodeURIComponent(s)}`)
-      .join(',');
+    // Use PostgREST 'in' filter (cleaner than or=() for multi-value match)
+    const inFilter = matchedSlugs.map(s => encodeURIComponent(s)).join(',');
+    const questionsUrl = `${supabaseUrl}/rest/v1/ajarkan_queries?subcategory=in.(${inFilter})&age_group=eq.${encodeURIComponent(ageGroup)}&select=question_id,question_text,category,subcategory`;
 
-    const questionsRes = await fetch(
-      `${supabaseUrl}/rest/v1/ajarkan_queries?or=(${subcatFilter})&age_group=eq.${encodeURIComponent(ageGroup)}&select=question_id,question_text,category,subcategory`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
+    const questionsRes = await fetch(questionsUrl, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+    });
 
     if (!questionsRes.ok) {
-      console.error('Ajarkan questions query failed:', questionsRes.status);
+      const errBody = await questionsRes.text().catch(() => '');
+      console.error('Ajarkan questions query failed:', questionsRes.status, errBody, 'URL:', questionsUrl);
       return res.status(500).json({ error: 'Gagal memuat pertanyaan.' });
     }
 
     const availableQuestions = await questionsRes.json();
     if (!availableQuestions || availableQuestions.length === 0) {
+      console.error('Ajarkan: DB returned 0 questions for slugs=%j, age=%s', matchedSlugs, ageGroup);
       return res.status(200).json({
         error: 'not_available',
         message: 'Konten untuk kategori ini sedang disiapkan. Coba pertanyaan dari kategori lain.',
