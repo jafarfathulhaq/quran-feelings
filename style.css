@@ -4003,14 +4003,24 @@ body.about-locked { overflow: hidden; }
 
 /* ── Card 2: Aktivitas ──────────────────────────────── */
 .ak-activity-box {
-  background: linear-gradient(135deg, var(--ak-blue-bg), #E8EFF8);
+  background: linear-gradient(135deg, var(--ak-blue-bg) 0%, #E8EFF8 50%, #F0F4FA 100%);
   border: 1px solid var(--ak-blue-border);
-  border-radius: var(--radius-sm);
-  padding: 20px;
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.ak-activity-box::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--ak-blue), var(--ak-blue-light));
+  border-radius: 4px 0 0 4px;
 }
 .ak-activity-text {
   font-size: 15px;
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--text-dark);
 }
 .ak-activity-text .ak-when {

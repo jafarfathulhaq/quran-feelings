@@ -3843,12 +3843,12 @@ function buildAjarkanNgobrolCard(data) {
         </div>
       </div>
 
-      <div class="ak-mini-cta" data-ak-goto="2">
-        <span class="ak-mini-cta-icon">\u2728</span>
-        <span class="ak-mini-cta-text">Coba lakukan bersama anak</span>
-        <span class="ak-mini-cta-arrow">\u2192</span>
-      </div>
     </div></div>
+    <div class="ak-swipe-cta" data-ak-goto="2">
+      <span class="ak-swipe-cta-icon">\u2728</span>
+      <span class="ak-swipe-cta-text">Coba lakukan bersama anak</span>
+      <span class="ak-swipe-cta-arrow">Geser \u2192</span>
+    </div>
   `;
 
   // Wire ngobrol toggle
@@ -3870,38 +3870,13 @@ function buildAjarkanNgobrolCard(data) {
 function buildAjarkanAktivitasCard(data) {
   const slide = document.createElement('div');
   slide.className = 'verse-slide';
-  const p = data.pembuka_percakapan || {};
-  const hasVerses = (data.ayat || []).length > 0;
 
   slide.innerHTML = `
     <div class="ak-card"><div class="ak-card-body">
       <div class="ak-section-label"><span class="ak-sl-icon">\u2728</span> Coba lakukan bersama anak</div>
-      <div class="ak-activity-box"><p class="ak-activity-text">${data.aktivitas_bersama || ''}</p></div>
-
-      <div class="ak-expand-row" data-ak-expand>
-        <span class="ak-expand-row-icon">\uD83C\uDF19</span>
-        <span class="ak-expand-row-label">Lihat penjelasan untuk anak</span>
-        <span class="ak-expand-row-chevron">\u25BC</span>
+      <div class="ak-activity-box">
+        <p class="ak-activity-text">${data.aktivitas_bersama || ''}</p>
       </div>
-      <div class="ak-expand-content">
-        <p class="ak-expand-text">${escapeHtml(data.penjelasan_anak || '')}</p>
-      </div>
-      <div class="ak-expand-row" data-ak-expand>
-        <span class="ak-expand-row-icon">\uD83D\uDCAC</span>
-        <span class="ak-expand-row-label">Lihat kalimat pembuka untuk anak</span>
-        <span class="ak-expand-row-chevron">\u25BC</span>
-      </div>
-      <div class="ak-expand-content">
-        <p class="ak-xref-approach">Mulai dari Pertanyaan</p>
-        <p class="ak-xref-pembuka">${escapeHtml(p.pertanyaan || '')}</p>
-        <p class="ak-xref-panduan">${escapeHtml(p.panduan_pertanyaan || '')}</p>
-      </div>
-
-      ${hasVerses ? `<div class="ak-mini-cta" data-ak-goto="3">
-        <span class="ak-mini-cta-icon">\uD83D\uDCD6</span>
-        <span class="ak-mini-cta-text">Referensi ayat pendukung lainnya</span>
-        <span class="ak-mini-cta-arrow">\u2192</span>
-      </div>` : ''}
     </div></div>
   `;
 
