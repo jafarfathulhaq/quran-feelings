@@ -1119,9 +1119,12 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
     let matchedSlugs = (categoryMatch.matched_subcategories || [])
       .map(s => String(s).trim().toLowerCase())
       .flatMap(s => {
-        if (VALID_SUBCATEGORIES.has(s)) return [s];
+        // GPT sometimes returns "category/subcategory" format — strip the prefix
+        const slug = s.includes('/') ? s.split('/').pop() : s;
+        if (VALID_SUBCATEGORIES.has(slug)) return [slug];
         // If GPT returned a category name, expand to all its subcategories
         if (CATEGORY_TO_SUBCATEGORIES[s]) return CATEGORY_TO_SUBCATEGORIES[s];
+        if (CATEGORY_TO_SUBCATEGORIES[slug]) return CATEGORY_TO_SUBCATEGORIES[slug];
         return [];
       });
     // Deduplicate
@@ -1132,7 +1135,6 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
       return res.status(200).json({
         error: 'not_available',
         message: 'Maaf, kami belum punya jawaban untuk pertanyaan ini. Coba pilih dari kategori yang tersedia.',
-        _debug_gpt: categoryMatch,  // TEMP: debug GPT response
       });
     }
 
@@ -1166,7 +1168,6 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
       return res.status(200).json({
         error: 'not_available',
         message: 'Konten untuk kategori ini sedang disiapkan. Coba pertanyaan dari kategori lain.',
-        _debug_slugs: matchedSlugs, _debug_age: ageGroup,  // TEMP
       });
     }
 
