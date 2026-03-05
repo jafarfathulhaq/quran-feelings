@@ -3404,12 +3404,12 @@ body.about-locked { overflow: hidden; }
 
 /* ── Input Card Override ────────────────────────────── */
 .ak-input-card {
-  margin-top: 12px;
+  margin: 12px 20px 0;
 }
 
 /* ── Category Filter Input ──────────────────────────── */
 .ak-filter-wrap {
-  padding: 0 16px 10px;
+  padding: 0 0 10px;
 }
 .ak-filter-input {
   width: 100%;
@@ -3435,7 +3435,7 @@ body.about-locked { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 16px 40px;
+  padding: 0 0 40px;
 }
 
 .ak-category-card {
@@ -3498,7 +3498,7 @@ body.about-locked { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 16px 40px;
+  padding: 0 0 40px;
 }
 .ak-filtered-item {
   width: 100%;
