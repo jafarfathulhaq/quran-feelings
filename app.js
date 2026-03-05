@@ -3702,8 +3702,9 @@ function renderAjarkanResults(data) {
   renderDots();
   updateCounter();
 
-  // Set up carousel snapping + scroll listener for index tracking
-  setupCarouselSnapping();
+  // Scroll listener for index tracking
+  // NOTE: CSS scroll-snap-type: x mandatory handles native touch swiping.
+  // Do NOT add manual touch handlers — they race with onCarouselScroll and cause card skipping.
   carousel.addEventListener('scroll', onCarouselScroll, { passive: true });
 
   // Hide actions/feedback for ajarkan
@@ -3735,28 +3736,6 @@ function typewriteAjarkan(el, text, speed) {
       setTimeout(() => cursor.remove(), 1200);
     }
   }, speed);
-}
-
-function setupCarouselSnapping() {
-  const carousel = document.getElementById('verses-carousel');
-  let touchStartX = 0, isDragging = false;
-
-  carousel.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX;
-    isDragging = true;
-  }, { passive: true });
-
-  carousel.addEventListener('touchend', e => {
-    if (!isDragging) return;
-    isDragging = false;
-    const diff = touchStartX - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) {
-      const newIdx = diff > 0
-        ? Math.min(currentCardIndex + 1, totalVerseCards - 1)
-        : Math.max(currentCardIndex - 1, 0);
-      scrollCarouselTo(newIdx);
-    }
-  }, { passive: true });
 }
 
 // ── Card Builders ─────────────────────────────────────────────────────────────
