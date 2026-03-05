@@ -3721,7 +3721,7 @@ function renderAjarkanResults(data) {
   const typeEl = document.getElementById('ak-penjelasan-text');
   if (typeEl && data.penjelasan_anak) {
     typewriterActive = true;
-    typewriteAjarkan(typeEl, data.penjelasan_anak, 4);
+    typewriteAjarkan(typeEl, data.penjelasan_anak, 1);
   }
 }
 

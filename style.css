@@ -3677,12 +3677,6 @@ body.about-locked { overflow: hidden; }
 }
 .ak-explanation-wrap {
   position: relative;
-  padding-right: 36px;
-}
-.ak-explanation-wrap > .ak-inline-salin {
-  position: absolute;
-  top: 0;
-  right: 0;
 }
 .ak-verse-teaser {
   margin-top: 20px;
