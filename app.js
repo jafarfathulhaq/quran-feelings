@@ -3754,21 +3754,22 @@ function buildAjarkanPenjelasanCard(data, verses) {
   if (verses.length > 0) {
     verseTeaserHtml = `
       <div class="ak-verse-teaser">
-        <div class="ak-verse-teaser-label">Referensi Ayat (${verses.length})</div>
+        <div class="ak-verse-teaser-label">\uD83D\uDCD6 Referensi Ayat (${verses.length})</div>
         ${verses.map((v, i) => `
-          <div class="ak-verse-teaser-row" data-ak-toggle="vt">
-            <span class="ak-verse-teaser-name">${escapeHtml(v.surah_name || '')} \u2022 Ayat ${v.ayah || ''}</span>
-            <span class="ak-verse-teaser-action">lihat ayat <span class="ak-verse-teaser-chevron">\u25BC</span></span>
-          </div>
-          <div class="ak-verse-teaser-detail">
-            ${v.verse_relevance ? `<div style="display:flex;gap:8px;margin-bottom:14px;"><span style="font-size:14px;flex-shrink:0;margin-top:2px;">\uD83D\uDCCC</span><span style="font-size:13.5px;font-style:italic;color:var(--text-mid);line-height:1.6;">${escapeHtml(v.verse_relevance)}</span></div>` : ''}
-            <p class="ak-verse-arabic">${v.arabic || ''}</p>
-            <p class="ak-verse-translation">${escapeHtml(v.translation || '')}</p>
-            <div class="ak-action-row">
-              <button class="ak-action-btn" data-ak-audio="${v.surah || ''}:${v.ayah || ''}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
-              </button>
-              <button class="ak-action-btn" data-ak-share="${i}">Bagikan Ayat</button>
+          <div class="ak-verse-mini-card">
+            ${v.verse_relevance ? `<div class="ak-vmc-relevance"><span class="ak-vmc-pin">\uD83D\uDCCC</span><span>${escapeHtml(v.verse_relevance)}</span></div>` : ''}
+            <div class="ak-vmc-arabic-section">
+              <div class="ak-vmc-ref">${escapeHtml(v.surah_name || '')} \u2022 Ayat ${v.ayah || ''}</div>
+              <p class="ak-vmc-arabic">${v.arabic || ''}</p>
+            </div>
+            <div class="ak-vmc-content">
+              <p class="ak-vmc-translation">"${escapeHtml(v.translation || '')}"</p>
+              <div class="ak-action-row">
+                <button class="ak-action-btn" data-ak-audio="${v.surah || ''}:${v.ayah || ''}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
+                </button>
+                <button class="ak-action-btn" data-ak-share="${i}">Bagikan Ayat</button>
+              </div>
             </div>
           </div>
         `).join('')}
@@ -3899,12 +3900,6 @@ function buildAjarkanAktivitasCard(data) {
 function buildAjarkanVerseCard(verse, data, index) {
   const slide = document.createElement('div');
   slide.className = 'verse-slide';
-  const p = data.pembuka_percakapan || {};
-  // Alternate between pertanyaan and cerita for cross-refs
-  const isEven = index % 2 === 0;
-  const approachLabel = isEven ? 'Mulai dari Cerita' : 'Mulai dari Pertanyaan';
-  const approachText = isEven ? (p.cerita || '') : (p.pertanyaan || '');
-  const approachGuide = isEven ? (p.panduan_cerita || '') : (p.panduan_pertanyaan || '');
 
   slide.innerHTML = `
     <div class="ak-card"><div class="ak-card-body">
@@ -3927,34 +3922,6 @@ function buildAjarkanVerseCard(verse, data, index) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
         </button>
         <button class="ak-action-btn" data-ak-share="${index}">Bagikan Ayat</button>
-      </div>
-      <div class="ak-verse-refs">
-        <div class="ak-expand-row" data-ak-expand>
-          <span class="ak-expand-row-icon">\uD83C\uDF19</span>
-          <span class="ak-expand-row-label">Lihat penjelasan untuk anak</span>
-          <span class="ak-expand-row-chevron">\u25BC</span>
-        </div>
-        <div class="ak-expand-content">
-          <p class="ak-expand-text">${escapeHtml(data.penjelasan_anak || '')}</p>
-        </div>
-        <div class="ak-expand-row" data-ak-expand>
-          <span class="ak-expand-row-icon">\uD83D\uDCAC</span>
-          <span class="ak-expand-row-label">Lihat kalimat pembuka untuk anak</span>
-          <span class="ak-expand-row-chevron">\u25BC</span>
-        </div>
-        <div class="ak-expand-content">
-          <p class="ak-xref-approach">${approachLabel}</p>
-          <p class="ak-xref-pembuka">${escapeHtml(approachText)}</p>
-          <p class="ak-xref-panduan">${escapeHtml(approachGuide)}</p>
-        </div>
-        <div class="ak-expand-row" data-ak-expand>
-          <span class="ak-expand-row-icon">\u2728</span>
-          <span class="ak-expand-row-label">Lihat aktivitas bersama anak</span>
-          <span class="ak-expand-row-chevron">\u25BC</span>
-        </div>
-        <div class="ak-expand-content">
-          <p class="ak-expand-text">${data.aktivitas_bersama || ''}</p>
-        </div>
       </div>
     </div></div>
   `;

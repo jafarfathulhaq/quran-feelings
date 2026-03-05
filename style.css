@@ -3682,9 +3682,73 @@ body.about-locked { overflow: hidden; }
   margin-top: 20px;
   border-top: 1px solid var(--border);
   padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.ak-verse-teaser-detail + .ak-verse-teaser-row {
-  margin-top: 6px;
+
+/* ── Verse Mini Cards (Card 0 references) ─────────── */
+.ak-verse-mini-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(226,232,240,0.8);
+  box-shadow: 0 2px 8px rgba(10,15,30,0.06);
+}
+.ak-vmc-relevance {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-mid);
+  line-height: 1.6;
+  border-bottom: 1px solid var(--ak-blue-border);
+}
+.ak-vmc-pin {
+  flex-shrink: 0;
+  font-size: 13px;
+  margin-top: 1px;
+}
+.ak-vmc-arabic-section {
+  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 70%, #0D3B6E 100%);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.ak-vmc-arabic-section::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #D4A853, #E8C97A, transparent);
+}
+.ak-vmc-ref {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.3px;
+  margin-bottom: 10px;
+}
+.ak-vmc-arabic {
+  font-family: 'Scheherazade New', 'Amiri', serif;
+  font-size: 22px;
+  line-height: 2;
+  color: #fff;
+  text-align: right;
+  direction: rtl;
+  margin: 0;
+}
+.ak-vmc-content {
+  padding: 14px 16px;
+  background: var(--card-bg);
+}
+.ak-vmc-translation {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-mid);
+  margin: 0 0 12px;
+  font-style: italic;
 }
 
 /* ── Subcategory headers (expanded category, tappable) ── */
@@ -3732,51 +3796,7 @@ body.about-locked { overflow: hidden; }
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-muted);
-  margin-bottom: 10px;
-}
-.ak-verse-teaser-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: var(--ak-blue-bg);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.ak-verse-teaser-row:hover {
-  background: #E3EDF6;
-}
-.ak-verse-teaser-name {
-  font-size: 14px;
-  font-weight: 600;
-}
-.ak-verse-teaser-action {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ak-blue);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.ak-verse-teaser-chevron {
-  display: inline-block;
-  font-size: 11px;
-  transition: transform 0.3s;
-}
-.ak-verse-teaser-action.open .ak-verse-teaser-chevron {
-  transform: rotate(180deg);
-}
-.ak-verse-teaser-detail {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.4s ease, padding 0.3s ease;
-  background: var(--ak-blue-muted-bg);
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-}
-.ak-verse-teaser-detail.open {
-  max-height: 600px;
-  padding: 16px 14px;
+  margin-bottom: 0;
 }
 
 /* ── Swipe CTA (big) ────────────────────────────────── */
