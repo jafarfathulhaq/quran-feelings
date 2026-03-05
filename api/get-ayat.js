@@ -1132,6 +1132,7 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
       return res.status(200).json({
         error: 'not_available',
         message: 'Maaf, kami belum punya jawaban untuk pertanyaan ini. Coba pilih dari kategori yang tersedia.',
+        _debug_gpt: categoryMatch,  // TEMP: debug GPT response
       });
     }
 
@@ -1165,6 +1166,7 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
       return res.status(200).json({
         error: 'not_available',
         message: 'Konten untuk kategori ini sedang disiapkan. Coba pertanyaan dari kategori lain.',
+        _debug_slugs: matchedSlugs, _debug_age: ageGroup,  // TEMP
       });
     }
 
