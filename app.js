@@ -3389,7 +3389,6 @@ function expandAjarkanCategory(catId) {
     // Subcategory header
     const header = document.createElement('div');
     header.className = 'ak-subcategory-header';
-    header.style.cssText = 'font-size:13px;font-weight:700;color:var(--text-mid);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px;';
     header.textContent = `${sub.name} (${sub.questions.length})`;
     list.appendChild(header);
 
@@ -3766,27 +3765,28 @@ function buildAjarkanPenjelasanCard(data, verses) {
   const slide = document.createElement('div');
   slide.className = 'verse-slide';
 
-  const firstVerse = verses[0];
   let verseTeaserHtml = '';
-  if (firstVerse) {
+  if (verses.length > 0) {
     verseTeaserHtml = `
       <div class="ak-verse-teaser">
-        <div class="ak-verse-teaser-label">Referensi Ayat</div>
-        <div class="ak-verse-teaser-row" data-ak-toggle="vt">
-          <span class="ak-verse-teaser-name">${escapeHtml(firstVerse.surah_name || '')} \u2022 Ayat ${firstVerse.ayah || ''}</span>
-          <span class="ak-verse-teaser-action">lihat ayat <span class="ak-verse-teaser-chevron">\u25BC</span></span>
-        </div>
-        <div class="ak-verse-teaser-detail">
-          ${firstVerse.verse_relevance ? `<div style="display:flex;gap:8px;margin-bottom:14px;"><span style="font-size:14px;flex-shrink:0;margin-top:2px;">\uD83D\uDCCC</span><span style="font-size:13.5px;font-style:italic;color:var(--text-mid);line-height:1.6;">${escapeHtml(firstVerse.verse_relevance)}</span></div>` : ''}
-          <p class="ak-verse-arabic">${firstVerse.arabic || ''}</p>
-          <p class="ak-verse-translation">${escapeHtml(firstVerse.translation || '')}</p>
-          <div class="ak-action-row">
-            <button class="ak-action-btn" data-ak-audio="${firstVerse.surah || ''}:${firstVerse.ayah || ''}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
-            </button>
-            <button class="ak-action-btn" data-ak-share="${0}">Bagikan Ayat</button>
+        <div class="ak-verse-teaser-label">Referensi Ayat (${verses.length})</div>
+        ${verses.map((v, i) => `
+          <div class="ak-verse-teaser-row" data-ak-toggle="vt">
+            <span class="ak-verse-teaser-name">${escapeHtml(v.surah_name || '')} \u2022 Ayat ${v.ayah || ''}</span>
+            <span class="ak-verse-teaser-action">lihat ayat <span class="ak-verse-teaser-chevron">\u25BC</span></span>
           </div>
-        </div>
+          <div class="ak-verse-teaser-detail">
+            ${v.verse_relevance ? `<div style="display:flex;gap:8px;margin-bottom:14px;"><span style="font-size:14px;flex-shrink:0;margin-top:2px;">\uD83D\uDCCC</span><span style="font-size:13.5px;font-style:italic;color:var(--text-mid);line-height:1.6;">${escapeHtml(v.verse_relevance)}</span></div>` : ''}
+            <p class="ak-verse-arabic">${v.arabic || ''}</p>
+            <p class="ak-verse-translation">${escapeHtml(v.translation || '')}</p>
+            <div class="ak-action-row">
+              <button class="ak-action-btn" data-ak-audio="${v.surah || ''}:${v.ayah || ''}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
+              </button>
+              <button class="ak-action-btn" data-ak-share="${i}">Bagikan Ayat</button>
+            </div>
+          </div>
+        `).join('')}
       </div>
     `;
   }
@@ -3800,7 +3800,7 @@ function buildAjarkanPenjelasanCard(data, verses) {
     <div class="ak-card"><div class="ak-card-body">
       <div class="ak-section-label"><span class="ak-sl-icon">\uD83E\uDDD2</span> Penjelasan untuk anak</div>
       <h2 class="ak-intro-question">${escapeHtml(data.question_text || currentFeeling)}</h2>
-      <div style="position:relative;">
+      <div class="ak-explanation-wrap">
         <span class="ak-explanation-text" id="ak-penjelasan-text"></span>
         <span class="ak-inline-salin" data-ak-copy="penjelasan"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
       </div>
@@ -3998,7 +3998,12 @@ function wireAjarkanCardEvents(slide, data, verses) {
     row.addEventListener('click', () => {
       const detail = row.nextElementSibling;
       if (detail) detail.classList.toggle('open');
-      row.querySelector('.ak-verse-teaser-action')?.classList.toggle('open');
+      const actionEl = row.querySelector('.ak-verse-teaser-action');
+      if (actionEl) {
+        actionEl.classList.toggle('open');
+        const isOpen = actionEl.classList.contains('open');
+        actionEl.childNodes[0].textContent = isOpen ? 'tutup ayat ' : 'lihat ayat ';
+      }
     });
   });
 
@@ -4007,7 +4012,12 @@ function wireAjarkanCardEvents(slide, data, verses) {
     row.addEventListener('click', () => {
       const dd = row.nextElementSibling;
       if (dd) dd.classList.toggle('open');
-      row.querySelector('.ak-verse-toggle')?.classList.toggle('open');
+      const toggleEl = row.querySelector('.ak-verse-toggle');
+      if (toggleEl) {
+        toggleEl.classList.toggle('open');
+        const isOpen = toggleEl.classList.contains('open');
+        toggleEl.childNodes[0].textContent = isOpen ? 'tutup ayat ' : 'lihat ayat ';
+      }
       logEvent('ajarkan_verse_expanded');
     });
   });

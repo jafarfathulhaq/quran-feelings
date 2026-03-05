@@ -733,7 +733,7 @@ body {
 
 /* ── Reading Progress Bar (for long surahs) ──────────── */
 .reading-progress {
-  height: 4px;
+  height: 5px;
   background: var(--border);
   margin: 12px 20px;
   border-radius: 4px;
@@ -1462,15 +1462,15 @@ body {
 }
 
 .verse-dot {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--border);
+  background: rgba(0,0,0,0.18);
   transition: background 0.2s ease, transform 0.2s ease;
 }
 .verse-dot.active {
   background: var(--gold);
-  transform: scale(1.25);
+  transform: scale(1.3);
 }
 
 /* Loading state inside carousel */
@@ -3398,6 +3398,11 @@ body.about-locked { overflow: hidden; }
   scrollbar-width: none;
 }
 .ak-popular-scroll::-webkit-scrollbar { display: none; }
+.ak-popular-scroll::after {
+  content: '';
+  flex-shrink: 0;
+  width: 16px;
+}
 
 .ak-popular-pill {
   flex-shrink: 0;
@@ -3537,7 +3542,7 @@ body.about-locked { overflow: hidden; }
 .ak-card::before {
   content: '';
   display: block;
-  height: 4px;
+  height: 5px;
   background: linear-gradient(90deg, var(--ak-blue-accent), var(--ak-blue-light));
 }
 .ak-card-body {
@@ -3691,10 +3696,36 @@ body.about-locked { overflow: hidden; }
   line-height: 1.75;
   color: var(--text-mid);
 }
+.ak-explanation-wrap {
+  position: relative;
+  padding-right: 36px;
+}
+.ak-explanation-wrap > .ak-inline-salin {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
 .ak-verse-teaser {
   margin-top: 20px;
   border-top: 1px solid var(--border);
   padding-top: 14px;
+}
+.ak-verse-teaser-detail + .ak-verse-teaser-row {
+  margin-top: 6px;
+}
+
+/* ── Subcategory headers (expanded category) ────────── */
+.ak-subcategory-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ak-blue-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 20px 0 8px;
+  padding: 7px 12px;
+  background: var(--ak-blue-bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--ak-blue);
 }
 .ak-verse-teaser-label {
   font-size: 11px;
@@ -3818,6 +3849,11 @@ body.about-locked { overflow: hidden; }
 .ak-mini-cta-arrow {
   color: var(--ak-blue);
   animation: akBounce 1.2s ease-in-out infinite;
+}
+
+/* Hide swipe/mini CTA on desktop — arrow buttons are visible */
+@media (min-width: 601px) {
+  .ak-swipe-cta, .ak-mini-cta { display: none; }
 }
 
 /* ── Card 1: Ide Ngobrol ────────────────────────────── */
@@ -4021,6 +4057,13 @@ body.about-locked { overflow: hidden; }
 }
 .ak-age-badge:hover {
   background: linear-gradient(135deg, rgba(74,127,181,0.12), rgba(74,127,181,0.2));
+}
+.ak-age-badge::after {
+  content: '\21C4  Ganti';
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.6;
+  margin-left: 2px;
 }
 
 /* ── Cross-ref approach label ───────────────────────── */
