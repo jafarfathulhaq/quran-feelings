@@ -184,12 +184,24 @@ async function subscribeToPush(notifyHour) {
 function canShowPushPrompt() {
   if (!('Notification' in window) || !('PushManager' in window)) return false;
   if (localStorage.getItem('push_subscribed') === 'true') return false;
+  if (Notification.permission === 'granted') return false;
   if (Notification.permission === 'denied') return false;
 
   const dismissedUntil = localStorage.getItem('push_dismissed_until');
   if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) return false;
 
   return true;
+}
+
+// If permission was granted but subscription wasn't saved (e.g. network error),
+// silently retry so the user doesn't get asked again.
+async function resubscribeIfNeeded() {
+  if (!('Notification' in window) || !('PushManager' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  if (localStorage.getItem('push_subscribed') === 'true') return;
+  try {
+    await subscribeToPush(NOTIFY_TIME_OPTIONS[1].hour);
+  } catch (_) { /* will retry next visit */ }
 }
 
 function showPushPermissionCard() {
@@ -4343,6 +4355,9 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     }
   }
 })();
+
+// ── Silent re-subscribe if permission granted but subscription lost ──────────
+resubscribeIfNeeded();
 
 // ── Push Permission Triggers ──────────────────────────────────────────────────
 
