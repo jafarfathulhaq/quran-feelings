@@ -999,17 +999,6 @@ const AJARKAN_CATEGORIES = [
   },
 ];
 
-const AJARKAN_POPULAR = [
-  { questionId: 'siapa-allah-01', text: 'Siapa itu Allah?' },
-  { questionId: 'sholat-02', text: 'Kenapa kita harus sholat?' },
-  { questionId: 'puasa-ramadan-02', text: 'Kenapa kita berpuasa di bulan Ramadan?' },
-  { questionId: 'kejujuran-01', text: 'Kenapa harus jujur?' },
-  { questionId: 'emosi-perasaan-07', text: 'Apa yang harus dilakukan saat merasa takut?' },
-  { questionId: 'keluarga-hubungan-01', text: 'Kenapa kita harus sayang dan hormat kepada orang tua?' },
-  { questionId: 'alam-ciptaan-01', text: 'Siapa yang menciptakan langit, bumi, dan semua isinya?' },
-];
-
-
 const JELAJAHI_BATCH_SIZE = 15;
 let jelajahiAllVerses    = [];   // full verse array from API
 let jelajahiLoadedUpTo   = 0;    // how many verse slides rendered so far
@@ -3305,41 +3294,34 @@ function scrollCarouselTo(index) {
 
 function renderAjarkanView() {
   renderAjarkanAgePills();
-  renderAjarkanPopular();
   renderAjarkanCategories();
   initAjarkanSearch();
   initAjarkanFilter();
+  // If age was already selected (returning to view), show gated content
+  if (ajarkanAgeGroup) {
+    const gated = document.getElementById('ak-gated-content');
+    if (gated) { gated.classList.remove('ak-hidden'); gated.classList.remove('ak-gated-reveal'); }
+  }
 }
 
 function renderAjarkanAgePills() {
-  document.querySelectorAll('.ak-age-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      const age = pill.dataset.age;
+  document.querySelectorAll('.ak-age-seg').forEach(seg => {
+    seg.addEventListener('click', () => {
+      const age = seg.dataset.age;
       ajarkanAgeGroup = age;
-      document.querySelectorAll('.ak-age-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
+      document.querySelectorAll('.ak-age-seg').forEach(s => s.classList.remove('active'));
+      seg.classList.add('active');
       logEvent(age === 'under7' ? 'ajarkan_age_under7_selected' : 'ajarkan_age_7plus_selected');
       // Remove warning if any
       const warn = document.querySelector('.ak-age-warning');
       if (warn) warn.remove();
+      // Reveal gated content (search + categories)
+      const gated = document.getElementById('ak-gated-content');
+      if (gated && gated.classList.contains('ak-hidden')) {
+        gated.classList.remove('ak-hidden');
+        gated.classList.add('ak-gated-reveal');
+      }
     });
-  });
-}
-
-function renderAjarkanPopular() {
-  const container = document.getElementById('ak-popular-pills');
-  if (!container) return;
-  container.innerHTML = '';
-  AJARKAN_POPULAR.forEach(q => {
-    const pill = document.createElement('button');
-    pill.className = 'ak-popular-pill';
-    pill.textContent = q.text;
-    pill.addEventListener('click', () => {
-      if (!ensureAjarkanAge()) return;
-      logEvent('ajarkan_question_selected', { question_id: q.questionId, source: 'popular' });
-      fetchAjarkanPreset(q.questionId);
-    });
-    container.appendChild(pill);
   });
 }
 
@@ -4070,8 +4052,8 @@ function wireAjarkanCardEvents(slide, data, verses) {
       if (!newAge || !ajarkanCurrentQId) return;
       ajarkanAgeGroup = newAge;
       // Update pills on the ajarkan-view too
-      document.querySelectorAll('.ak-age-pill').forEach(p => {
-        p.classList.toggle('active', p.dataset.age === newAge);
+      document.querySelectorAll('.ak-age-seg').forEach(s => {
+        s.classList.toggle('active', s.dataset.age === newAge);
       });
       logEvent(newAge === 'under7' ? 'ajarkan_age_under7_selected' : 'ajarkan_age_7plus_selected', { source: 'badge' });
       fetchAjarkanPreset(ajarkanCurrentQId);

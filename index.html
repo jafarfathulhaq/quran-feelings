@@ -157,7 +157,7 @@
           <div class="landing-card-icon ajarkan">🌙</div>
           <div class="landing-card-text">
             <span class="landing-card-title">Ajarkan Anakku</span>
-            <span class="landing-card-desc">Ketika anak bertanya tentang Allah, temukan cara menjelaskannya</span>
+            <span class="landing-card-desc">Temukan cara sederhana menjelaskan Al-Qur'an kepada anak.</span>
           </div>
         </button>
         <button class="landing-card" data-mode="jelajahi">
@@ -400,54 +400,48 @@
       </header>
 
       <!-- Age Selector -->
+      <p class="ak-age-instruction">Berapa usia anak Anda?</p>
       <div class="ak-age-selector">
-        <button class="ak-age-pill" data-age="under7">
-          <span class="ak-age-emoji">🧒</span>
-          <span class="ak-age-label">7 tahun ke bawah</span>
-          <span class="ak-age-hint">Seperti bercerita</span>
-        </button>
-        <button class="ak-age-pill" data-age="7plus">
-          <span class="ak-age-emoji">🧑</span>
-          <span class="ak-age-label">7 tahun ke atas</span>
-          <span class="ak-age-hint">Seperti ngobrol</span>
-        </button>
+        <div class="ak-age-toggle">
+          <button class="ak-age-seg" data-age="under7">Di bawah 7 tahun</button>
+          <button class="ak-age-seg" data-age="7plus">7 tahun ke atas</button>
+        </div>
       </div>
 
-      <!-- Ajarkan Input Card -->
-      <div class="input-card ak-input-card">
-        <div class="search-textarea-wrap">
-          <textarea
-            id="ajarkan-input"
-            class="search-textarea"
-            placeholder="Ketik pertanyaan anak, misal: Kenapa kita harus sholat?"
-            autocomplete="off"
-            rows="2"
-          ></textarea>
-          <button id="ajarkan-clear" class="search-clear hidden" aria-label="Hapus">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+      <!-- Gated content: hidden until age is picked -->
+      <div id="ak-gated-content" class="ak-hidden">
+
+        <!-- Ajarkan Input Card -->
+        <div class="input-card ak-input-card">
+          <div class="search-textarea-wrap">
+            <textarea
+              id="ajarkan-input"
+              class="search-textarea"
+              placeholder="Ketik pertanyaan anak, misal: Kenapa kita harus sholat?"
+              autocomplete="off"
+              rows="2"
+            ></textarea>
+            <button id="ajarkan-clear" class="search-clear hidden" aria-label="Hapus">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <button id="ajarkan-submit" class="search-submit-btn hidden">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Cari Jawaban
           </button>
         </div>
-        <button id="ajarkan-submit" class="search-submit-btn hidden">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          Cari Jawaban
-        </button>
-      </div>
 
-      <!-- Popular Questions -->
-      <div class="home-content">
-        <p class="search-divider"><span>pertanyaan populer</span></p>
-        <div id="ak-popular-pills" class="ak-popular-scroll"></div>
-      </div>
-
-      <!-- Category Grid -->
-      <div class="home-content">
-        <p class="search-divider"><span>atau pilih kategori</span></p>
-        <div class="ak-filter-wrap">
-          <input type="text" id="ak-filter-input" class="ak-filter-input" placeholder="Filter pertanyaan..." />
+        <!-- Category Grid -->
+        <div class="home-content">
+          <p class="search-divider"><span>atau pilih pertanyaan</span></p>
+          <div class="ak-filter-wrap">
+            <input type="text" id="ak-filter-input" class="ak-filter-input" placeholder="Cari pertanyaan…" />
+          </div>
+          <div id="ak-category-grid" class="ak-category-grid"></div>
         </div>
-        <div id="ak-category-grid" class="ak-category-grid"></div>
+
       </div>
 
       <!-- Expanded category overlay (rendered by JS) -->

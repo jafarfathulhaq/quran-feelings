@@ -3322,55 +3322,74 @@ body.about-locked { overflow: hidden; }
   background-clip: text;
 }
 
-/* ── Age Selector ───────────────────────────────────── */
+/* ── Age Instruction Text ──────────────────────────── */
+.ak-age-instruction {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 16px 0 0;
+  padding: 0 16px;
+  animation: akInstructionFade 2s ease-in-out infinite alternate;
+}
+@keyframes akInstructionFade {
+  0%, 40% { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+
+/* ── Age Selector (Segmented Toggle) ──────────────── */
 .ak-age-selector {
   display: flex;
-  gap: 10px;
-  padding: 16px 16px 0;
+  padding: 10px 16px 0;
   justify-content: center;
 }
 
-.ak-age-pill {
+.ak-age-toggle {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 18px;
-  border-radius: 24px;
-  border: 2px solid var(--ak-blue-border);
-  background: white;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  flex: 1;
-  max-width: 180px;
-  -webkit-tap-highlight-color: transparent;
-}
-.ak-age-pill:hover {
-  border-color: var(--ak-blue);
-}
-.ak-age-pill.active {
-  background: var(--ak-blue);
-  border-color: var(--ak-blue);
-}
-.ak-age-pill.active .ak-age-label,
-.ak-age-pill.active .ak-age-hint {
-  color: white;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ak-blue-bg);
+  max-width: 340px;
+  width: 100%;
 }
 
-.ak-age-emoji {
-  font-size: 20px;
-}
-.ak-age-label {
+.ak-age-seg {
+  flex: 1;
+  padding: 10px 16px;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dark);
-  transition: color 0.25s;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--ak-blue-dark);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
 }
-.ak-age-hint {
-  font-size: 11px;
-  color: var(--text-muted);
-  transition: color 0.25s;
+.ak-age-seg:first-child {
+  border-right: 1px solid var(--ak-blue-border);
+}
+.ak-age-seg:hover {
+  background: rgba(74, 127, 181, 0.08);
+}
+.ak-age-seg.active {
+  background: var(--ak-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Gated content (hidden until age selected) ─────── */
+.ak-hidden {
+  display: none;
+}
+.ak-gated-reveal {
+  animation: akGatedReveal 0.4s ease both;
+}
+@keyframes akGatedReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Age warning (no age selected) ──────────────────── */
@@ -3386,46 +3405,6 @@ body.about-locked { overflow: hidden; }
 /* ── Input Card Override ────────────────────────────── */
 .ak-input-card {
   margin-top: 12px;
-}
-
-/* ── Popular Questions (horizontal scroll) ──────────── */
-.ak-popular-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 16px 8px;
-  scrollbar-width: none;
-}
-.ak-popular-scroll::-webkit-scrollbar { display: none; }
-.ak-popular-scroll::after {
-  content: '';
-  flex-shrink: 0;
-  width: 16px;
-}
-
-.ak-popular-pill {
-  flex-shrink: 0;
-  padding: 8px 16px;
-  background: white;
-  border: 1.5px solid var(--ak-blue-border);
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-mid);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-}
-.ak-popular-pill:hover {
-  border-color: var(--ak-blue);
-  color: var(--ak-blue-dark);
-}
-.ak-popular-pill:active {
-  background: var(--ak-blue-bg);
-  transform: scale(0.97);
 }
 
 /* ── Category Filter Input ──────────────────────────── */
