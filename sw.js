@@ -63,7 +63,9 @@ self.addEventListener('notificationclick', function (event) {
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.focus();
-          client.navigate(targetUrl);
+          if ('navigate' in client) {
+            return client.navigate(targetUrl);
+          }
           return;
         }
       }

@@ -164,7 +164,7 @@ async function subscribeToPush(notifyHour) {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
-    await fetch('/api/subscribe-push', {
+    const res = await fetch('/api/subscribe-push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -173,6 +173,7 @@ async function subscribeToPush(notifyHour) {
         tzOffset: new Date().getTimezoneOffset(),
       }),
     });
+    if (!res.ok) throw new Error('subscribe-push API returned ' + res.status);
     localStorage.setItem('push_subscribed', 'true');
     logEvent('push_subscribed', { hour: notifyHour });
     showToast('Siap! Kamu akan dapat pengingat dari Al-Qur\'an');

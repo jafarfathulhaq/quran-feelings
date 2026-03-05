@@ -126,28 +126,29 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ sent: 0, reason: 'No subscribers' });
   }
 
-  let sent = 0;
-  let failed = 0;
   const staleEndpoints = [];
 
-  await Promise.all(
+  const results = await Promise.allSettled(
     subscribers.map(async (sub) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         );
-        sent++;
+        return 'sent';
       } catch (err) {
-        failed++;
         if (err.statusCode === 410 || err.statusCode === 404) {
           staleEndpoints.push(sub.endpoint);
         } else {
           console.error('push send error:', err.statusCode, sub.endpoint);
         }
+        return 'failed';
       }
     })
   );
+
+  const sent = results.filter(r => r.value === 'sent').length;
+  const failed = results.filter(r => r.value === 'failed').length;
 
   if (staleEndpoints.length > 0) {
     await supabase
