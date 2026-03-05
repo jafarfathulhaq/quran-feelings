@@ -2194,15 +2194,15 @@ function showVerseActions() {
     : currentMode === 'panduan' ? 'Topik lain'
     : currentMode === 'ajarkan' ? 'Pertanyaan lain' : 'Perasaan lain';
 
-  // Jelajahi doesn't have "try other verses" (no AI), just back button
-  if (currentMode === 'jelajahi') {
+  // Jelajahi & Ajarkan don't have "try other verses" (no AI / pre-generated), just back button
+  if (currentMode === 'jelajahi' || currentMode === 'ajarkan') {
     actionsEl.innerHTML = `
       <button class="va-secondary" id="find-more-btn">${moreLabel}</button>
     `;
     actionsEl.classList.remove('hidden');
     document.getElementById('find-more-btn')
       .addEventListener('click', () => {
-        if (lastJuzSurahTapped) {
+        if (currentMode === 'jelajahi' && lastJuzSurahTapped) {
           switchView('jelajahi-view');
           setTimeout(() => showJuzSurahList(), 50);
         } else {
