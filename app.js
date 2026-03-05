@@ -3335,8 +3335,10 @@ function renderAjarkanCategories() {
     card.className = 'ak-category-card';
     card.innerHTML = `
       <span class="ak-category-emoji">${cat.emoji}</span>
-      <span class="ak-category-label">${cat.label}</span>
-      <span class="ak-category-count">${total} pertanyaan</span>
+      <div class="ak-category-text">
+        <span class="ak-category-label">${cat.label}</span>
+        <span class="ak-category-count">${total} pertanyaan</span>
+      </div>
     `;
     card.addEventListener('click', () => {
       logEvent('ajarkan_category_tapped', { category: cat.id });
@@ -3357,12 +3359,14 @@ function expandAjarkanCategory(catId) {
       <button class="panduan-expanded-back" id="ak-expanded-back-btn">
         ${BACK_ARROW_SVG} Kembali
       </button>
-      <div class="panduan-expanded-header">
-        <span class="panduan-expanded-emoji">${cat.emoji}</span>
-        <h3 class="panduan-expanded-title">${cat.label}</h3>
-        <p class="panduan-expanded-desc">${cat.subcategories.length} topik</p>
+      <div class="ak-expanded-header">
+        <span class="ak-expanded-emoji">${cat.emoji}</span>
+        <div class="ak-expanded-text">
+          <h3 class="ak-expanded-title">${cat.label}</h3>
+          <p class="ak-expanded-desc">${cat.subcategories.length} topik</p>
+        </div>
       </div>
-      <div class="sub-questions-list" id="ak-subcategory-list"></div>
+      <div class="ak-questions-list" id="ak-subcategory-list"></div>
     </div>
   `;
 
@@ -3371,7 +3375,7 @@ function expandAjarkanCategory(catId) {
     // Subcategory header (tappable, toggles question list)
     const header = document.createElement('div');
     header.className = 'ak-subcategory-header';
-    header.innerHTML = `<span>${sub.name} (${sub.questions.length})</span><span class="ak-sub-chevron">▼</span>`;
+    header.innerHTML = `<span class="ak-sub-name">${sub.name}</span><span class="ak-sub-meta">${sub.questions.length} pertanyaan <span class="ak-sub-chevron">\u25BC</span></span>`;
     list.appendChild(header);
 
     // Questions wrapper (collapsed by default)
@@ -3380,7 +3384,7 @@ function expandAjarkanCategory(catId) {
 
     sub.questions.forEach(q => {
       const row = document.createElement('button');
-      row.className = 'sub-question-row';
+      row.className = 'ak-question-row';
       row.innerHTML = `<span>${escapeHtml(q.text)}</span>${CHEVRON_RIGHT_SVG}`;
       row.addEventListener('click', () => {
         if (!ensureAjarkanAge()) return;
@@ -3532,7 +3536,11 @@ function filterAjarkanQuestions(query) {
   container.innerHTML = '';
 
   if (matches.length === 0) {
-    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">Tidak ada pertanyaan yang cocok</p>';
+    container.innerHTML = `<div class="ak-empty-state">
+      <span class="ak-empty-icon">\uD83D\uDD0D</span>
+      <p class="ak-empty-text">Tidak ada pertanyaan yang cocok</p>
+      <p class="ak-empty-hint">Coba kata kunci lain</p>
+    </div>`;
     return;
   }
 
