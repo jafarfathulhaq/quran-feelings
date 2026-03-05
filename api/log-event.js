@@ -61,6 +61,12 @@ const VALID_EVENTS = new Set([
   'ajarkan_card_swiped',
   'ajarkan_panduan_fallback',
   'ajarkan_query_miss',
+  // Push notification events
+  'pwa_session_start',
+  'push_opened',
+  'push_subscribed',
+  'push_permission_denied',
+  'push_permission_dismissed',
 ]);
 
 module.exports = async function handler(req, res) {

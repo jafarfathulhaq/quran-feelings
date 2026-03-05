@@ -1,8 +1,12 @@
 {
-  "name": "quran-feelings",
+  "name": "temuquran",
   "version": "1.0.0",
   "private": true,
   "engines": {
     "node": "20.x"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7",
+    "@supabase/supabase-js": "^2.39.0"
   }
 }

@@ -138,6 +138,122 @@ let shareIncludeQuestion = false;
 let shareActiveVerse     = null;      // verse object being shared
 let shareLastPlatform    = 'wa_chat'; // last selected platform (for preview aspect ratio)
 
+// ── Push Notification ─────────────────────────────────────────────────────────
+
+const VAPID_PUBLIC_KEY = 'BKSz_3Z4dVpGuwI3W5i2sFtt8HfvJpJvJsjGoL_P2pRTS1FH__D7NiOdZerX2Tv7rL9epRjpBBVYxJsJS8FF-mE';
+
+const NOTIFY_TIME_OPTIONS = [
+  { label: 'Subuh  ~05:00', hour: 5 },
+  { label: 'Pagi   ~07:00', hour: 7 },
+  { label: 'Siang  ~12:00', hour: 12 },
+  { label: 'Malam  ~20:00', hour: 20 },
+  { label: 'Isya   ~21:00', hour: 21 },
+];
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+async function subscribeToPush(notifyHour) {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    await fetch('/api/subscribe-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription,
+        notifyHour,
+        tzOffset: new Date().getTimezoneOffset(),
+      }),
+    });
+    localStorage.setItem('push_subscribed', 'true');
+    logEvent('push_subscribed', { hour: notifyHour });
+    showToast('Siap! Kamu akan dapat pengingat dari Al-Qur\'an');
+  } catch (err) {
+    console.error('Push subscribe error:', err);
+  }
+}
+
+function canShowPushPrompt() {
+  if (!('Notification' in window) || !('PushManager' in window)) return false;
+  if (localStorage.getItem('push_subscribed') === 'true') return false;
+  if (Notification.permission === 'denied') return false;
+
+  const dismissedUntil = localStorage.getItem('push_dismissed_until');
+  if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) return false;
+
+  return true;
+}
+
+function showPushPermissionCard() {
+  const existing = document.getElementById('pushPermissionCard');
+  if (existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.id = 'pushPermissionCard';
+  card.className = 'push-permission-card';
+
+  card.innerHTML = `
+    <div class="ppc-icon">\u{1F514}</div>
+    <div class="ppc-title">Pengingat harian dari Al-Qur'an</div>
+    <div class="ppc-body">Boleh kami kirim satu ayat setiap hari? Pilih waktu yang cocok untukmu.</div>
+    <div class="ppc-times">
+      ${NOTIFY_TIME_OPTIONS.map((t, i) =>
+        `<button class="ppc-time-btn${i === 1 ? ' selected' : ''}" data-hour="${t.hour}">${escapeHtml(t.label)}</button>`
+      ).join('')}
+    </div>
+    <div class="ppc-privacy">\u{1F512} <span>Tidak ada data pribadimu yang disimpan. Hanya waktu pengingat.</span></div>
+    <div class="ppc-actions">
+      <button class="ppc-confirm-btn">Ya, aktifkan pengingat</button>
+      <button class="ppc-dismiss-btn">Nanti saja</button>
+    </div>
+  `;
+
+  let selectedHour = NOTIFY_TIME_OPTIONS[1].hour;
+  card.querySelectorAll('.ppc-time-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      card.querySelectorAll('.ppc-time-btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedHour = parseInt(btn.dataset.hour, 10);
+    });
+  });
+
+  card.querySelector('.ppc-confirm-btn').addEventListener('click', async () => {
+    card.remove();
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      await subscribeToPush(selectedHour);
+    } else {
+      logEvent('push_permission_denied', {});
+    }
+  });
+
+  card.querySelector('.ppc-dismiss-btn').addEventListener('click', () => {
+    card.remove();
+    localStorage.setItem('push_dismissed_until', (Date.now() + 3 * 24 * 60 * 60 * 1000).toString());
+    logEvent('push_permission_dismissed', {});
+  });
+
+  const a2hsCard = document.getElementById('a2hsCard');
+  if (a2hsCard) {
+    a2hsCard.after(card);
+  } else {
+    document.getElementById('landing-view').prepend(card);
+  }
+}
+
+function requestPushPermission() {
+  if (!canShowPushPrompt()) return;
+  showPushPermissionCard();
+}
+
 // ── Bismillah Handling ───────────────────────────────────────────────────────
 // In the DB, verse 1 of every surah (except At-Tawbah/9) includes the
 // Bismillah as a prefix.  For Jelajahi we strip it from verse 1 and
@@ -4204,4 +4320,75 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
+}
+
+// ── PWA Session Tracking ──────────────────────────────────────────────────────
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  logEvent('pwa_session_start', { source: 'homescreen' });
+}
+
+// ── Notification Open Tracking ────────────────────────────────────────────────
+(function trackPushOpen() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('ref') === 'push') {
+    logEvent('push_opened', {
+      type: params.get('type') || 'unknown',
+      day: params.get('day') || 'unknown',
+    });
+    history.replaceState(null, '', window.location.pathname);
+
+    const mode = params.get('mode');
+    if (mode && typeof selectMode === 'function') {
+      selectMode(mode);
+    }
+  }
+})();
+
+// ── Push Permission Triggers ──────────────────────────────────────────────────
+
+// Path 1 — Android: ask immediately after install
+window.addEventListener('appinstalled', () => {
+  setTimeout(requestPushPermission, 2000);
+});
+
+// Path 2 — iOS standalone: ask on next launch
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  setTimeout(requestPushPermission, 3000);
+}
+
+// Path 3 — Regular mobile browser: ask after 60 cumulative seconds
+if (!window.matchMedia('(display-mode: standalone)').matches) {
+  const THRESHOLD_SECONDS = 60;
+  let _engagementTimer = null;
+  let _prompted = false;
+
+  function _checkTimeGate() {
+    if (_prompted) return;
+    const spent = parseInt(localStorage.getItem('tq_time_spent') || '0', 10);
+    if (spent >= THRESHOLD_SECONDS) {
+      _prompted = true;
+      _stopTimer();
+      requestPushPermission();
+    }
+  }
+
+  function _startTimer() {
+    if (_engagementTimer) return;
+    _engagementTimer = setInterval(() => {
+      const current = parseInt(localStorage.getItem('tq_time_spent') || '0', 10);
+      localStorage.setItem('tq_time_spent', (current + 1).toString());
+      _checkTimeGate();
+    }, 1000);
+  }
+
+  function _stopTimer() {
+    clearInterval(_engagementTimer);
+    _engagementTimer = null;
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    document.hidden ? _stopTimer() : _startTimer();
+  });
+
+  _startTimer();
 }
