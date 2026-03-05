@@ -3675,6 +3675,13 @@ body.about-locked { overflow: hidden; }
   line-height: 1.75;
   color: var(--text-mid);
 }
+.ak-fade-in {
+  animation: akFadeIn 0.3s ease both;
+}
+@keyframes akFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 .ak-explanation-wrap {
   position: relative;
 }

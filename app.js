@@ -3713,11 +3713,11 @@ function renderAjarkanResults(data) {
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
 
-  // Typewriter on penjelasan_anak
+  // Show penjelasan_anak instantly with fade-in
   const typeEl = document.getElementById('ak-penjelasan-text');
   if (typeEl && data.penjelasan_anak) {
-    typewriterActive = true;
-    typewriteAjarkan(typeEl, data.penjelasan_anak, 1);
+    typeEl.textContent = data.penjelasan_anak;
+    typeEl.classList.add('ak-fade-in');
   }
 }
 
