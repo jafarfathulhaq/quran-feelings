@@ -3690,20 +3690,16 @@ function renderAjarkanResults(data) {
   }
 
   const verses = data.ayat || [];
-  // Cards: Penjelasan + Ide Ngobrol + Coba Lakukan + N verse cards
-  totalVerseCards = 3 + verses.length;
+  // Cards: Penjelasan + Ide Ngobrol + Coba Lakukan (verse refs are in Card 0)
+  totalVerseCards = 3;
   currentCardIndex = 0;
 
-  // Card 0: Penjelasan
+  // Card 0: Penjelasan (with verse references)
   carousel.appendChild(buildAjarkanPenjelasanCard(data, verses));
   // Card 1: Ide Ngobrol
   carousel.appendChild(buildAjarkanNgobrolCard(data));
   // Card 2: Coba Lakukan
   carousel.appendChild(buildAjarkanAktivitasCard(data));
-  // Cards 3-N: Verse cards
-  verses.forEach((v, i) => {
-    carousel.appendChild(buildAjarkanVerseCard(v, data, i));
-  });
 
   renderDots();
   updateCounter();
@@ -3756,7 +3752,11 @@ function buildAjarkanPenjelasanCard(data, verses) {
       <div class="ak-verse-teaser">
         <div class="ak-verse-teaser-label">\uD83D\uDCD6 Referensi Ayat (${verses.length})</div>
         ${verses.map((v, i) => `
-          <div class="ak-verse-mini-card">
+          <div class="ak-vmc-row" data-ak-toggle="vmc">
+            <span class="ak-vmc-row-name">${escapeHtml(v.surah_name || '')} \u2022 Ayat ${v.ayah || ''}</span>
+            <span class="ak-vmc-row-action">lihat ayat <span class="ak-vmc-row-chevron">\u25BC</span></span>
+          </div>
+          <div class="ak-verse-mini-card ak-vmc-collapsed">
             ${v.verse_relevance ? `<div class="ak-vmc-relevance"><span class="ak-vmc-pin">\uD83D\uDCCC</span><span>${escapeHtml(v.verse_relevance)}</span></div>` : ''}
             <div class="ak-vmc-arabic-section">
               <div class="ak-vmc-ref">${escapeHtml(v.surah_name || '')} \u2022 Ayat ${v.ayah || ''}</div>
@@ -3942,16 +3942,16 @@ function wireAjarkanCardEvents(slide, data, verses) {
     });
   });
 
-  // Verse teaser toggle
-  slide.querySelectorAll('[data-ak-toggle="vt"]').forEach(row => {
+  // Verse mini-card toggle (Card 0)
+  slide.querySelectorAll('[data-ak-toggle="vmc"]').forEach(row => {
     row.addEventListener('click', () => {
-      const detail = row.nextElementSibling;
-      if (detail) detail.classList.toggle('open');
-      const actionEl = row.querySelector('.ak-verse-teaser-action');
+      const card = row.nextElementSibling;
+      if (card) card.classList.toggle('ak-vmc-collapsed');
+      row.classList.toggle('ak-vmc-open');
+      const actionEl = row.querySelector('.ak-vmc-row-action');
       if (actionEl) {
-        actionEl.classList.toggle('open');
-        const isOpen = actionEl.classList.contains('open');
-        actionEl.childNodes[0].textContent = isOpen ? 'tutup ayat ' : 'lihat ayat ';
+        const isOpen = row.classList.contains('ak-vmc-open');
+        actionEl.childNodes[0].textContent = isOpen ? 'tutup ' : 'lihat ayat ';
       }
     });
   });

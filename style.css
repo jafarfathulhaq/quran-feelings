@@ -3684,7 +3684,44 @@ body.about-locked { overflow: hidden; }
   padding-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 6px;
+}
+
+/* ── Verse Mini Card Row (tappable, Card 0) ───────── */
+.ak-vmc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-vmc-row:hover {
+  background: #E3EDF6;
+}
+.ak-vmc-row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.ak-vmc-row-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ak-blue);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ak-vmc-row-chevron {
+  display: inline-block;
+  font-size: 10px;
+  transition: transform 0.3s;
+}
+.ak-vmc-row.ak-vmc-open .ak-vmc-row-chevron {
+  transform: rotate(180deg);
 }
 
 /* ── Verse Mini Cards (Card 0 references) ─────────── */
@@ -3693,6 +3730,17 @@ body.about-locked { overflow: hidden; }
   overflow: hidden;
   border: 1px solid rgba(226,232,240,0.8);
   box-shadow: 0 2px 8px rgba(10,15,30,0.06);
+  transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+  max-height: 800px;
+  opacity: 1;
+  margin-bottom: 8px;
+}
+.ak-verse-mini-card.ak-vmc-collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+  border: none;
+  box-shadow: none;
 }
 .ak-vmc-relevance {
   display: flex;
