@@ -61,6 +61,8 @@ function initA2HS() {
     if (e.target === guide) hideA2HSGuide();
   });
 
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
   btn.addEventListener('click', () => {
     if (deferredPrompt) {
       // Android / Chrome — native prompt
@@ -78,6 +80,17 @@ function initA2HS() {
       showA2HSGuide();
       logEvent('a2hs_tapped', { platform: 'ios' });
     } else {
+      // Android fallback (prompt unavailable) — swap guide to Android steps
+      if (isAndroid && guide) {
+        const title = guide.querySelector('.a2hs-guide-title');
+        const steps = guide.querySelector('.a2hs-guide-steps');
+        if (title) title.textContent = 'Pasang TemuQuran di Android';
+        if (steps) steps.innerHTML = `
+          <div class="a2hs-step"><span class="a2hs-step-num">1</span><span>Tap ikon <strong>⋮</strong> (titik tiga) di pojok kanan atas Chrome</span></div>
+          <div class="a2hs-step"><span class="a2hs-step-num">2</span><span>Tap <strong>"Tambahkan ke layar utama"</strong> atau <strong>"Install app"</strong></span></div>
+          <div class="a2hs-step"><span class="a2hs-step-num">3</span><span>Tap <strong>"Pasang"</strong> untuk konfirmasi</span></div>
+        `;
+      }
       showA2HSGuide();
       logEvent('a2hs_tapped', { platform: 'other' });
     }
