@@ -998,8 +998,18 @@ async function handleAjarkan(req, res, { feeling, ip }) {
 
       const row = rows[0];
 
+      // Safety: JSONB fields may be double-encoded as strings
+      let selectedVerses = row.selected_verses || [];
+      if (typeof selectedVerses === 'string') {
+        try { selectedVerses = JSON.parse(selectedVerses); } catch { selectedVerses = []; }
+      }
+      let pembuka = row.pembuka_percakapan || {};
+      if (typeof pembuka === 'string') {
+        try { pembuka = JSON.parse(pembuka); } catch { pembuka = {}; }
+      }
+
       // Hydrate verses: fetch Arabic + translation from quran_verses
-      const hydratedVerses = await hydrateAjarkanVerses(row.selected_verses || [], supabaseUrl, supabaseKey);
+      const hydratedVerses = await hydrateAjarkanVerses(selectedVerses, supabaseUrl, supabaseKey);
 
       const payload = {
         mode: 'ajarkan',
@@ -1007,7 +1017,7 @@ async function handleAjarkan(req, res, { feeling, ip }) {
         question_text: row.question_text,
         age_group: row.age_group,
         penjelasan_anak: row.penjelasan_anak,
-        pembuka_percakapan: row.pembuka_percakapan,
+        pembuka_percakapan: pembuka,
         aktivitas_bersama: row.aktivitas_bersama,
         ayat: hydratedVerses,
       };
@@ -1217,8 +1227,16 @@ Respond in JSON:
 
     const row = contentRows[0];
 
-    // Hydrate verses
-    const selectedVerses = row.selected_verses || [];
+    // Safety: JSONB fields may be double-encoded as strings
+    let selectedVerses = row.selected_verses || [];
+    if (typeof selectedVerses === 'string') {
+      try { selectedVerses = JSON.parse(selectedVerses); } catch { selectedVerses = []; }
+    }
+    let pembuka = row.pembuka_percakapan || {};
+    if (typeof pembuka === 'string') {
+      try { pembuka = JSON.parse(pembuka); } catch { pembuka = {}; }
+    }
+
     const hydratedVerses = await hydrateAjarkanVerses(selectedVerses, supabaseUrl, supabaseKey);
 
     const payload = {
@@ -1227,7 +1245,7 @@ Respond in JSON:
       question_text: row.question_text,
       age_group: row.age_group,
       penjelasan_anak: row.penjelasan_anak,
-      pembuka_percakapan: row.pembuka_percakapan,
+      pembuka_percakapan: pembuka,
       aktivitas_bersama: row.aktivitas_bersama,
       ayat: hydratedVerses,
     };
