@@ -90,7 +90,7 @@ Completely different pipeline — uses pre-generated content from `ajarkan_queri
 - **Cache**: 7-day TTL (static pre-generated content).
 - **Rate limit**: Presets exempt. Freeform queries count toward the normal rate limit (20/hr/IP).
 - **Age groups**: `'under7'` (balita/TK) and `'7plus'` (SD). Same verses, different `penjelasan_anak` and `pembuka_percakapan`.
-- **Result cards**: 4 types — Penjelasan (Card 0, typewriter), Ide Ngobrol (Card 1, two pembuka options), Coba Lakukan (Card 2, activity box), Verse cards (Cards 3-N, relevance hero + Arabic/translation).
+- **Result cards**: 3 cards total — Penjelasan (Card 0, instant fade-in, with collapsible verse mini-cards), Cara Ngobrol (Card 1, segmented toggle to pick Pertanyaan or Cerita approach), Coba Lakukan (Card 2, clean activity box only). No separate verse cards — verse references are consolidated in Card 0.
 - **DB table**: `ajarkan_queries` — `question_id` + `age_group` unique pair. 325 questions × 2 age groups = 650 rows. JSONB fields: `selected_verses`, `pembuka_percakapan`.
 
 ---
@@ -126,7 +126,7 @@ GROUP BY event_type ORDER BY count DESC;
 
 ### Views & navigation
 - **Six views**: `landing-view` → `selection-view` (curhat) / `panduan-view` (panduan) / `jelajahi-view` (jelajahi) / `ajarkan-view` (ajarkan) → `verses-view` (results). `switchView(id)` swaps the `.active` class.
-- **Landing**: 4 mode cards (Curhat, Panduan Hidup, Jelajahi Al-Qur'an, Ajarkan Anakku) + VOTD section below a divider + A2HS install card ("Jadikan TemuQuran aplikasi di HP")
+- **Landing**: 4 mode cards (Curhat, Panduan Hidup, Ajarkan Anakku, Jelajahi Al-Qur'an) + VOTD section below a divider + A2HS install card ("Jadikan TemuQuran aplikasi di HP")
 - **Back navigation stack**:
   - Curhat: verses → selection-view → landing
   - Panduan: verses → expanded card (if came from sub-question) → panduan grid → landing
@@ -155,7 +155,6 @@ GROUP BY event_type ORDER BY count DESC;
 - `JUZ_30_SURAHS` — filtered subset of SURAH_META (surahs 78–114)
 - `PANDUAN_SUB_QUESTIONS` — 10 categories × 8 sub-questions
 - `AJARKAN_CATEGORIES` — 6 categories with 20 subcategories, 325 total questions (inline in app.js, ~500 lines)
-- `AJARKAN_POPULAR` — 7 popular question objects `{questionId, text}`
 - `BISMILLAH_AR` / `BISMILLAH_NFC` — Bismillah constant for stripping/display
 
 ### Bismillah handling
@@ -184,18 +183,20 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - **Node cloning on re-show**: `showJuzSurahList()` clones the container node to drop stale `animationend` listeners from a prior `hideJuzSurahList()` that may not have fired (view switched away mid-animation).
 
 ### Ajarkan Anakku mode
-- **Hero + age pills + search**: Blue gradient hero (`hero-ajarkan`), two age pills (`under7`/`7plus`) — must select before search. Textarea for freeform queries.
-- **Popular pills**: 7 horizontal scrollable pills with common children's questions. Tap → `fetchAjarkanPreset(questionId)`.
-- **Category grid**: 2-column grid of 6 categories (Aqidah 🤲, Ibadah 🕌, Akhlak 💎, Kehidupan & Takdir 🌿, Kisah & Tokoh 👥, Alam & Ciptaan 🌍). Each shows emoji + label + question count.
-- **Category drill-down**: Tap category → full-screen expanded overlay (`#ajarkan-expanded`, reuses panduan-expanded pattern) showing subcategories with question counts, each listing individual questions.
-- **Filter input**: Sticky search input above the category grid — filters across all 325 questions, shows flat matching list.
-- **Result cards**: 4 card types built by `buildAjarkanPenjelasanCard()`, `buildAjarkanNgobrolCard()`, `buildAjarkanAktivitasCard()`, `buildAjarkanVerseCard()`. Wired by `wireAjarkanCardEvents()`.
+- **Hero + age toggle + gated content**: Blue gradient hero (`hero-ajarkan`), subtle "Berapa usia anak Anda?" instruction text with pulsing animation, iOS-style segmented toggle (`ak-age-seg`, `under7`/`7plus`). All content below (search input + categories) is hidden until age is selected, then fades in (`#ak-gated-content`, `ak-hidden` / `ak-gated-reveal`).
+- **Category grid**: Single-column list of 6 categories (Aqidah 🤲, Ibadah 🕌, Akhlak 💎, Kehidupan & Takdir 🌿, Keluarga & Sosial 👥, Alam & Rasa Ingin Tahu 🌍). Horizontal layout: emoji left, label + count right. Blue-tinted background with left accent bar, hover lifts with shadow.
+- **Category drill-down**: Tap category → full-screen expanded overlay (`#ajarkan-expanded`) with blue gradient header (`.ak-expanded-header`). Subcategories shown as tappable headers (sentence case, `.ak-subcategory-header`) — **collapsed by default**, tap to expand. Question rows (`.ak-question-row`) use blue hover theme (not teal).
+- **Filter input**: Search input above the category grid — filters across all 325 questions, shows flat matching list with subcategory pill badges. Styled empty state with icon when no matches.
+- **Result cards**: 3 card types built by `buildAjarkanPenjelasanCard()`, `buildAjarkanNgobrolCard()`, `buildAjarkanAktivitasCard()`. Wired by `wireAjarkanCardEvents()`.
+  - **Card 0 (Penjelasan)**: Age badge with "↔ Ganti kategori umur", question title, penjelasan text (instant fade-in, no typewriter), collapsible verse mini-cards (tap-to-expand rows revealing dark Arabic section + gold accent bar + translation + action buttons). Bottom CTA: "Cara ngobrol dengan anak".
+  - **Card 1 (Cara Ngobrol)**: Segmented toggle to pick between ❓ Pertanyaan or 📖 Cerita approach — only one panel shown at a time. Each panel has pembuka text, panduan, and expandable "Lihat penjelasan untuk anak". Bottom CTA: "Coba lakukan bersama anak".
+  - **Card 2 (Coba Lakukan)**: Clean activity box only (blue gradient bg, left accent bar). No expandables, no cross-references.
 - **Age switching from results**: Age badge in results is tappable → re-fetches same question with different age_group.
 - **Color palette**: `--ak-blue: #4A7FB5` family (distinct warm blue, separate from teal and gold).
 
 ### Verse carousel (shared by all modes)
 - Horizontal swipeable carousel (`#verses-carousel`) with CSS scroll-snap
-- Intro slide (card 0): curhat/panduan shows typewriter reflection/explanation; jelajahi shows static surah info + Bismillah; ajarkan shows Penjelasan card with typewriter
+- Intro slide (card 0): curhat/panduan shows typewriter reflection/explanation; jelajahi shows static surah info + Bismillah; ajarkan shows Penjelasan card with instant fade-in
 - Verse slides (1–N): each contains one verse card built by `buildVerseCard()`
 - Pagination dots (≤16 cards) or progress bar (>16 cards) + counter arrows in `.verses-header`
 - Actions/feedback appear on reaching last card
@@ -232,7 +233,7 @@ Each verse card has three elements below the translation + resonance text:
   2. **Peek nudge** (1.5s): carousel scrolls 50px right then snaps back, showing a physical preview of the next card.
   3. **Auto-advance** (5s): carousel auto-scrolls to card 2 if user hasn't swiped yet.
   - Timers stored in `_swipeHintTimers`; `clearSwipeHints()` cancels all timers and fades the pill (`.hint-faded` class) on first user swipe.
-- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms on intro slide (curhat/panduan only). Jelajahi intro is static (no typewriter).
+- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms on intro slide (curhat/panduan only). Jelajahi and Ajarkan intros are static (no typewriter — Ajarkan uses instant fade-in).
 - **A2HS (Add to Home Screen)**: Install card (`#a2hsCard`) below VOTD on landing — "Jadikan TemuQuran aplikasi di HP" + "Pasang" button.
   - **Android**: Captures `beforeinstallprompt` event → fires native install prompt on tap.
   - **iOS**: Opens a visual step-by-step guide overlay (`.a2hs-guide-overlay`) with 4 numbered steps matching Safari's actual flow (⋯ → Share → scroll to "Tambahkan ke Layar Utama" → "Tambah"). Slides up from bottom, dismissible by "Mengerti" button or overlay tap.
