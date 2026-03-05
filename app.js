@@ -3504,17 +3504,29 @@ function filterAjarkanQuestions(query) {
   // Hide category grid
   grid.style.display = 'none';
 
-  // Build flat filtered list
+  // Build flat filtered list — word-based matching (all query words must appear)
+  const queryWords = query.split(/\s+/).filter(w => w.length >= 2);
+  if (queryWords.length === 0) {
+    grid.style.display = '';
+    const existing = document.getElementById('ak-filtered-results');
+    if (existing) existing.remove();
+    return;
+  }
   const matches = [];
   AJARKAN_CATEGORIES.forEach(cat => {
     cat.subcategories.forEach(sub => {
       sub.questions.forEach(q => {
-        if (q.text.toLowerCase().includes(query)) {
-          matches.push({ ...q, category: cat.label, subcategory: sub.name });
+        const text = q.text.toLowerCase();
+        // Score: count how many query words appear in the question text
+        const wordHits = queryWords.filter(w => text.includes(w)).length;
+        if (wordHits > 0) {
+          matches.push({ ...q, category: cat.label, subcategory: sub.name, _score: wordHits });
         }
       });
     });
   });
+  // Sort by relevance: more matching words first
+  matches.sort((a, b) => b._score - a._score);
 
   let container = document.getElementById('ak-filtered-results');
   if (!container) {
