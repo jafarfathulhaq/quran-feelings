@@ -3368,13 +3368,16 @@ function expandAjarkanCategory(catId) {
 
   const list = container.querySelector('#ak-subcategory-list');
   cat.subcategories.forEach(sub => {
-    // Subcategory header
+    // Subcategory header (tappable, toggles question list)
     const header = document.createElement('div');
     header.className = 'ak-subcategory-header';
-    header.textContent = `${sub.name} (${sub.questions.length})`;
+    header.innerHTML = `<span>${sub.name} (${sub.questions.length})</span><span class="ak-sub-chevron">▼</span>`;
     list.appendChild(header);
 
-    // Questions
+    // Questions wrapper (collapsed by default)
+    const questionsWrap = document.createElement('div');
+    questionsWrap.className = 'ak-sub-questions-wrap ak-sub-collapsed';
+
     sub.questions.forEach(q => {
       const row = document.createElement('button');
       row.className = 'sub-question-row';
@@ -3384,7 +3387,16 @@ function expandAjarkanCategory(catId) {
         logEvent('ajarkan_question_selected', { question_id: q.id, source: 'category' });
         fetchAjarkanPreset(q.id);
       });
-      list.appendChild(row);
+      questionsWrap.appendChild(row);
+    });
+
+    list.appendChild(questionsWrap);
+
+    // Toggle expand/collapse on header tap
+    header.addEventListener('click', () => {
+      const isCollapsed = questionsWrap.classList.contains('ak-sub-collapsed');
+      questionsWrap.classList.toggle('ak-sub-collapsed', !isCollapsed);
+      header.classList.toggle('ak-sub-expanded', isCollapsed);
     });
   });
 
@@ -3709,7 +3721,7 @@ function renderAjarkanResults(data) {
   const typeEl = document.getElementById('ak-penjelasan-text');
   if (typeEl && data.penjelasan_anak) {
     typewriterActive = true;
-    typewriteAjarkan(typeEl, data.penjelasan_anak, 12);
+    typewriteAjarkan(typeEl, data.penjelasan_anak, 4);
   }
 }
 
@@ -3775,13 +3787,12 @@ function buildAjarkanPenjelasanCard(data, verses) {
       <h2 class="ak-intro-question">${escapeHtml(data.question_text || currentFeeling)}</h2>
       <div class="ak-explanation-wrap">
         <span class="ak-explanation-text" id="ak-penjelasan-text"></span>
-        <span class="ak-inline-salin" data-ak-copy="penjelasan"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
       </div>
       ${verseTeaserHtml}
     </div></div>
     <div class="ak-swipe-cta" data-ak-goto="1">
       <span class="ak-swipe-cta-icon">\uD83D\uDCAC</span>
-      <span class="ak-swipe-cta-text">Ide ngobrol bareng anak</span>
+      <span class="ak-swipe-cta-text">Cara ngobrol dengan anak</span>
       <span class="ak-swipe-cta-arrow">Geser \u2192</span>
     </div>
   `;
@@ -3803,7 +3814,6 @@ function buildAjarkanNgobrolCard(data) {
         <div class="ak-approach-label">Mulai dari Pertanyaan</div>
         <div style="position:relative;">
           <span class="ak-pembuka-text">${escapeHtml(p.pertanyaan || '')}</span>
-          <span class="ak-inline-salin" data-ak-copy="pertanyaan"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
         </div>
         <p class="ak-panduan-text">${escapeHtml(p.panduan_pertanyaan || '')}</p>
         <div class="ak-expand-row" data-ak-expand>
@@ -3820,7 +3830,6 @@ function buildAjarkanNgobrolCard(data) {
         <div class="ak-approach-label">Mulai dari Cerita</div>
         <div style="position:relative;">
           <span class="ak-pembuka-text">${escapeHtml(p.cerita || '')}</span>
-          <span class="ak-inline-salin" data-ak-copy="cerita"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
         </div>
         <p class="ak-panduan-text">${escapeHtml(p.panduan_cerita || '')}</p>
         <div class="ak-expand-row" data-ak-expand>

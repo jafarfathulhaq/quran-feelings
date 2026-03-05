@@ -3693,18 +3693,44 @@ body.about-locked { overflow: hidden; }
   margin-top: 6px;
 }
 
-/* ── Subcategory headers (expanded category) ────────── */
+/* ── Subcategory headers (expanded category, tappable) ── */
 .ak-subcategory-header {
   font-size: 12px;
   font-weight: 700;
   color: var(--ak-blue-dark);
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  margin: 20px 0 8px;
-  padding: 7px 12px;
+  margin: 20px 0 0;
+  padding: 10px 12px;
   background: var(--ak-blue-bg);
   border-radius: 8px;
   border-left: 3px solid var(--ak-blue);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-subcategory-header:active {
+  background: var(--ak-blue-light);
+}
+.ak-sub-chevron {
+  font-size: 9px;
+  transition: transform 0.25s ease;
+  color: var(--ak-blue);
+}
+.ak-subcategory-header.ak-sub-expanded .ak-sub-chevron {
+  transform: rotate(180deg);
+}
+.ak-sub-questions-wrap {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+  max-height: 2000px;
+  opacity: 1;
+}
+.ak-sub-questions-wrap.ak-sub-collapsed {
+  max-height: 0;
+  opacity: 0;
 }
 .ak-verse-teaser-label {
   font-size: 11px;
@@ -4029,6 +4055,7 @@ body.about-locked { overflow: hidden; }
   gap: 6px;
   cursor: pointer;
   transition: all 0.2s;
+  margin-bottom: 12px;
 }
 .ak-age-badge::before {
   content: '\1F319';
@@ -4038,7 +4065,7 @@ body.about-locked { overflow: hidden; }
   background: linear-gradient(135deg, rgba(74,127,181,0.12), rgba(74,127,181,0.2));
 }
 .ak-age-badge::after {
-  content: '\21C4  Ganti';
+  content: '\21C4  Ganti kategori umur';
   font-size: 10px;
   font-weight: 500;
   opacity: 0.6;
