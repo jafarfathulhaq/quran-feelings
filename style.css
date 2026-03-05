@@ -3276,3 +3276,783 @@ body.about-locked { overflow: hidden; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 3px; }
+
+/* ════════════════════════════════════════════════════════
+   AJARKAN ANAKKU — Mode 4
+════════════════════════════════════════════════════════ */
+
+/* ── Color Variables ────────────────────────────────── */
+:root {
+  --ak-blue:        #4A7FB5;
+  --ak-blue-dark:   #3A6A9A;
+  --ak-blue-light:  #A8C8E8;
+  --ak-blue-bg:     #EFF5FB;
+  --ak-blue-card:   #FAFCFF;
+  --ak-blue-border: #D4E2F0;
+  --ak-blue-accent: #5B8EC4;
+  --ak-blue-muted-bg: #F0F4F8;
+}
+
+/* ── Landing Card Icon ──────────────────────────────── */
+.landing-card-icon.ajarkan {
+  background: rgba(74, 127, 181, 0.08);
+}
+
+.landing-card:nth-child(4) {
+  animation: fadeInUp 0.5s ease-out 0.5s both;
+}
+
+/* ── Hero Gradient ──────────────────────────────────── */
+.hero-ajarkan {
+  background: linear-gradient(160deg,
+    #0A1628 0%,
+    #142A4D 30%,
+    #1E3F6E 55%,
+    #2A5B8C 75%,
+    #4A7FB5 100%
+  );
+}
+.hero-ajarkan .hero-ornament {
+  color: rgba(168, 200, 232, 0.55);
+}
+.hero-ajarkan .hero-title span {
+  background: linear-gradient(90deg, var(--ak-blue-light), #D4E8FC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Age Selector ───────────────────────────────────── */
+.ak-age-selector {
+  display: flex;
+  gap: 10px;
+  padding: 16px 16px 0;
+  justify-content: center;
+}
+
+.ak-age-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 18px;
+  border-radius: 24px;
+  border: 2px solid var(--ak-blue-border);
+  background: white;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex: 1;
+  max-width: 180px;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-age-pill:hover {
+  border-color: var(--ak-blue);
+}
+.ak-age-pill.active {
+  background: var(--ak-blue);
+  border-color: var(--ak-blue);
+}
+.ak-age-pill.active .ak-age-label,
+.ak-age-pill.active .ak-age-hint {
+  color: white;
+}
+
+.ak-age-emoji {
+  font-size: 20px;
+}
+.ak-age-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  transition: color 0.25s;
+}
+.ak-age-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: color 0.25s;
+}
+
+/* ── Age warning (no age selected) ──────────────────── */
+.ak-age-warning {
+  text-align: center;
+  font-size: 12px;
+  color: #C0392B;
+  font-weight: 500;
+  padding: 8px 16px 0;
+  animation: fadeUp 0.3s ease both;
+}
+
+/* ── Input Card Override ────────────────────────────── */
+.ak-input-card {
+  margin-top: 12px;
+}
+
+/* ── Popular Questions (horizontal scroll) ──────────── */
+.ak-popular-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 8px;
+  scrollbar-width: none;
+}
+.ak-popular-scroll::-webkit-scrollbar { display: none; }
+
+.ak-popular-pill {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: white;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-popular-pill:hover {
+  border-color: var(--ak-blue);
+  color: var(--ak-blue-dark);
+}
+.ak-popular-pill:active {
+  background: var(--ak-blue-bg);
+  transform: scale(0.97);
+}
+
+/* ── Category Filter Input ──────────────────────────── */
+.ak-filter-wrap {
+  padding: 0 16px 10px;
+}
+.ak-filter-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-dark);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ak-filter-input:focus {
+  border-color: var(--ak-blue);
+}
+.ak-filter-input::placeholder {
+  color: var(--text-soft);
+}
+
+/* ── Category Grid ──────────────────────────────────── */
+.ak-category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px 40px;
+}
+
+.ak-category-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 10px;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-category-card:hover {
+  border-color: var(--ak-blue-border);
+  background: var(--ak-blue-bg);
+}
+.ak-category-card:active {
+  transform: scale(0.97);
+}
+
+.ak-category-emoji {
+  font-size: 28px;
+}
+.ak-category-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.ak-category-count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Filtered Question List ─────────────────────────── */
+.ak-filtered-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 40px;
+}
+.ak-filtered-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ak-filtered-item:hover {
+  border-color: var(--ak-blue-border);
+  background: var(--ak-blue-bg);
+}
+.ak-filtered-cat {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Result Card Base ───────────────────────────────── */
+.ak-card {
+  background: var(--ak-blue-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--ak-blue-border);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(30,60,90,0.06);
+}
+.ak-card::before {
+  content: '';
+  display: block;
+  height: 4px;
+  background: linear-gradient(90deg, var(--ak-blue-accent), var(--ak-blue-light));
+}
+.ak-card-body {
+  padding: 20px;
+}
+
+/* ── Section Label ──────────────────────────────────── */
+.ak-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ak-section-label .ak-sl-icon {
+  font-size: 14px;
+}
+
+/* ── Inline Salin (Copy) ────────────────────────────── */
+.ak-inline-salin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--ak-blue-bg);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: 6px;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 6px;
+  transition: all 0.2s;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-inline-salin:hover {
+  background: #DDE9F3;
+}
+.ak-inline-salin.copied {
+  background: var(--ak-blue);
+  border-color: var(--ak-blue);
+}
+.ak-inline-salin.copied .ak-salin-icon {
+  visibility: hidden;
+}
+.ak-inline-salin.copied::after {
+  content: '\2713';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ak-salin-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+.ak-salin-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-dark);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.ak-salin-tooltip.show {
+  opacity: 1;
+}
+.ak-salin-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--text-dark);
+}
+
+/* ── Expand Rows ────────────────────────────────────── */
+.ak-expand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--ak-blue-muted-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-expand-row:hover {
+  background: #DDE9F3;
+}
+.ak-expand-row-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.ak-expand-row-label {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.ak-expand-row-chevron {
+  font-size: 10px;
+  color: var(--ak-blue);
+  transition: transform 0.3s;
+}
+.ak-expand-row.open .ak-expand-row-chevron {
+  transform: rotate(180deg);
+}
+
+.ak-expand-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  background: var(--ak-blue-muted-bg);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.ak-expand-content.open {
+  max-height: 500px;
+  padding: 14px;
+}
+.ak-expand-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-mid);
+}
+
+/* ── Card 0: Penjelasan ─────────────────────────────── */
+.ak-intro-question {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.ak-explanation-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-mid);
+}
+.ak-verse-teaser {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.ak-verse-teaser-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.ak-verse-teaser-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.ak-verse-teaser-row:hover {
+  background: #E3EDF6;
+}
+.ak-verse-teaser-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ak-verse-teaser-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ak-blue);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ak-verse-teaser-chevron {
+  display: inline-block;
+  font-size: 11px;
+  transition: transform 0.3s;
+}
+.ak-verse-teaser-action.open .ak-verse-teaser-chevron {
+  transform: rotate(180deg);
+}
+.ak-verse-teaser-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  background: var(--ak-blue-muted-bg);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.ak-verse-teaser-detail.open {
+  max-height: 600px;
+  padding: 16px 14px;
+}
+
+/* ── Swipe CTA (big) ────────────────────────────────── */
+.ak-swipe-cta {
+  margin: 10px 0 0;
+  padding: 16px 18px;
+  background: var(--ak-blue-card);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 12px rgba(30,60,90,0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  animation: akPulse 3s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-swipe-cta:hover {
+  transform: translateX(3px);
+}
+@keyframes akPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74,127,181,0), 0 2px 12px rgba(30,60,90,0.06); }
+  50% { box-shadow: 0 0 0 4px rgba(74,127,181,0.08), 0 2px 12px rgba(30,60,90,0.06); }
+}
+.ak-swipe-cta-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.ak-swipe-cta-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ak-swipe-cta-arrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ak-blue);
+  white-space: nowrap;
+  animation: akBounce 1.2s ease-in-out infinite;
+}
+@keyframes akBounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+/* ── Mini CTA ───────────────────────────────────────── */
+.ak-mini-cta {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px dashed var(--ak-blue-border);
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-mini-cta-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ak-mini-cta-text {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-mid);
+}
+.ak-mini-cta-arrow {
+  color: var(--ak-blue);
+  animation: akBounce 1.2s ease-in-out infinite;
+}
+
+/* ── Card 1: Ide Ngobrol ────────────────────────────── */
+.ak-pembuka-opt {
+  background: var(--ak-blue-bg);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.ak-pembuka-opt:last-of-type {
+  margin-bottom: 0;
+}
+.ak-approach-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 14px;
+}
+.ak-approach-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 4px;
+  font-weight: 400;
+}
+.ak-pembuka-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+.ak-panduan-text {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Card 2: Aktivitas ──────────────────────────────── */
+.ak-activity-box {
+  background: linear-gradient(135deg, var(--ak-blue-bg), #E8EFF8);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+}
+.ak-activity-text {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-dark);
+}
+.ak-activity-text .ak-when {
+  font-weight: 600;
+  color: var(--ak-blue-dark);
+}
+
+/* ── Verse Cards (ajarkan mode) ─────────────────────── */
+.ak-verse-relevance {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.ak-verse-relevance-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.ak-verse-relevance-text {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-mid);
+  line-height: 1.65;
+}
+
+.ak-verse-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.ak-verse-row:hover {
+  background: #DDE9F3;
+}
+.ak-verse-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ak-verse-toggle {
+  font-size: 13px;
+  color: var(--ak-blue);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ak-verse-chevron {
+  display: inline-block;
+  transition: transform 0.3s;
+  font-size: 11px;
+}
+.ak-verse-toggle.open .ak-verse-chevron {
+  transform: rotate(180deg);
+}
+
+.ak-verse-dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  background: var(--ak-blue-muted-bg);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.ak-verse-dropdown.open {
+  max-height: 500px;
+  padding: 16px 14px;
+}
+
+.ak-verse-arabic {
+  font-family: 'Amiri', serif;
+  font-size: 22px;
+  line-height: 2;
+  direction: rtl;
+  text-align: right;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ak-verse-translation {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-mid);
+  font-style: italic;
+}
+
+.ak-verse-refs {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+/* ── Action Row (reuse pattern from mockup) ──────── */
+.ak-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.ak-action-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: white;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-action-btn:hover {
+  border-color: var(--ak-blue-light);
+  background: var(--ak-blue-bg);
+}
+.ak-action-btn:active {
+  transform: scale(0.97);
+}
+.ak-action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Age Badge Strip (result view) ──────────────────── */
+.ak-age-badge {
+  background: linear-gradient(135deg, rgba(74,127,181,0.08), rgba(74,127,181,0.15));
+  border: 1px solid var(--ak-blue-border);
+  color: var(--ak-blue-dark);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ak-age-badge::before {
+  content: '\1F319';
+  font-size: 13px;
+}
+.ak-age-badge:hover {
+  background: linear-gradient(135deg, rgba(74,127,181,0.12), rgba(74,127,181,0.2));
+}
+
+/* ── Cross-ref approach label ───────────────────────── */
+.ak-xref-approach {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ak-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.ak-xref-pembuka {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.ak-xref-panduan {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+/* ── Typewriter cursor ──────────────────────────────── */
+.ak-typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--ak-blue);
+  margin-left: 2px;
+  animation: blink 0.8s infinite;
+  vertical-align: text-bottom;
+}

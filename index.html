@@ -160,6 +160,13 @@
             <span class="landing-card-desc">Cari surat pilihanmu dan pelajari ayatnya</span>
           </div>
         </button>
+        <button class="landing-card" data-mode="ajarkan">
+          <div class="landing-card-icon ajarkan">🌙</div>
+          <div class="landing-card-text">
+            <span class="landing-card-title">Ajarkan Anakku</span>
+            <span class="landing-card-desc">Ketika anak bertanya tentang Allah, temukan cara menjelaskannya</span>
+          </div>
+        </button>
       </nav>
 
       <hr class="landing-section-divider" />
@@ -367,6 +374,84 @@
 
       <!-- Juz Amma surah list (rendered by JS) -->
       <div id="juz-surah-list" class="juz-surah-list hidden"></div>
+
+    </section>
+
+    <!-- ── Ajarkan View (Ajarkan Anakku mode) ──────────── -->
+    <section id="ajarkan-view" class="view">
+
+      <!-- Back button -->
+      <div class="mode-back-wrap">
+        <button class="back-btn-light" id="ajarkan-back-btn" aria-label="Kembali ke beranda">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Kembali
+        </button>
+      </div>
+
+      <!-- Ajarkan Header -->
+      <header class="header">
+        <div class="hero hero-ajarkan">
+          <p class="hero-ornament">✦ &nbsp;AJARKAN ANAKKU&nbsp; ✦</p>
+          <h2 class="hero-title">Bantu anak memahami<br/><span>firman Allah</span></h2>
+        </div>
+        <div class="hero-wave"></div>
+      </header>
+
+      <!-- Age Selector -->
+      <div class="ak-age-selector">
+        <button class="ak-age-pill" data-age="under7">
+          <span class="ak-age-emoji">🧒</span>
+          <span class="ak-age-label">7 tahun ke bawah</span>
+          <span class="ak-age-hint">Seperti bercerita</span>
+        </button>
+        <button class="ak-age-pill" data-age="7plus">
+          <span class="ak-age-emoji">🧑</span>
+          <span class="ak-age-label">7 tahun ke atas</span>
+          <span class="ak-age-hint">Seperti ngobrol</span>
+        </button>
+      </div>
+
+      <!-- Ajarkan Input Card -->
+      <div class="input-card ak-input-card">
+        <div class="search-textarea-wrap">
+          <textarea
+            id="ajarkan-input"
+            class="search-textarea"
+            placeholder="Ketik pertanyaan anak, misal: Kenapa kita harus sholat?"
+            autocomplete="off"
+            rows="2"
+          ></textarea>
+          <button id="ajarkan-clear" class="search-clear hidden" aria-label="Hapus">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <button id="ajarkan-submit" class="search-submit-btn hidden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Cari Jawaban
+        </button>
+      </div>
+
+      <!-- Popular Questions -->
+      <div class="home-content">
+        <p class="search-divider"><span>pertanyaan populer</span></p>
+        <div id="ak-popular-pills" class="ak-popular-scroll"></div>
+      </div>
+
+      <!-- Category Grid -->
+      <div class="home-content">
+        <p class="search-divider"><span>atau pilih kategori</span></p>
+        <div class="ak-filter-wrap">
+          <input type="text" id="ak-filter-input" class="ak-filter-input" placeholder="Filter pertanyaan..." />
+        </div>
+        <div id="ak-category-grid" class="ak-category-grid"></div>
+      </div>
+
+      <!-- Expanded category overlay (rendered by JS) -->
+      <div id="ajarkan-expanded" class="panduan-expanded hidden"></div>
 
     </section>
 

@@ -1,7 +1,7 @@
 # CLAUDE.md — TemuQuran
 
 ## Project overview
-**TemuQuran** — a privacy-first web app with three modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations, (3) **Jelajahi Al-Qur'an** — users browse and read Quran verses by surah, juz, or natural language query (no AI needed for presets). No user text is ever stored.
+**TemuQuran** — a privacy-first web app with four modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations, (3) **Jelajahi Al-Qur'an** — users browse and read Quran verses by surah, juz, or natural language query (no AI needed for presets), (4) **Ajarkan Anakku** — helps Muslim parents explain Qur'anic concepts to children using pre-generated, age-appropriate content (no live AI for presets). No user text is ever stored.
 
 - **Live URL**: https://temuquran.com (custom domain on Vercel, DNS via Namecheap)
 - **Legacy URL**: https://quran-feelings.vercel.app (redirects to temuquran.com)
@@ -17,18 +17,18 @@
 | Backend | Vercel Serverless Functions (`api/*.js`, Node 20) |
 | Database | Supabase (PostgreSQL + pgvector) |
 | AI | OpenAI — `gpt-4o-mini` (verse selection, HyDE, decompose, jelajahi intent parser), `text-embedding-3-large` (1536 dims) |
-| Analytics | Supabase `analytics_events` table via `/api/log-event` |
+| Analytics | Supabase `analytics_events` table via `/api/log-event` + Google Analytics GA4 (`G-NWKWSKTNS0`) via `gtag()` |
 | PWA | `manifest.json` + `sw.js` |
 
 ---
 
 ## Key files
 ```
-index.html          — single-page shell (5 views: landing-view, selection-view, panduan-view, jelajahi-view, verses-view)
+index.html          — single-page shell (6 views: landing-view, selection-view, panduan-view, jelajahi-view, ajarkan-view, verses-view)
 style.css           — all styles, no framework
 app.js              — all frontend JS, no framework, no build
 api/
-  get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select), mode-aware (curhat/panduan/jelajahi)
+  get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select), mode-aware (curhat/panduan/jelajahi/ajarkan)
   log-event.js      — privacy-safe analytics proxy (event allowlist, no user text)
   verse-of-day.js   — serves a daily verse from data/verses.json, cached by day
 data/verses.json    — curated verses for Verse of the Day feature
@@ -36,9 +36,12 @@ supabase/migrations/
   001_quran_verses.sql   — quran_verses table + pgvector column
   002_hybrid_search.sql  — match_verses_hybrid RPC (vector + full-text hybrid search)
   003_asbabun_nuzul.sql  — adds asbabun_nuzul + asbabun_nuzul_id columns
+  005_ajarkan_queries.sql — ajarkan_queries table (pre-generated content for Ajarkan Anakku)
 scripts/
   seed_asbabun_nuzul.py      — fetches English asbabun nuzul from spa5k/tafsir_api (Al-Wahidi)
   translate_asbabun_nuzul.py  — translates to Indonesian via OpenAI Batch API
+  seed_ajarkan.py            — seeds ajarkan_queries table (325 questions × 2 age groups)
+qris.png            — QRIS payment QR code image for the Dukung (support) section
 vercel.json         — maxDuration 30s, security headers (CSP, X-Frame-Options, etc.), redirect vercel.app → temuquran.com
 ```
 
@@ -66,7 +69,7 @@ Each search makes **5–6 parallel AI calls** then one sequential GPT-4o call:
 5. **Select** (`gpt-4o-mini`) — picks 3–7 verses (3–4 for focused queries, 5–7 for complex/multi-dimensional). Curhat writes `reflection` + `verse_resonance`; Panduan writes `explanation` + `verse_relevance`
 6. **Tafsir fetch** (Supabase REST) — fetches `tafsir_kemenag`, `tafsir_ibnu_kathir`, `tafsir_ibnu_kathir_id` for the selected verses only
 
-**Mode**: POST body accepts `mode` (`'curhat'` default, `'panduan'`, `'jelajahi'`). Mode forks prompts at steps 1, 2, and 5.
+**Mode**: POST body accepts `mode` (`'curhat'` default, `'panduan'`, `'jelajahi'`, `'ajarkan'`). Mode forks prompts at steps 1, 2, and 5. Ajarkan has its own pipeline (see below).
 **Cache**: in-memory per container, 24h TTL, 500 entries max (FIFO eviction). Cache key prefixed with `mode:`. `refresh: true` bypasses lookup but still writes result.
 **Rate limit**: 20 requests / IP / hour, in-memory. Returns `resetAt` timestamp → frontend shows exact minutes.
 
@@ -79,10 +82,21 @@ Completely different pipeline — no vector search, no GPT-4o verse selection:
 - **Rate limit**: Presets exempt. Typed queries count toward the normal rate limit.
 - **Juz type**: Returns `{ type: 'surah_list' }` response — frontend shows surah list overlay instead of verses.
 
+### Ajarkan Anakku mode
+Completely different pipeline — uses pre-generated content from `ajarkan_queries` table:
+
+- **Preset taps**: bypass AI entirely. Frontend sends `questionId` + `ageGroup`. API queries `ajarkan_queries` for the matching row, hydrates verse references from `quran_verses`. Zero OpenAI cost, no rate limit.
+- **Freeform queries**: 2-step GPT-4o-mini matcher (~$0.0002/call). Step 1: category match (classifies query into subcategory slugs). Step 2: question match (picks best question_id + confidence + 3 similar). Confidence ≥ 0.8 → clean match; 0.5–0.79 → match + suggestions; < 0.5 → suggestions only.
+- **Cache**: 7-day TTL (static pre-generated content).
+- **Rate limit**: Presets exempt. Freeform queries count toward the normal rate limit (20/hr/IP).
+- **Age groups**: `'under7'` (balita/TK) and `'7plus'` (SD). Same verses, different `penjelasan_anak` and `pembuka_percakapan`.
+- **Result cards**: 4 types — Penjelasan (Card 0, typewriter), Ide Ngobrol (Card 1, two pembuka options), Coba Lakukan (Card 2, activity box), Verse cards (Cards 3-N, relevance hero + Arabic/translation).
+- **DB table**: `ajarkan_queries` — `question_id` + `age_group` unique pair. 325 questions × 2 age groups = 650 rows. JSONB fields: `selected_verses`, `pembuka_percakapan`.
+
 ---
 
 ## Analytics (`api/log-event.js`)
-Fire-and-forget from `app.js`. **Never logs user text.** Each event includes `session_id` (random per tab, `sessionStorage`).
+Dual-send from `logEvent()` in `app.js`: (1) Supabase via POST to `/api/log-event` (allowlisted events only), (2) GA4 via `gtag('event', ...)` (all events, no allowlist). **Never logs user text.** Each event includes `session_id` (random per tab, `sessionStorage`). GA4 tag loaded async in `index.html`; `dataLayer` + `gtag()` initialized at top of `app.js`.
 
 Valid event types:
 `mode_selected`, `search_started`, `search_completed`, `search_cached`, `mood_feedback`,
@@ -91,7 +105,12 @@ Valid event types:
 `jelajahi_search`, `jelajahi_juz_surah_selected`, `jelajahi_surah_browser`, `jelajahi_juz_group_opened`, `jelajahi_multi_selected`,
 `share_sheet_opened`, `share_theme_selected`, `share_completed`,
 `tafsir_summary_opened`, `tafsir_summary_swiped`, `tafsir_full_opened`, `tafsir_full_tab_switched`, `tafsir_overlay_closed`,
-`a2hs_tapped`, `a2hs_installed`, `about_opened`, `about_faq_tapped`, `qris_saved`
+`a2hs_tapped`, `a2hs_installed`, `about_opened`, `about_faq_tapped`, `qris_saved`,
+`ajarkan_search_started`, `ajarkan_search_completed`, `ajarkan_search_partial_match`, `ajarkan_not_available`,
+`ajarkan_suggestion_tapped`, `ajarkan_age_under7_selected`, `ajarkan_age_7plus_selected`,
+`ajarkan_category_tapped`, `ajarkan_question_selected`, `ajarkan_question_filtered`,
+`ajarkan_conversation_copied`, `ajarkan_penjelasan_copied`, `ajarkan_aktivitas_viewed`,
+`ajarkan_verse_expanded`, `ajarkan_card_swiped`, `ajarkan_panduan_fallback`, `ajarkan_query_miss`
 
 To query analytics:
 ```sql
@@ -106,15 +125,16 @@ GROUP BY event_type ORDER BY count DESC;
 ## Frontend architecture (`app.js`)
 
 ### Views & navigation
-- **Five views**: `landing-view` → `selection-view` (curhat) / `panduan-view` (panduan) / `jelajahi-view` (jelajahi) → `verses-view` (results). `switchView(id)` swaps the `.active` class.
-- **Landing**: 3 mode cards (Curhat, Panduan Hidup, Jelajahi Al-Qur'an) + VOTD section below a divider
+- **Six views**: `landing-view` → `selection-view` (curhat) / `panduan-view` (panduan) / `jelajahi-view` (jelajahi) / `ajarkan-view` (ajarkan) → `verses-view` (results). `switchView(id)` swaps the `.active` class.
+- **Landing**: 4 mode cards (Curhat, Panduan Hidup, Jelajahi Al-Qur'an, Ajarkan Anakku) + VOTD section below a divider + A2HS install card ("Jadikan TemuQuran aplikasi di HP")
 - **Back navigation stack**:
   - Curhat: verses → selection-view → landing
   - Panduan: verses → expanded card (if came from sub-question) → panduan grid → landing
   - Jelajahi: verses → juz surah list (if came from Juz Amma) → jelajahi presets → landing
+  - Ajarkan: verses → expanded category (if came from drill-down) → ajarkan-view → landing
 
 ### State variables
-- `currentMode` (`'curhat'`, `'panduan'`, or `'jelajahi'`)
+- `currentMode` (`'curhat'`, `'panduan'`, `'jelajahi'`, or `'ajarkan'`)
 - `expandedCardId` — active panduan sub-question card ID, or null
 - `currentCardIndex` / `totalVerseCards` — carousel position and total slides
 - `jelajahiAllVerses` — full verse array for lazy loading
@@ -123,12 +143,19 @@ GROUP BY event_type ORDER BY count DESC;
 - `juzSurahListVisible` — whether the juz surah list overlay is showing
 - `lastJuzSurahTapped` — surah number if user came from juz list (for back nav)
 - `shareTheme` / `shareIncludeQuestion` / `shareIncludeTafsir` / `shareActiveVerse` / `shareLastPlatform` — share sheet state
+- `_swipeHintTimers` — array of setTimeout IDs for the swipe hint sequence (peek nudge + auto-advance); cleared on first user swipe
+- `ajarkanAgeGroup` — `'under7'` | `'7plus'` | `null`
+- `ajarkanExpandedCatId` — expanded category ID in the drill-down overlay
+- `ajarkanCurrentData` — last result data (for age switch re-fetch)
+- `ajarkanCurrentQId` — last question ID (for age switch re-fetch)
 
 ### Key data constants
 - `SURAH_META` — 114 entries with `{ number, name, name_arabic, verses, type }` (~5KB)
 - `SURAH_BROWSER` — 10 Juz groups (flat array), each `{ label, surahs: [numbers] }`. Groups: Juz 1–5, 6–10, 11–15, 16–20, 21–25, 26, 27, 28, 29, 30
 - `JUZ_30_SURAHS` — filtered subset of SURAH_META (surahs 78–114)
 - `PANDUAN_SUB_QUESTIONS` — 10 categories × 8 sub-questions
+- `AJARKAN_CATEGORIES` — 6 categories with 20 subcategories, 325 total questions (inline in app.js, ~500 lines)
+- `AJARKAN_POPULAR` — 7 popular question objects `{questionId, text}`
 - `BISMILLAH_AR` / `BISMILLAH_NFC` — Bismillah constant for stripping/display
 
 ### Bismillah handling
@@ -156,9 +183,19 @@ In the DB, verse 1 of every surah (except At-Tawbah/9) includes Bismillah as a p
 - **Verse cards**: No resonance/relevance text (no AI involved), just Arabic + translation + tafsir + asbabun nuzul + audio/share.
 - **Node cloning on re-show**: `showJuzSurahList()` clones the container node to drop stale `animationend` listeners from a prior `hideJuzSurahList()` that may not have fired (view switched away mid-animation).
 
+### Ajarkan Anakku mode
+- **Hero + age pills + search**: Blue gradient hero (`hero-ajarkan`), two age pills (`under7`/`7plus`) — must select before search. Textarea for freeform queries.
+- **Popular pills**: 7 horizontal scrollable pills with common children's questions. Tap → `fetchAjarkanPreset(questionId)`.
+- **Category grid**: 2-column grid of 6 categories (Aqidah 🤲, Ibadah 🕌, Akhlak 💎, Kehidupan & Takdir 🌿, Kisah & Tokoh 👥, Alam & Ciptaan 🌍). Each shows emoji + label + question count.
+- **Category drill-down**: Tap category → full-screen expanded overlay (`#ajarkan-expanded`, reuses panduan-expanded pattern) showing subcategories with question counts, each listing individual questions.
+- **Filter input**: Sticky search input above the category grid — filters across all 325 questions, shows flat matching list.
+- **Result cards**: 4 card types built by `buildAjarkanPenjelasanCard()`, `buildAjarkanNgobrolCard()`, `buildAjarkanAktivitasCard()`, `buildAjarkanVerseCard()`. Wired by `wireAjarkanCardEvents()`.
+- **Age switching from results**: Age badge in results is tappable → re-fetches same question with different age_group.
+- **Color palette**: `--ak-blue: #4A7FB5` family (distinct warm blue, separate from teal and gold).
+
 ### Verse carousel (shared by all modes)
 - Horizontal swipeable carousel (`#verses-carousel`) with CSS scroll-snap
-- Intro slide (card 0): curhat/panduan shows typewriter reflection/explanation; jelajahi shows static surah info + Bismillah
+- Intro slide (card 0): curhat/panduan shows typewriter reflection/explanation; jelajahi shows static surah info + Bismillah; ajarkan shows Penjelasan card with typewriter
 - Verse slides (1–N): each contains one verse card built by `buildVerseCard()`
 - Pagination dots (≤16 cards) or progress bar (>16 cards) + counter arrows in `.verses-header`
 - Actions/feedback appear on reaching last card
@@ -175,9 +212,9 @@ Each verse card has three elements below the translation + resonance text:
 - **Bottom sheet**: Opens `#share-sheet` with overlay (`#share-overlay`). Slides up with 300ms animation. Dismissible by: (1) overlay tap, (2) X close button in header, (3) swipe-down gesture.
 - **Swipe-down dismiss**: Touch handlers on `#share-sheet` track drag distance. `touchmove` uses `{ passive: false }` + `e.preventDefault()` to block browser pull-to-refresh. Threshold: 80px drag = dismiss. Only activates when `sheet.scrollTop === 0`.
 - **X close button**: `#share-sheet-close` in `.share-sheet-header`, positioned absolute top-right next to the drag handle.
-- **Live preview**: CSS-styled preview thumbnail (~60% width) updates in real-time when theme or toggles change. NOT canvas-rendered — uses the same `.si-wrap` / `.si-theme-*` classes at reduced font sizes.
+- **Live preview**: Full uncropped preview (`.share-preview`, ~60% width) in a `.share-preview-wrap` with "Pratinjau" label. Updates in real-time when theme or toggles change. NOT canvas-rendered — uses the same `.si-wrap` / `.si-theme-*` classes at reduced font sizes. Shows complete translation (no truncation) + "TemuQuran.com" footer branding.
 - **3 themes**: Light (#FFFFFF bg), Dark (#1A1D2E deep navy), Classic (#F5EFE0 parchment). Theme picker is horizontal pill buttons. Theme colors defined as `.si-theme-light`, `.si-theme-dark`, `.si-theme-classic` CSS classes.
-- **Content toggles**: "Sertakan pertanyaan" (curhat/panduan only, hidden in jelajahi) and "Sertakan tafsir" (all modes). Both unchecked by default.
+- **Content toggles**: "Sertakan pertanyaan" (curhat/panduan only, hidden in jelajahi/ajarkan) and "Sertakan tafsir" (all modes). Both unchecked by default.
 - **Platform buttons**: 2×2 grid — IG Story (1080×1920), WA Status (1080×1920), WA Chat (1080×1080), Download (1080×1080). Preview aspect ratio changes when story platforms selected.
 - **Image generation**: `buildShareElement()` creates an off-screen div in `#share-render`, styled per theme. `html2canvas` renders at `scale: 2` for crisp output. Branding footer "TemuQuran.com" on every image.
 - **Share flow**: Web Share API (`navigator.share({files})`) if supported, fallback to download. In-app browsers (Instagram/Facebook/TikTok/LINE) show toast warning.
@@ -189,8 +226,18 @@ Each verse card has three elements below the translation + resonance text:
 - **Tafsir lengkap accordion**: Three sources — Kemenag, Ibnu Katsir (ID), Ibnu Katsir (EN). All start **collapsed** (user sees source options before choosing). Each source is a `.tfl-toggle` / `.tfl-answer` pair using `max-height` transition for smooth expand/collapse.
 
 ### Other features
-- **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 mode-specific Indonesian messages every 1.8s. Jelajahi uses a simpler spinner.
-- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms on intro slide; "Geser untuk mulai →" hint after completion (curhat/panduan only)
+- **Loading state**: `.ls-step-wrap` bounces continuously; `.ls-step-text` cycles through 4 mode-specific Indonesian messages every 1.8s. Jelajahi uses surah-focused loading steps ("Membuka surah…", "Menyiapkan ayat-ayat…") with `color: var(--text-mid)` override (`.jelajahi-loading .ls-step-text`) since the background is white. Ajarkan uses 🌙 icon and centered spinner (like jelajahi).
+- **Swipe hint sequence** (curhat/panduan/jelajahi): Progressive 3-tier discoverability after verse results load:
+  1. **Teal pill** (`.swipe-hint-pill`): "Geser untuk menemukan ayat →" with bouncing arrow animation (`@keyframes hintArrowBounce`). Shown immediately.
+  2. **Peek nudge** (1.5s): carousel scrolls 50px right then snaps back, showing a physical preview of the next card.
+  3. **Auto-advance** (5s): carousel auto-scrolls to card 2 if user hasn't swiped yet.
+  - Timers stored in `_swipeHintTimers`; `clearSwipeHints()` cancels all timers and fades the pill (`.hint-faded` class) on first user swipe.
+- **Typewriter**: reflection/explanation text types at 3 chars / 15 ms on intro slide (curhat/panduan only). Jelajahi intro is static (no typewriter).
+- **A2HS (Add to Home Screen)**: Install card (`#a2hsCard`) below VOTD on landing — "Jadikan TemuQuran aplikasi di HP" + "Pasang" button.
+  - **Android**: Captures `beforeinstallprompt` event → fires native install prompt on tap.
+  - **iOS**: Opens a visual step-by-step guide overlay (`.a2hs-guide-overlay`) with 4 numbered steps matching Safari's actual flow (⋯ → Share → scroll to "Tambahkan ke Layar Utama" → "Tambah"). Slides up from bottom, dismissible by "Mengerti" button or overlay tap.
+  - Events: `a2hs_tapped`, `a2hs_installed`.
+- **QRIS support (Dukung TemuQuran)**: In the About overlay's "Dukung" FAQ accordion — shows inline QRIS image (`qris.png`) + "Simpan QRIS" download button. Download uses blob-based approach (`URL.createObjectURL`) for reliable mobile saving (iOS Safari `<a download>` is unreliable), falls back to `window.open`. Event: `qris_saved`.
 - **Verse of the Day**: collapsed by default (tap to expand) on landing-view. Loaded from `/api/verse-of-day`, silently hidden on failure.
 - **html2canvas**: lazy-loaded (~200 KB) only on first share tap. Used by the share sheet image generation.
 - **Audio**: Alafasy recitation via `cdn.islamic.network`, global ayah number computed from `SURAH_VERSE_COUNTS` cumulative sum. Auto-paused on carousel swipe.
@@ -214,6 +261,7 @@ Each verse card has three elements below the translation + resonance text:
 - Emotion cards (curhat): uniform blue — `#EEF3FB` bg, `#C8D8F0` border, `#6B8DD6` accent bar
 - Panduan cards: teal accent — `#EDF7F6` bg, `#B8DDD9` border, `var(--teal-dark)` accent bar
 - Jelajahi cards: light border — `var(--border)` border, no accent bar, hover lift
+- Ajarkan cards: blue accent — `--ak-blue` family (`#4A7FB5`), 4px gradient accent bar (`::before`), `--ak-blue-bg` (#EFF5FB), `--ak-blue-border` (#D4E2F0)
 - Jelajahi intro card: dark gradient bg (`#0A0F1E` → `#0A5C7A`), gold Bismillah (`.ji-bismillah`)
 - Reading progress bar: `var(--border)` track, `var(--teal-dark)` fill, 4px height
 - No CSS framework, no preprocessor
@@ -226,7 +274,7 @@ Each verse card has three elements below the translation + resonance text:
 All routes serve these security headers:
 | Header | Value |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdn.islamic.network; media-src https://cdn.islamic.network; frame-ancestors 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://cdn.islamic.network https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://*.analytics.google.com; media-src https://cdn.islamic.network; frame-ancestors 'none'` |
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
@@ -267,5 +315,6 @@ API error responses never expose raw OpenAI/Supabase error details. Internal err
 - **Share sheet close** — `closeShareSheet()` must reset inline `transform` and `transition` styles set by the swipe-down drag gesture before removing the `visible` class.
 - **Share image themes** — `.si-theme-*` classes in `style.css` define colors for the off-screen share render element AND the live preview. Both share the same class hierarchy (`si-wrap`, `si-arabic`, `si-translation`, `si-ref`, `si-tafsir`, `si-footer`).
 - **OG meta tags** — title is "TemuQuran — Temukan dalam Al-Qur'an", description mentions all 3 modes + privacy + no ads. Theme color is `#2A7C6F` (teal).
-- **CSP changes** — if you add a new CDN script or connect to a new external API from the frontend, update the CSP in `vercel.json` or the browser will block it.
+- **Filename case sensitivity** — Vercel deploys on Linux (case-sensitive). `qris.png` ≠ `QRIS.png`. Always use lowercase filenames.
+- **CSP changes** — if you add a new CDN script or connect to a new external API from the frontend, update the CSP in `vercel.json` or the browser will block it. GA4 required additions to `script-src`, `img-src`, and `connect-src`.
 - **CORS changes** — if you add a new custom domain or need localhost dev access, update the `allowedOrigin` in both `api/get-ayat.js` and `api/log-event.js`.

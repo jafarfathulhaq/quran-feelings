@@ -43,6 +43,24 @@ const VALID_EVENTS = new Set([
   'about_faq_tapped',
   'qris_saved',
   'tafsir_full_tab_switched',
+  // Ajarkan Anakku events
+  'ajarkan_search_started',
+  'ajarkan_search_completed',
+  'ajarkan_search_partial_match',
+  'ajarkan_not_available',
+  'ajarkan_suggestion_tapped',
+  'ajarkan_age_under7_selected',
+  'ajarkan_age_7plus_selected',
+  'ajarkan_category_tapped',
+  'ajarkan_question_selected',
+  'ajarkan_question_filtered',
+  'ajarkan_conversation_copied',
+  'ajarkan_penjelasan_copied',
+  'ajarkan_aktivitas_viewed',
+  'ajarkan_verse_expanded',
+  'ajarkan_card_swiped',
+  'ajarkan_panduan_fallback',
+  'ajarkan_query_miss',
 ]);
 
 module.exports = async function handler(req, res) {

@@ -451,25 +451,34 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── Rate limit check ────────────────────────────────────────────────────────
+  // ── Input validation ────────────────────────────────────────────────────────
+  const { feeling, refresh, mode: rawMode, intent: presetIntent } = req.body || {};
+  const mode = rawMode === 'panduan' ? 'panduan'
+             : rawMode === 'jelajahi' ? 'jelajahi'
+             : rawMode === 'ajarkan' ? 'ajarkan'
+             : 'curhat';
+
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
     || req.socket?.remoteAddress
     || 'unknown';
+
+  // ── Ajarkan mode — pre-generated content, presets skip rate limit ─────────
+  if (mode === 'ajarkan') {
+    return handleAjarkan(req, res, { feeling, ip });
+  }
+
+  // ── Jelajahi mode — completely different pipeline ─────────────────────────
+  if (mode === 'jelajahi') {
+    return handleJelajahi(req, res, { feeling, presetIntent, refresh, ip });
+  }
+
+  // ── Rate limit check ────────────────────────────────────────────────────────
   const rateLimitReset = checkRateLimit(ip);
   if (rateLimitReset !== null) {
     const minutes = Math.ceil((rateLimitReset - Date.now()) / 60_000);
     return res.status(429).json({
       error: `Terlalu banyak permintaan. Coba lagi dalam ${minutes} menit.`,
     });
-  }
-
-  // ── Input validation ────────────────────────────────────────────────────────
-  const { feeling, refresh, mode: rawMode, intent: presetIntent } = req.body || {};
-  const mode = rawMode === 'panduan' ? 'panduan' : rawMode === 'jelajahi' ? 'jelajahi' : 'curhat';
-
-  // ── Jelajahi mode — completely different pipeline ─────────────────────────
-  if (mode === 'jelajahi') {
-    return handleJelajahi(req, res, { feeling, presetIntent, refresh, ip });
   }
 
   if (!feeling || feeling.trim().length < 2) {
@@ -888,6 +897,359 @@ module.exports = async function handler(req, res) {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ── Ajarkan Handler ─────────────────────────────────────────────────────────
+// Pre-generated content from ajarkan_queries table.
+// Preset path: direct DB lookup by question_id + age_group (no GPT, no rate limit).
+// Freeform path: 2-step GPT matcher → find best question → return DB content.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const AJARKAN_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days — static pre-generated content
+
+/**
+ * Hydrate selected_verses JSONB with Arabic text + translation from quran_verses.
+ * Uses surah_number/verse_number columns (the actual DB column names).
+ */
+async function hydrateAjarkanVerses(selectedVerses, supabaseUrl, supabaseKey) {
+  if (!selectedVerses || selectedVerses.length === 0) return [];
+
+  const verseFilters = selectedVerses.map(v =>
+    `and(surah_number.eq.${v.surah},verse_number.eq.${v.ayah})`
+  ).join(',');
+
+  try {
+    const versesRes = await fetch(
+      `${supabaseUrl}/rest/v1/quran_verses?or=(${verseFilters})&select=surah_number,verse_number,arabic,translation,surah_name`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    );
+
+    if (!versesRes.ok) return selectedVerses.map(sv => ({
+      surah: sv.surah, ayah: sv.ayah, surah_name: '', arabic: '', translation: '', verse_relevance: sv.verse_relevance || '',
+    }));
+
+    const dbVerses = await versesRes.json();
+    return selectedVerses.map(sv => {
+      const dbV = dbVerses.find(d => d.surah_number === sv.surah && d.verse_number === sv.ayah) || {};
+      return {
+        surah: sv.surah,
+        ayah: sv.ayah,
+        surah_name: dbV.surah_name || '',
+        arabic: dbV.arabic || '',
+        translation: dbV.translation || '',
+        verse_relevance: sv.verse_relevance || '',
+      };
+    });
+  } catch (err) {
+    console.error('Failed to hydrate verses:', err);
+    return selectedVerses.map(sv => ({
+      surah: sv.surah, ayah: sv.ayah, surah_name: '', arabic: '', translation: '', verse_relevance: sv.verse_relevance || '',
+    }));
+  }
+}
+
+async function handleAjarkan(req, res, { feeling, ip }) {
+  const { questionId, ageGroup, freeform } = req.body || {};
+
+  // Validate age group
+  if (!ageGroup || !['under7', '7plus'].includes(ageGroup)) {
+    return res.status(400).json({ error: 'Pilih kelompok usia anak dulu.' });
+  }
+
+  try {
+    // ── Preset path (no GPT, no rate limit) ────────────────────────────────
+    if (questionId && !freeform) {
+      const cacheKey = `ajarkan:${questionId}:${ageGroup}`;
+      const cached = getCached(cacheKey);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.status(200).json(cached);
+      }
+
+      // Query ajarkan_queries table
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+
+      const queryRes = await fetch(
+        `${supabaseUrl}/rest/v1/ajarkan_queries?question_id=eq.${encodeURIComponent(questionId)}&age_group=eq.${encodeURIComponent(ageGroup)}&select=*`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+        }
+      );
+
+      if (!queryRes.ok) {
+        console.error('Ajarkan DB query failed:', queryRes.status);
+        return res.status(500).json({ error: 'Gagal memuat data.' });
+      }
+
+      const rows = await queryRes.json();
+      if (!rows || rows.length === 0) {
+        return res.status(200).json({
+          error: 'not_available',
+          message: 'Pertanyaan ini belum tersedia. Kami sedang menyiapkan kontennya.',
+        });
+      }
+
+      const row = rows[0];
+
+      // Hydrate verses: fetch Arabic + translation from quran_verses
+      const hydratedVerses = await hydrateAjarkanVerses(row.selected_verses || [], supabaseUrl, supabaseKey);
+
+      const payload = {
+        mode: 'ajarkan',
+        question_id: row.question_id,
+        question_text: row.question_text,
+        age_group: row.age_group,
+        penjelasan_anak: row.penjelasan_anak,
+        pembuka_percakapan: row.pembuka_percakapan,
+        aktivitas_bersama: row.aktivitas_bersama,
+        ayat: hydratedVerses,
+      };
+
+      setCached(cacheKey, payload, AJARKAN_CACHE_TTL);
+      return res.status(200).json(payload);
+    }
+
+    // ── Freeform path (GPT matcher, rate limited) ──────────────────────────
+    if (!feeling || feeling.trim().length < 2) {
+      return res.status(400).json({ error: 'Ketik pertanyaan anak.' });
+    }
+    if (feeling.length > MAX_INPUT_LEN) {
+      return res.status(400).json({ error: `Input terlalu panjang (maks ${MAX_INPUT_LEN} karakter).` });
+    }
+
+    // Rate limit for freeform
+    const rateLimitReset = checkRateLimit(ip);
+    if (rateLimitReset !== null) {
+      const minutes = Math.ceil((rateLimitReset - Date.now()) / 60_000);
+      return res.status(429).json({
+        error: `Terlalu banyak permintaan. Coba lagi dalam ${minutes} menit.`,
+      });
+    }
+
+    const normalized = feeling.trim().replace(/\s+/g, ' ').toLowerCase();
+    const freeformCacheKey = `ajarkan:freeform:${ageGroup}:${normalized}`;
+    const cachedFreeform = getCached(freeformCacheKey);
+    if (cachedFreeform) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json(cachedFreeform);
+    }
+
+    // Step 1: GPT matches user query to a question_id
+    const matchRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `You are a question matcher for an Islamic children's education app. Given a parent's question about teaching Islam to children, find the most relevant pre-written question from our database.
+
+Our question categories and their subcategory slugs:
+- aqidah: siapa-allah, quran-wahyu, malaikat, nabi-rasul, hari-kiamat
+- ibadah: sholat, puasa-ramadan, doa, zakat-sedekah, haji-umrah
+- akhlak: kejujuran, sabar-syukur, rendah-hati-ikhlas, tanggung-jawab
+- kehidupan-takdir: ujian-cobaan, emosi-perasaan
+- keluarga-sosial: keluarga-hubungan, situasi-sosial-anak
+- alam-rasa-ingin-tahu: alam-ciptaan, rasa-ingin-tahu
+
+Respond in JSON: {"matched_subcategories": ["slug1", "slug2"], "confidence": 0.0-1.0}
+Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our database has a matching question.`
+          },
+          { role: 'user', content: feeling }
+        ],
+      }),
+    });
+
+    if (!matchRes.ok) {
+      console.error('Ajarkan GPT category match failed:', matchRes.status);
+      return res.status(500).json({ error: 'Gagal mencocokkan pertanyaan.' });
+    }
+
+    const matchData = await matchRes.json();
+    let categoryMatch;
+    try {
+      categoryMatch = JSON.parse(matchData.choices[0].message.content);
+    } catch {
+      return res.status(500).json({ error: 'Gagal memproses hasil.' });
+    }
+
+    if (!categoryMatch.matched_subcategories || categoryMatch.matched_subcategories.length === 0) {
+      return res.status(200).json({
+        error: 'not_available',
+        message: 'Maaf, kami belum punya jawaban untuk pertanyaan ini. Coba pilih dari kategori yang tersedia.',
+      });
+    }
+
+    // Step 2: Get all questions from matched subcategories and ask GPT to pick the best match
+    // We need to load the questions from the frontend constants, but since this is serverless,
+    // we'll send the subcategory slugs and let GPT pick from a provided list.
+    // For this to work, we need the questions list. We'll query the DB for available questions.
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+
+    const subcatFilter = categoryMatch.matched_subcategories
+      .map(s => `subcategory.eq.${encodeURIComponent(s)}`)
+      .join(',');
+
+    const questionsRes = await fetch(
+      `${supabaseUrl}/rest/v1/ajarkan_queries?or=(${subcatFilter})&age_group=eq.${encodeURIComponent(ageGroup)}&select=question_id,question_text,category,subcategory`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    );
+
+    if (!questionsRes.ok) {
+      console.error('Ajarkan questions query failed:', questionsRes.status);
+      return res.status(500).json({ error: 'Gagal memuat pertanyaan.' });
+    }
+
+    const availableQuestions = await questionsRes.json();
+    if (!availableQuestions || availableQuestions.length === 0) {
+      return res.status(200).json({
+        error: 'not_available',
+        message: 'Konten untuk kategori ini sedang disiapkan. Coba pertanyaan dari kategori lain.',
+      });
+    }
+
+    // Step 2: GPT picks best matching question
+    const questionList = availableQuestions.map(q => `${q.question_id}: ${q.question_text}`).join('\n');
+    const pickRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `You match a parent's question to the closest pre-written question from our database.
+
+Available questions:
+${questionList}
+
+Respond in JSON:
+{
+  "best_match": "question_id",
+  "confidence": 0.0-1.0,
+  "similar": ["id1", "id2", "id3"]
+}
+- confidence: how well the best match answers the parent's actual question
+- similar: up to 3 other relevant question IDs (excluding best_match)`
+          },
+          { role: 'user', content: feeling }
+        ],
+      }),
+    });
+
+    if (!pickRes.ok) {
+      console.error('Ajarkan GPT question pick failed:', pickRes.status);
+      return res.status(500).json({ error: 'Gagal mencocokkan pertanyaan.' });
+    }
+
+    const pickData = await pickRes.json();
+    let pickResult;
+    try {
+      pickResult = JSON.parse(pickData.choices[0].message.content);
+    } catch {
+      return res.status(500).json({ error: 'Gagal memproses hasil.' });
+    }
+
+    const confidence = pickResult.confidence || 0;
+
+    if (confidence < 0.5) {
+      // Low confidence → suggest alternatives
+      const suggestions = (pickResult.similar || []).slice(0, 3).map(id => {
+        const q = availableQuestions.find(aq => aq.question_id === id);
+        return q ? { questionId: q.question_id, text: q.question_text } : null;
+      }).filter(Boolean);
+
+      const noMatchPayload = {
+        error: 'not_available',
+        message: 'Kami belum punya jawaban yang pas untuk pertanyaan ini.',
+        suggestions,
+      };
+      setCached(freeformCacheKey, noMatchPayload, AJARKAN_CACHE_TTL);
+      return res.status(200).json(noMatchPayload);
+    }
+
+    // Confidence >= 0.5 → fetch the matched content via preset path
+    // Recursively call with questionId to reuse the preset logic
+    const matchedId = pickResult.best_match;
+
+    // Direct DB fetch for matched question
+    const contentRes = await fetch(
+      `${supabaseUrl}/rest/v1/ajarkan_queries?question_id=eq.${encodeURIComponent(matchedId)}&age_group=eq.${encodeURIComponent(ageGroup)}&select=*`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    );
+
+    const contentRows = contentRes.ok ? await contentRes.json() : [];
+    if (!contentRows || contentRows.length === 0) {
+      return res.status(200).json({
+        error: 'not_available',
+        message: 'Konten untuk pertanyaan ini sedang disiapkan.',
+      });
+    }
+
+    const row = contentRows[0];
+
+    // Hydrate verses
+    const selectedVerses = row.selected_verses || [];
+    const hydratedVerses = await hydrateAjarkanVerses(selectedVerses, supabaseUrl, supabaseKey);
+
+    const payload = {
+      mode: 'ajarkan',
+      question_id: row.question_id,
+      question_text: row.question_text,
+      age_group: row.age_group,
+      penjelasan_anak: row.penjelasan_anak,
+      pembuka_percakapan: row.pembuka_percakapan,
+      aktivitas_bersama: row.aktivitas_bersama,
+      ayat: hydratedVerses,
+    };
+
+    // Add also_relevant suggestions for partial matches (0.5 <= confidence < 0.8)
+    if (confidence < 0.8 && pickResult.similar) {
+      payload.also_relevant = pickResult.similar.slice(0, 3).map(id => {
+        const q = availableQuestions.find(aq => aq.question_id === id);
+        return q ? { questionId: q.question_id, text: q.question_text } : null;
+      }).filter(Boolean);
+    }
+
+    setCached(freeformCacheKey, payload, AJARKAN_CACHE_TTL);
+    setCached(`ajarkan:${matchedId}:${ageGroup}`, payload, AJARKAN_CACHE_TTL);
+    return res.status(200).json(payload);
+
+  } catch (err) {
+    console.error('Ajarkan handler error:', err);
+    return res.status(500).json({ error: 'Terjadi kesalahan. Silakan coba lagi.' });
+  }
+}
+
 // ── Jelajahi Handler ────────────────────────────────────────────────────────
 // Completely separate pipeline: intent parsing → DB query → return verses.
 // No embeddings, no vector search, no GPT-4o selection.

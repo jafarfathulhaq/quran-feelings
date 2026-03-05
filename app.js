@@ -126,6 +126,12 @@ let currentCardIndex  = 0;     // carousel active slide index
 let totalVerseCards   = 0;     // total slides (intro + verses)
 let _swipeHintTimers  = [];    // timers for peek nudge + auto-advance
 
+// ── Ajarkan Anakku state ──────────────────────────────────────────────────
+let ajarkanAgeGroup       = null;   // 'under7' | '7plus' | null
+let ajarkanExpandedCatId  = null;   // expanded category slug
+let ajarkanCurrentData    = null;   // last result data (for age switch)
+let ajarkanCurrentQId     = null;   // last question_id (for age switch re-fetch)
+
 // ── Share sheet state ──────────────────────────────────────────────────────
 let shareTheme           = 'light';   // 'light', 'dark', 'classic'
 let shareIncludeQuestion = false;
@@ -174,7 +180,8 @@ function startLoadingSteps() {
   const el = document.getElementById('loading-step-text');
   if (!el) return;
   const steps = currentMode === 'jelajahi' ? LOADING_STEPS_JELAJAHI
-    : currentMode === 'panduan' ? LOADING_STEPS_PANDUAN : LOADING_STEPS_CURHAT;
+    : currentMode === 'panduan' ? LOADING_STEPS_PANDUAN
+    : currentMode === 'ajarkan' ? LOADING_STEPS_AJARKAN : LOADING_STEPS_CURHAT;
   let i = 0;
   el.textContent = steps[0];
   el.classList.remove('ls-fade');
@@ -495,6 +502,514 @@ const LOADING_STEPS_JELAJAHI = [
   'Hampir siap...',
 ];
 
+const LOADING_STEPS_AJARKAN = [
+  'Mencari pertanyaan...',
+  'Menyiapkan penjelasan...',
+  'Menyusun ide ngobrol...',
+  'Hampir siap...',
+];
+
+const AJARKAN_CATEGORIES = [
+  {
+    id: 'aqidah',
+    emoji: '\u{1F932}',
+    label: 'Aqidah',
+    subcategories: [
+      {
+        id: 'siapa-allah',
+        name: 'Siapa Allah',
+        questions: [
+          { id: 'siapa-allah-01', text: 'Siapa itu Allah?' },
+          { id: 'siapa-allah-02', text: 'Di mana Allah berada?' },
+          { id: 'siapa-allah-03', text: 'Kenapa kita tidak bisa lihat Allah?' },
+          { id: 'siapa-allah-04', text: 'Apakah Allah selalu ada?' },
+          { id: 'siapa-allah-05', text: 'Apakah Allah mendengar doa kita?' },
+          { id: 'siapa-allah-06', text: 'Apakah Allah sayang kepada kita?' },
+          { id: 'siapa-allah-07', text: 'Kenapa Allah menciptakan kita?' },
+          { id: 'siapa-allah-08', text: 'Apakah Allah punya nama lain?' },
+          { id: 'siapa-allah-09', text: 'Apa itu Asmaul Husna?' },
+          { id: 'siapa-allah-10', text: 'Apa artinya Allah Maha Mengetahui?' },
+          { id: 'siapa-allah-11', text: 'Apa artinya Allah Maha Kuasa?' },
+          { id: 'siapa-allah-12', text: 'Kenapa kita harus percaya kepada Allah?' },
+          { id: 'siapa-allah-13', text: 'Apa bedanya Allah dengan manusia?' },
+          { id: 'siapa-allah-14', text: 'Apakah Allah pernah tidur?' },
+          { id: 'siapa-allah-15', text: 'Apakah Allah pernah marah?' },
+          { id: 'siapa-allah-16', text: 'Kenapa Allah tidak terlihat tapi kita harus percaya?' },
+          { id: 'siapa-allah-17', text: 'Kenapa hanya ada satu Allah?' },
+          { id: 'siapa-allah-18', text: 'Bagaimana cara kita mengenal Allah lebih dalam?' },
+          { id: 'siapa-allah-19', text: 'Kenapa Allah menciptakan alam semesta?' },
+          { id: 'siapa-allah-20', text: 'Apakah Allah selalu bersama kita?' },
+          { id: 'siapa-allah-21', text: 'Kenapa Allah memberikan ujian kepada kita?' },
+          { id: 'siapa-allah-22', text: 'Apakah Allah senang ketika kita berdoa?' },
+          { id: 'siapa-allah-23', text: 'Bagaimana Allah bisa dengar semua doa semua orang sekaligus?' },
+          { id: 'siapa-allah-24', text: 'Apa yang dimaksud dengan ridha Allah?' },
+        ]
+      },
+      {
+        id: 'quran-wahyu',
+        name: 'Quran dan Wahyu',
+        questions: [
+          { id: 'quran-wahyu-01', text: 'Apa itu Al-Qur\'an?' },
+          { id: 'quran-wahyu-02', text: 'Siapa yang membuat Al-Qur\'an?' },
+          { id: 'quran-wahyu-03', text: 'Kenapa kita harus baca Al-Qur\'an?' },
+          { id: 'quran-wahyu-04', text: 'Apa isi Al-Qur\'an?' },
+          { id: 'quran-wahyu-05', text: 'Kenapa Al-Qur\'an ditulis dalam bahasa Arab?' },
+          { id: 'quran-wahyu-06', text: 'Bagaimana Al-Qur\'an sampai ke kita?' },
+          { id: 'quran-wahyu-07', text: 'Siapa itu Nabi Muhammad dan apa hubungannya dengan Qur\'an?' },
+          { id: 'quran-wahyu-08', text: 'Apa itu wahyu?' },
+          { id: 'quran-wahyu-09', text: 'Kenapa Al-Qur\'an tidak berubah sampai sekarang?' },
+          { id: 'quran-wahyu-10', text: 'Apa manfaat membaca Al-Qur\'an setiap hari?' },
+          { id: 'quran-wahyu-11', text: 'Kenapa kita harus hafal Al-Qur\'an?' },
+          { id: 'quran-wahyu-12', text: 'Apa itu surah dan ayat?' },
+          { id: 'quran-wahyu-13', text: 'Kenapa ada surah yang panjang dan ada yang pendek?' },
+          { id: 'quran-wahyu-14', text: 'Apa itu Bismillah dan kenapa kita selalu mulai dengannya?' },
+          { id: 'quran-wahyu-15', text: 'Apa itu Al-Fatihah dan kenapa sangat penting?' },
+          { id: 'quran-wahyu-16', text: 'Kenapa kita harus wudu sebelum pegang Al-Qur\'an?' },
+          { id: 'quran-wahyu-17', text: 'Apa bedanya membaca Qur\'an dengan buku biasa?' },
+          { id: 'quran-wahyu-18', text: 'Apakah Allah senang kalau kita baca Qur\'an?' },
+          { id: 'quran-wahyu-19', text: 'Kenapa ada orang yang hafal seluruh Al-Qur\'an?' },
+          { id: 'quran-wahyu-20', text: 'Apa yang terjadi kalau kita rajin baca Qur\'an?' },
+          { id: 'quran-wahyu-21', text: 'Apa itu tajwid dan kenapa cara baca Quran itu penting?' },
+          { id: 'quran-wahyu-22', text: 'Kenapa kita membaca Quran dengan pelan dan tartil?' },
+        ]
+      },
+      {
+        id: 'malaikat',
+        name: 'Malaikat dan Makhluk Gaib',
+        questions: [
+          { id: 'malaikat-01', text: 'Apa itu malaikat?' },
+          { id: 'malaikat-02', text: 'Apakah malaikat bisa dilihat?' },
+          { id: 'malaikat-03', text: 'Apa tugas malaikat?' },
+          { id: 'malaikat-04', text: 'Berapa jumlah malaikat?' },
+          { id: 'malaikat-05', text: 'Siapa malaikat Jibril?' },
+          { id: 'malaikat-06', text: 'Siapa malaikat Mikail?' },
+          { id: 'malaikat-07', text: 'Siapa malaikat Izrail?' },
+          { id: 'malaikat-08', text: 'Siapa malaikat Israfil?' },
+          { id: 'malaikat-09', text: 'Apa itu malaikat Raqib dan Atid?' },
+          { id: 'malaikat-10', text: 'Apakah ada malaikat yang menjaga kita?' },
+          { id: 'malaikat-11', text: 'Apa itu jin?' },
+          { id: 'malaikat-12', text: 'Apa bedanya jin dengan setan?' },
+          { id: 'malaikat-13', text: 'Kenapa ada setan di dunia ini?' },
+          { id: 'malaikat-14', text: 'Bagaimana cara melindungi diri dari gangguan setan?' },
+          { id: 'malaikat-15', text: 'Kenapa kita membaca Bismillah untuk menjauhkan setan?' },
+        ]
+      },
+      {
+        id: 'nabi-rasul',
+        name: 'Nabi dan Rasul',
+        questions: [
+          { id: 'nabi-rasul-01', text: 'Siapa itu nabi dan rasul?' },
+          { id: 'nabi-rasul-02', text: 'Apa bedanya nabi dan rasul?' },
+          { id: 'nabi-rasul-03', text: 'Kenapa Allah mengutus nabi dan rasul?' },
+          { id: 'nabi-rasul-04', text: 'Siapa nabi pertama?' },
+          { id: 'nabi-rasul-05', text: 'Siapa nabi terakhir?' },
+          { id: 'nabi-rasul-06', text: 'Kenapa Nabi Muhammad sangat istimewa?' },
+          { id: 'nabi-rasul-07', text: 'Bagaimana akhlak Nabi Muhammad?' },
+          { id: 'nabi-rasul-08', text: 'Apa itu sunnah Nabi?' },
+          { id: 'nabi-rasul-09', text: 'Kenapa kita harus mencintai Nabi Muhammad?' },
+          { id: 'nabi-rasul-10', text: 'Apa itu shalawat dan kenapa kita membacanya?' },
+          { id: 'nabi-rasul-11', text: 'Siapa itu Nabi Ibrahim?' },
+          { id: 'nabi-rasul-12', text: 'Apa yang bisa kita pelajari dari Nabi Ibrahim?' },
+          { id: 'nabi-rasul-13', text: 'Siapa itu Nabi Musa?' },
+          { id: 'nabi-rasul-14', text: 'Siapa itu Nabi Isa?' },
+          { id: 'nabi-rasul-15', text: 'Siapa itu Nabi Yusuf dan apa pelajaran dari kisahnya?' },
+          { id: 'nabi-rasul-16', text: 'Siapa itu Nabi Yunus?' },
+          { id: 'nabi-rasul-17', text: 'Apa pelajaran dari kisah Nabi Yunus?' },
+          { id: 'nabi-rasul-18', text: 'Siapa itu Nabi Ayyub dan apa yang bisa dipelajari?' },
+          { id: 'nabi-rasul-19', text: 'Kenapa kisah para nabi diceritakan di Al-Qur\'an?' },
+          { id: 'nabi-rasul-20', text: 'Bagaimana cara kita meneladani para nabi?' },
+          { id: 'nabi-rasul-21', text: 'Siapa Khadijah dan kenapa beliau istimewa?' },
+          { id: 'nabi-rasul-22', text: 'Bagaimana Nabi Muhammad memperlakukan anak-anak?' },
+        ]
+      },
+      {
+        id: 'hari-kiamat',
+        name: 'Hari Kiamat dan Akhirat',
+        questions: [
+          { id: 'hari-kiamat-01', text: 'Apa itu hari kiamat?' },
+          { id: 'hari-kiamat-02', text: 'Apa yang terjadi setelah kita meninggal?' },
+          { id: 'hari-kiamat-03', text: 'Apa itu surga?' },
+          { id: 'hari-kiamat-04', text: 'Apa itu neraka?' },
+          { id: 'hari-kiamat-05', text: 'Siapa yang masuk surga?' },
+          { id: 'hari-kiamat-06', text: 'Apa itu hari perhitungan amal?' },
+          { id: 'hari-kiamat-07', text: 'Apa itu buku catatan amal?' },
+          { id: 'hari-kiamat-08', text: 'Kenapa setiap perbuatan kita dicatat?' },
+          { id: 'hari-kiamat-09', text: 'Apa itu Mizan \u2014 timbangan amal?' },
+          { id: 'hari-kiamat-10', text: 'Apa itu Shirath \u2014 jembatan menuju surga?' },
+          { id: 'hari-kiamat-11', text: 'Kenapa kita harus berbuat baik sejak kecil?' },
+          { id: 'hari-kiamat-12', text: 'Apakah anak kecil juga dihisab?' },
+          { id: 'hari-kiamat-13', text: 'Kenapa kehidupan di akhirat lebih penting dari dunia?' },
+          { id: 'hari-kiamat-14', text: 'Apa itu alam barzakh?' },
+          { id: 'hari-kiamat-15', text: 'Kenapa kita tidak takut mati kalau kita beriman?' },
+          { id: 'hari-kiamat-16', text: 'Apa itu doa untuk orang yang sudah meninggal dan kenapa penting?' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'ibadah',
+    emoji: '\u{1F54C}',
+    label: 'Ibadah',
+    subcategories: [
+      {
+        id: 'sholat',
+        name: 'Sholat',
+        questions: [
+          { id: 'sholat-01', text: 'Apa itu sholat?' },
+          { id: 'sholat-02', text: 'Kenapa kita harus sholat?' },
+          { id: 'sholat-03', text: 'Kenapa sholat harus 5 kali sehari?' },
+          { id: 'sholat-04', text: 'Kenapa sholat harus menghadap kiblat?' },
+          { id: 'sholat-05', text: 'Apa itu kiblat?' },
+          { id: 'sholat-06', text: 'Kenapa kita harus wudu sebelum sholat?' },
+          { id: 'sholat-07', text: 'Apa itu wudu?' },
+          { id: 'sholat-08', text: 'Kenapa kita pakai mukena atau sarung saat sholat?' },
+          { id: 'sholat-09', text: 'Apa yang kita katakan saat sholat?' },
+          { id: 'sholat-10', text: 'Kenapa gerakan sholat seperti itu \u2014 berdiri, rukuk, sujud?' },
+          { id: 'sholat-11', text: 'Apa artinya sujud?' },
+          { id: 'sholat-12', text: 'Kenapa sholat subuh dilakukan waktu masih gelap?' },
+          { id: 'sholat-13', text: 'Apakah Allah mendengar sholat kita?' },
+          { id: 'sholat-14', text: 'Apa yang terjadi kalau kita tidak sholat?' },
+          { id: 'sholat-15', text: 'Kenapa sholat berjamaah lebih baik?' },
+          { id: 'sholat-16', text: 'Apa itu sholat Jumat?' },
+          { id: 'sholat-17', text: 'Kenapa laki-laki wajib sholat Jumat?' },
+          { id: 'sholat-18', text: 'Apa itu adzan dan kenapa ada adzan?' },
+          { id: 'sholat-19', text: 'Kenapa kita diam dan dengarkan adzan?' },
+          { id: 'sholat-20', text: 'Apa itu iqamah?' },
+          { id: 'sholat-21', text: 'Bagaimana sholat bisa membuat hati tenang?' },
+          { id: 'sholat-22', text: 'Kenapa sholat disebut tiang agama?' },
+          { id: 'sholat-23', text: 'Apa itu sholat sunnah?' },
+          { id: 'sholat-24', text: 'Kenapa kita sholat meski sedang lelah?' },
+          { id: 'sholat-25', text: 'Bagaimana sholat menghubungkan kita dengan Allah?' },
+          { id: 'sholat-26', text: 'Apa itu tayamum dan kapan boleh digunakan?' },
+          { id: 'sholat-27', text: 'Kenapa kita harus menjaga kebersihan dalam Islam?' },
+          { id: 'sholat-28', text: 'Apa itu masjid dan kenapa kita pergi ke sana?' },
+        ]
+      },
+      {
+        id: 'puasa-ramadan',
+        name: 'Puasa dan Ramadan',
+        questions: [
+          { id: 'puasa-ramadan-01', text: 'Apa itu puasa?' },
+          { id: 'puasa-ramadan-02', text: 'Kenapa kita berpuasa di bulan Ramadan?' },
+          { id: 'puasa-ramadan-03', text: 'Apa itu bulan Ramadan?' },
+          { id: 'puasa-ramadan-04', text: 'Kenapa Ramadan istimewa?' },
+          { id: 'puasa-ramadan-05', text: 'Kenapa tidak boleh makan dan minum saat puasa?' },
+          { id: 'puasa-ramadan-06', text: 'Apa manfaat puasa untuk tubuh kita?' },
+          { id: 'puasa-ramadan-07', text: 'Apa manfaat puasa untuk hati kita?' },
+          { id: 'puasa-ramadan-08', text: 'Apa itu sahur dan kenapa penting?' },
+          { id: 'puasa-ramadan-09', text: 'Apa itu buka puasa?' },
+          { id: 'puasa-ramadan-10', text: 'Kenapa kita makan kurma saat buka puasa?' },
+          { id: 'puasa-ramadan-11', text: 'Apa itu tarawih?' },
+          { id: 'puasa-ramadan-12', text: 'Apa itu Lailatul Qadar?' },
+          { id: 'puasa-ramadan-13', text: 'Kenapa Lailatul Qadar sangat istimewa?' },
+          { id: 'puasa-ramadan-14', text: 'Apa itu Idul Fitri?' },
+          { id: 'puasa-ramadan-15', text: 'Kenapa kita pakai baju baru saat Lebaran?' },
+          { id: 'puasa-ramadan-16', text: 'Apa itu zakat fitrah?' },
+          { id: 'puasa-ramadan-17', text: 'Kenapa kita bayar zakat fitrah sebelum Lebaran?' },
+          { id: 'puasa-ramadan-18', text: 'Apa itu mudik dan kenapa banyak orang pulang kampung saat Lebaran?' },
+          { id: 'puasa-ramadan-19', text: 'Kenapa anak kecil belum wajib puasa penuh?' },
+          { id: 'puasa-ramadan-20', text: 'Bagaimana puasa mengajarkan kita tentang orang yang kelaparan?' },
+        ]
+      },
+      {
+        id: 'doa',
+        name: 'Doa',
+        questions: [
+          { id: 'doa-01', text: 'Apa itu doa?' },
+          { id: 'doa-02', text: 'Apakah Allah selalu mengabulkan doa kita?' },
+          { id: 'doa-03', text: 'Kenapa kadang doa kita tidak langsung terkabul?' },
+          { id: 'doa-04', text: 'Kapan waktu terbaik untuk berdoa?' },
+          { id: 'doa-05', text: 'Apakah doa harus pakai bahasa Arab?' },
+          { id: 'doa-06', text: 'Kenapa kita mengangkat tangan saat berdoa?' },
+          { id: 'doa-07', text: 'Apa itu doa sehari-hari yang penting dihafalkan?' },
+          { id: 'doa-08', text: 'Kenapa kita berdoa sebelum makan?' },
+          { id: 'doa-09', text: 'Kenapa kita berdoa sebelum tidur?' },
+          { id: 'doa-10', text: 'Kenapa kita berdoa sebelum bepergian?' },
+          { id: 'doa-11', text: 'Apakah doa anak kecil didengar Allah?' },
+          { id: 'doa-12', text: 'Kenapa kita harus berdoa dengan sungguh-sungguh?' },
+          { id: 'doa-13', text: 'Apa bedanya doa dan sholat?' },
+          { id: 'doa-14', text: 'Kenapa kita harus berdoa untuk orang tua kita?' },
+          { id: 'doa-15', text: 'Apa itu doa yang mustajab?' },
+          { id: 'doa-16', text: 'Kenapa kita mengucap Amin setelah berdoa?' },
+          { id: 'doa-17', text: 'Apakah Allah senang ketika anak-anak berdoa?' },
+        ]
+      },
+      {
+        id: 'zakat-sedekah',
+        name: 'Zakat dan Sedekah',
+        questions: [
+          { id: 'zakat-sedekah-01', text: 'Apa itu zakat?' },
+          { id: 'zakat-sedekah-02', text: 'Kenapa kita harus bayar zakat?' },
+          { id: 'zakat-sedekah-03', text: 'Apa bedanya zakat dan sedekah?' },
+          { id: 'zakat-sedekah-04', text: 'Kenapa berbagi itu penting dalam Islam?' },
+          { id: 'zakat-sedekah-05', text: 'Apa yang terjadi kalau kita sering bersedekah?' },
+          { id: 'zakat-sedekah-06', text: 'Apakah sedekah bisa mengurangi uang kita?' },
+          { id: 'zakat-sedekah-07', text: 'Apa itu infak?' },
+          { id: 'zakat-sedekah-08', text: 'Kepada siapa kita sebaiknya bersedekah?' },
+          { id: 'zakat-sedekah-09', text: 'Apakah senyum itu termasuk sedekah?' },
+          { id: 'zakat-sedekah-10', text: 'Apa itu wakaf?' },
+          { id: 'zakat-sedekah-11', text: 'Kenapa orang kaya harus bantu orang miskin dalam Islam?' },
+          { id: 'zakat-sedekah-12', text: 'Apakah anak kecil bisa bersedekah?' },
+          { id: 'zakat-sedekah-13', text: 'Apa itu sedekah jariyah?' },
+          { id: 'zakat-sedekah-14', text: 'Kenapa rezeki yang dibagi tidak akan habis?' },
+        ]
+      },
+      {
+        id: 'haji-umrah',
+        name: 'Haji dan Umrah',
+        questions: [
+          { id: 'haji-umrah-01', text: 'Apa itu haji?' },
+          { id: 'haji-umrah-02', text: 'Kenapa orang pergi ke Mekkah?' },
+          { id: 'haji-umrah-03', text: 'Apa itu Ka\'bah?' },
+          { id: 'haji-umrah-04', text: 'Kenapa Ka\'bah sangat istimewa?' },
+          { id: 'haji-umrah-05', text: 'Apa itu umrah dan bedanya dengan haji?' },
+          { id: 'haji-umrah-06', text: 'Kenapa haji dilakukan sekali seumur hidup?' },
+          { id: 'haji-umrah-07', text: 'Apa itu Masjidil Haram?' },
+          { id: 'haji-umrah-08', text: 'Kenapa banyak orang menangis saat haji?' },
+          { id: 'haji-umrah-09', text: 'Apa itu Madinah dan kenapa istimewa?' },
+          { id: 'haji-umrah-10', text: 'Apa itu Masjid Nabawi?' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'akhlak',
+    emoji: '\u{1F48E}',
+    label: 'Akhlak',
+    subcategories: [
+      {
+        id: 'kejujuran',
+        name: 'Kejujuran dan Amanah',
+        questions: [
+          { id: 'kejujuran-01', text: 'Kenapa harus jujur?' },
+          { id: 'kejujuran-02', text: 'Apa yang terjadi kalau kita berbohong?' },
+          { id: 'kejujuran-03', text: 'Apa itu amanah?' },
+          { id: 'kejujuran-04', text: 'Kenapa kita harus menepati janji?' },
+          { id: 'kejujuran-05', text: 'Apa yang terjadi kalau kita sering ingkar janji?' },
+          { id: 'kejujuran-06', text: 'Kenapa kita harus jujur meski tidak ada yang lihat?' },
+          { id: 'kejujuran-07', text: 'Apa itu munafik?' },
+          { id: 'kejujuran-08', text: 'Kenapa sifat munafik sangat berbahaya?' },
+          { id: 'kejujuran-09', text: 'Bagaimana cara melatih diri untuk selalu jujur?' },
+          { id: 'kejujuran-10', text: 'Apa itu integritas dalam Islam?' },
+          { id: 'kejujuran-11', text: 'Kenapa pedagang yang jujur dicintai Allah?' },
+          { id: 'kejujuran-12', text: 'Apa bedanya jujur dan kasar?' },
+          { id: 'kejujuran-13', text: 'Bolehkah berbohong untuk kebaikan?' },
+          { id: 'kejujuran-14', text: 'Bagaimana Islam mengajarkan kita untuk berkata benar meski sulit?' },
+        ]
+      },
+      {
+        id: 'sabar-syukur',
+        name: 'Sabar dan Syukur',
+        questions: [
+          { id: 'sabar-syukur-01', text: 'Apa itu sabar?' },
+          { id: 'sabar-syukur-02', text: 'Bagaimana cara bersabar saat marah?' },
+          { id: 'sabar-syukur-03', text: 'Apa yang Allah janjikan untuk orang yang sabar?' },
+          { id: 'sabar-syukur-04', text: 'Apa bedanya sabar dan pasrah?' },
+          { id: 'sabar-syukur-05', text: 'Bagaimana cara melatih kesabaran?' },
+          { id: 'sabar-syukur-06', text: 'Apa itu syukur?' },
+          { id: 'sabar-syukur-07', text: 'Kenapa kita harus bersyukur?' },
+          { id: 'sabar-syukur-08', text: 'Bagaimana cara bersyukur dalam kehidupan sehari-hari?' },
+          { id: 'sabar-syukur-09', text: 'Apa yang terjadi kalau kita sering bersyukur?' },
+          { id: 'sabar-syukur-10', text: 'Kenapa orang yang bersyukur hidupnya lebih bahagia?' },
+          { id: 'sabar-syukur-11', text: 'Apa itu qanaah \u2014 merasa cukup?' },
+          { id: 'sabar-syukur-12', text: 'Bagaimana cara bersyukur saat keadaan sulit?' },
+          { id: 'sabar-syukur-13', text: 'Apa hubungan antara sabar dan syukur?' },
+        ]
+      },
+      {
+        id: 'rendah-hati-ikhlas',
+        name: 'Rendah Hati dan Ikhlas',
+        questions: [
+          { id: 'rendah-hati-ikhlas-01', text: 'Apa itu sombong dan kenapa tidak boleh?' },
+          { id: 'rendah-hati-ikhlas-02', text: 'Apa itu tawadhu \u2014 rendah hati?' },
+          { id: 'rendah-hati-ikhlas-03', text: 'Bagaimana cara menjadi rendah hati?' },
+          { id: 'rendah-hati-ikhlas-04', text: 'Apa itu ikhlas?' },
+          { id: 'rendah-hati-ikhlas-05', text: 'Kenapa ikhlas itu penting?' },
+          { id: 'rendah-hati-ikhlas-06', text: 'Bagaimana cara berbuat baik dengan ikhlas?' },
+          { id: 'rendah-hati-ikhlas-07', text: 'Apa itu riya \u2014 pamer kebaikan?' },
+          { id: 'rendah-hati-ikhlas-08', text: 'Kenapa riya merusak pahala?' },
+          { id: 'rendah-hati-ikhlas-09', text: 'Bagaimana cara menghindari sifat riya?' },
+          { id: 'rendah-hati-ikhlas-10', text: 'Apa itu hasad \u2014 iri hati?' },
+          { id: 'rendah-hati-ikhlas-11', text: 'Kenapa iri hati itu merusak diri sendiri?' },
+          { id: 'rendah-hati-ikhlas-12', text: 'Bagaimana cara mengubah iri hati menjadi motivasi?' },
+          { id: 'rendah-hati-ikhlas-13', text: 'Apa itu tawakkal \u2014 berserah kepada Allah?' },
+          { id: 'rendah-hati-ikhlas-14', text: 'Bagaimana cara hidup dengan tawakkal?' },
+        ]
+      },
+      {
+        id: 'tanggung-jawab',
+        name: 'Tanggung Jawab dan Usaha',
+        questions: [
+          { id: 'tanggung-jawab-01', text: 'Kenapa kita harus rajin dan tidak malas?' },
+          { id: 'tanggung-jawab-02', text: 'Apa kata Islam tentang bekerja keras?' },
+          { id: 'tanggung-jawab-03', text: 'Apa itu rezeki dan dari mana asalnya?' },
+          { id: 'tanggung-jawab-04', text: 'Kenapa kita harus berusaha dulu sebelum berdoa?' },
+          { id: 'tanggung-jawab-05', text: 'Apa itu ikhtiar?' },
+          { id: 'tanggung-jawab-06', text: 'Bagaimana hubungan antara usaha dan doa?' },
+          { id: 'tanggung-jawab-07', text: 'Kenapa kita harus bertanggung jawab atas perbuatan kita?' },
+          { id: 'tanggung-jawab-08', text: 'Apa itu amal saleh?' },
+          { id: 'tanggung-jawab-09', text: 'Kenapa niat itu penting sebelum melakukan sesuatu?' },
+          { id: 'tanggung-jawab-10', text: 'Bagaimana cara menjaga niat tetap baik?' },
+          { id: 'tanggung-jawab-11', text: 'Kenapa kita harus menyelesaikan apa yang sudah dimulai?' },
+          { id: 'tanggung-jawab-12', text: 'Apa itu istiqamah \u2014 konsisten dalam kebaikan?' },
+          { id: 'tanggung-jawab-13', text: 'Bagaimana cara membangun kebiasaan baik?' },
+          { id: 'tanggung-jawab-14', text: 'Kenapa disiplin itu bagian dari ibadah?' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'kehidupan-takdir',
+    emoji: '\u{1F33F}',
+    label: 'Kehidupan & Takdir',
+    subcategories: [
+      {
+        id: 'ujian-cobaan',
+        name: 'Kehidupan, Ujian, dan Takdir',
+        questions: [
+          { id: 'ujian-cobaan-01', text: 'Kenapa ada orang yang sakit?' },
+          { id: 'ujian-cobaan-02', text: 'Apa itu cobaan dan kenapa Allah memberikan cobaan?' },
+          { id: 'ujian-cobaan-03', text: 'Kenapa hidup tidak selalu berjalan sesuai keinginan kita?' },
+          { id: 'ujian-cobaan-04', text: 'Apa itu takdir?' },
+          { id: 'ujian-cobaan-05', text: 'Apa bedanya takdir dan usaha kita sendiri?' },
+          { id: 'ujian-cobaan-06', text: 'Kenapa ada orang yang hidupnya susah dan ada yang mudah?' },
+          { id: 'ujian-cobaan-07', text: 'Apa yang harus kita lakukan saat menghadapi kesulitan?' },
+          { id: 'ujian-cobaan-08', text: 'Bagaimana Islam mengajarkan kita untuk bangkit setelah gagal?' },
+          { id: 'ujian-cobaan-09', text: 'Kenapa kita tidak boleh putus asa?' },
+          { id: 'ujian-cobaan-10', text: 'Bagaimana cara menghibur diri saat sedih menurut Islam?' },
+          { id: 'ujian-cobaan-11', text: 'Apa yang dimaksud dengan hidup di dunia hanya sementara?' },
+          { id: 'ujian-cobaan-12', text: 'Kenapa kita tidak boleh terlalu cinta dunia?' },
+          { id: 'ujian-cobaan-13', text: 'Apa itu zuhud \u2014 tidak tamak terhadap dunia?' },
+          { id: 'ujian-cobaan-14', text: 'Bagaimana cara mensyukuri hidup saat keadaan sulit?' },
+          { id: 'ujian-cobaan-15', text: 'Kenapa kematian itu pasti dan bagaimana kita menyikapinya?' },
+          { id: 'ujian-cobaan-16', text: 'Apa yang bisa kita siapkan untuk kehidupan setelah mati?' },
+          { id: 'ujian-cobaan-17', text: 'Bagaimana cara hidup yang bermakna menurut Islam?' },
+        ]
+      },
+      {
+        id: 'emosi-perasaan',
+        name: 'Emosi dan Perasaan',
+        questions: [
+          { id: 'emosi-perasaan-01', text: 'Apa yang harus dilakukan saat merasa sedih?' },
+          { id: 'emosi-perasaan-02', text: 'Kenapa kita kadang merasa marah?' },
+          { id: 'emosi-perasaan-03', text: 'Bagaimana cara menenangkan hati saat marah?' },
+          { id: 'emosi-perasaan-04', text: 'Kenapa kita kadang merasa iri kepada orang lain?' },
+          { id: 'emosi-perasaan-05', text: 'Kenapa kita harus memaafkan orang yang menyakiti kita?' },
+          { id: 'emosi-perasaan-06', text: 'Bagaimana cara memaafkan kalau masih merasa sakit hati?' },
+          { id: 'emosi-perasaan-07', text: 'Apa yang harus dilakukan saat merasa takut?' },
+          { id: 'emosi-perasaan-08', text: 'Bagaimana cara merasa lebih tenang saat khawatir?' },
+          { id: 'emosi-perasaan-09', text: 'Kenapa kita kadang merasa kecewa?' },
+          { id: 'emosi-perasaan-10', text: 'Bagaimana cara bangkit setelah gagal?' },
+          { id: 'emosi-perasaan-11', text: 'Kenapa kita harus tetap berharap kepada Allah saat susah?' },
+          { id: 'emosi-perasaan-12', text: 'Apa yang harus kita lakukan saat merasa sendirian?' },
+          { id: 'emosi-perasaan-13', text: 'Bagaimana cara menjaga hati tetap baik?' },
+          { id: 'emosi-perasaan-14', text: 'Kenapa hati kita bisa merasa damai saat mengingat Allah?' },
+          { id: 'emosi-perasaan-15', text: 'Apa yang harus dilakukan saat merasa bersalah?' },
+          { id: 'emosi-perasaan-16', text: 'Kenapa kita kadang merasa malu dan apa yang harus dilakukan?' },
+          { id: 'emosi-perasaan-17', text: 'Bagaimana cara menghadapi rasa takut sendirian di malam hari?' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'keluarga-sosial',
+    emoji: '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}',
+    label: 'Keluarga & Sosial',
+    subcategories: [
+      {
+        id: 'keluarga-hubungan',
+        name: 'Keluarga dan Hubungan',
+        questions: [
+          { id: 'keluarga-hubungan-01', text: 'Kenapa kita harus sayang dan hormat kepada orang tua?' },
+          { id: 'keluarga-hubungan-02', text: 'Apa itu birrul walidain \u2014 berbakti kepada orang tua?' },
+          { id: 'keluarga-hubungan-03', text: 'Kenapa kita tidak boleh membantah orang tua dengan kasar?' },
+          { id: 'keluarga-hubungan-04', text: 'Apa yang bisa kita lakukan untuk membahagiakan orang tua?' },
+          { id: 'keluarga-hubungan-05', text: 'Kenapa mendoakan orang tua itu penting?' },
+          { id: 'keluarga-hubungan-06', text: 'Apa yang terjadi setelah orang tua meninggal \u2014 bagaimana kita masih bisa berbakti?' },
+          { id: 'keluarga-hubungan-07', text: 'Kenapa kita harus sayang kepada adik dan kakak?' },
+          { id: 'keluarga-hubungan-08', text: 'Bagaimana cara bersikap baik kepada saudara?' },
+          { id: 'keluarga-hubungan-09', text: 'Apa itu silaturahmi?' },
+          { id: 'keluarga-hubungan-10', text: 'Kenapa silaturahmi bisa memanjangkan umur dan meluaskan rezeki?' },
+          { id: 'keluarga-hubungan-11', text: 'Bagaimana cara menjaga hubungan baik dengan keluarga besar?' },
+          { id: 'keluarga-hubungan-12', text: 'Kenapa kita harus baik kepada tetangga?' },
+          { id: 'keluarga-hubungan-13', text: 'Apa yang harus dilakukan kalau bertengkar dengan teman?' },
+          { id: 'keluarga-hubungan-14', text: 'Apa itu ukhuwah \u2014 persaudaraan dalam Islam?' },
+          { id: 'keluarga-hubungan-15', text: 'Bagaimana cara memilih teman yang baik?' },
+          { id: 'keluarga-hubungan-16', text: 'Kenapa bergaul dengan orang baik itu penting?' },
+          { id: 'keluarga-hubungan-17', text: 'Apa yang dimaksud dengan tolong-menolong dalam Islam?' },
+        ]
+      },
+      {
+        id: 'situasi-sosial-anak',
+        name: 'Situasi Sosial Anak',
+        questions: [
+          { id: 'situasi-sosial-anak-01', text: 'Kenapa kita tidak boleh mengejek orang lain?' },
+          { id: 'situasi-sosial-anak-02', text: 'Apa yang harus dilakukan kalau teman mengejek kita?' },
+          { id: 'situasi-sosial-anak-03', text: 'Kenapa kita harus berbagi dengan teman?' },
+          { id: 'situasi-sosial-anak-04', text: 'Apa yang harus dilakukan kalau teman berbohong kepada kita?' },
+          { id: 'situasi-sosial-anak-05', text: 'Bagaimana cara meminta maaf dengan benar?' },
+          { id: 'situasi-sosial-anak-06', text: 'Kenapa kita harus memaafkan teman yang berbuat salah?' },
+          { id: 'situasi-sosial-anak-07', text: 'Apa yang harus dilakukan kalau kita bertengkar dengan teman?' },
+          { id: 'situasi-sosial-anak-08', text: 'Kenapa kita harus berkata baik kepada orang lain?' },
+          { id: 'situasi-sosial-anak-09', text: 'Bagaimana cara menjadi teman yang baik?' },
+          { id: 'situasi-sosial-anak-10', text: 'Kenapa kita tidak boleh menyakiti perasaan orang lain?' },
+          { id: 'situasi-sosial-anak-11', text: 'Apa yang harus dilakukan kalau melihat orang lain diperlakukan tidak baik?' },
+          { id: 'situasi-sosial-anak-12', text: 'Kenapa kita harus membantu teman yang kesulitan?' },
+          { id: 'situasi-sosial-anak-13', text: 'Bagaimana cara menyelesaikan masalah tanpa bertengkar?' },
+          { id: 'situasi-sosial-anak-14', text: 'Kenapa kita harus menghargai perbedaan?' },
+          { id: 'situasi-sosial-anak-15', text: 'Bagaimana cara berteman dengan orang yang berbeda dari kita?' },
+          { id: 'situasi-sosial-anak-16', text: 'Apa yang harus dilakukan kalau melihat teman di-bully?' },
+          { id: 'situasi-sosial-anak-17', text: 'Kenapa kita tidak boleh pelit kepada teman?' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'alam-rasa-ingin-tahu',
+    emoji: '\u{1F30D}',
+    label: 'Alam & Rasa Ingin Tahu',
+    subcategories: [
+      {
+        id: 'alam-ciptaan',
+        name: 'Alam dan Ciptaan Allah',
+        questions: [
+          { id: 'alam-ciptaan-01', text: 'Siapa yang menciptakan langit, bumi, dan semua isinya?' },
+          { id: 'alam-ciptaan-02', text: 'Kenapa ada siang dan malam?' },
+          { id: 'alam-ciptaan-03', text: 'Kenapa ada musim hujan dan musim kemarau?' },
+          { id: 'alam-ciptaan-04', text: 'Kenapa kita harus menjaga alam dan lingkungan?' },
+          { id: 'alam-ciptaan-05', text: 'Kenapa manusia diciptakan berbeda-beda suku dan bangsa?' },
+          { id: 'alam-ciptaan-06', text: 'Kenapa kita tidak boleh menyakiti hewan tanpa alasan?' },
+          { id: 'alam-ciptaan-07', text: 'Bagaimana kita bisa melihat kebesaran Allah melalui alam?' },
+        ]
+      },
+      {
+        id: 'rasa-ingin-tahu',
+        name: 'Pertanyaan Rasa Ingin Tahu Anak',
+        questions: [
+          { id: 'rasa-ingin-tahu-01', text: 'Apakah hewan juga beribadah kepada Allah?' },
+          { id: 'rasa-ingin-tahu-02', text: 'Kenapa ada orang yang kaya dan ada yang miskin?' },
+          { id: 'rasa-ingin-tahu-03', text: 'Kenapa kita harus belajar ilmu?' },
+          { id: 'rasa-ingin-tahu-04', text: 'Kenapa manusia harus bekerja untuk mendapatkan rezeki?' },
+          { id: 'rasa-ingin-tahu-05', text: 'Kenapa ada orang yang baik dan ada yang jahat?' },
+          { id: 'rasa-ingin-tahu-06', text: 'Kenapa Allah menciptakan begitu banyak jenis makhluk?' },
+          { id: 'rasa-ingin-tahu-07', text: 'Bagaimana alam menunjukkan kebesaran Allah?' },
+        ]
+      },
+    ]
+  },
+];
+
+const AJARKAN_POPULAR = [
+  { questionId: 'siapa-allah-01', text: 'Siapa itu Allah?' },
+  { questionId: 'sholat-02', text: 'Kenapa kita harus sholat?' },
+  { questionId: 'puasa-ramadan-02', text: 'Kenapa kita berpuasa di bulan Ramadan?' },
+  { questionId: 'kejujuran-01', text: 'Kenapa harus jujur?' },
+  { questionId: 'emosi-perasaan-07', text: 'Apa yang harus dilakukan saat merasa takut?' },
+  { questionId: 'keluarga-hubungan-01', text: 'Kenapa kita harus sayang dan hormat kepada orang tua?' },
+  { questionId: 'alam-ciptaan-01', text: 'Siapa yang menciptakan langit, bumi, dan semua isinya?' },
+];
+
+
 const JELAJAHI_BATCH_SIZE = 15;
 let jelajahiAllVerses    = [];   // full verse array from API
 let jelajahiLoadedUpTo   = 0;    // how many verse slides rendered so far
@@ -644,7 +1159,7 @@ function openShareSheet(verse) {
 
   // Show/hide question toggle based on mode
   const qToggle = document.getElementById('share-toggle-question');
-  if (currentMode === 'jelajahi' || !currentFeeling) {
+  if (currentMode === 'jelajahi' || currentMode === 'ajarkan' || !currentFeeling) {
     qToggle.style.display = 'none';
   } else {
     qToggle.style.display = '';
@@ -1480,12 +1995,13 @@ function showLoading() {
 
   const carousel = document.getElementById('verses-carousel');
 
-  if (currentMode === 'jelajahi') {
-    // Jelajahi loading: simple centered spinner, no user chat bubble
+  if (currentMode === 'jelajahi' || currentMode === 'ajarkan') {
+    // Centered spinner loading (no user chat bubble)
+    const icon = currentMode === 'ajarkan' ? '🌙' : '📜';
     carousel.innerHTML = `
       <div class="verse-slide">
         <div class="jelajahi-loading">
-          <span class="jl-icon">📜</span>
+          <span class="jl-icon">${icon}</span>
           <span class="ls-step-wrap"><span class="ls-step-text" id="loading-step-text"></span></span>
         </div>
       </div>
@@ -1710,6 +2226,8 @@ function updateCounter() {
   if (currentCardIndex === 0) {
     if (currentMode === 'jelajahi') {
       el.textContent = jelajahiSurahInfo ? jelajahiSurahInfo.name : 'Info Surah';
+    } else if (currentMode === 'ajarkan') {
+      el.textContent = 'Ajarkan Anakku';
     } else {
       el.textContent = currentMode === 'panduan' ? 'Penjelasan' : 'Refleksi';
     }
@@ -1864,6 +2382,7 @@ function showAppBubble(text, btnLabel, btnAction) {
 function getParentView() {
   if (currentMode === 'jelajahi') return 'jelajahi-view';
   if (currentMode === 'panduan')  return 'panduan-view';
+  if (currentMode === 'ajarkan')  return 'ajarkan-view';
   return 'selection-view';
 }
 
@@ -1877,7 +2396,8 @@ function showError(message = 'Terjadi kesalahan. Silakan coba lagi.') {
 
 function showNotRelevant(message) {
   const btnLabel = currentMode === 'jelajahi' ? '← Coba cari lagi'
-    : currentMode === 'panduan' ? '← Ajukan pertanyaan lain' : '← Ceritakan perasaanmu';
+    : currentMode === 'panduan' ? '← Ajukan pertanyaan lain'
+    : currentMode === 'ajarkan' ? '← Coba pertanyaan lain' : '← Ceritakan perasaanmu';
   showAppBubble(
     `🤔 ${escapeHtml(message)}`,
     btnLabel,
@@ -2216,9 +2736,10 @@ function renderVOTD(verse, container) {
 function selectMode(mode) {
   currentMode = mode;
   logEvent('mode_selected', { mode });
-  if (mode === 'jelajahi')     switchView('jelajahi-view');
-  else if (mode === 'panduan') switchView('panduan-view');
-  else                         switchView('selection-view');
+  if (mode === 'jelajahi')      switchView('jelajahi-view');
+  else if (mode === 'panduan')  switchView('panduan-view');
+  else if (mode === 'ajarkan')  switchView('ajarkan-view');
+  else                          switchView('selection-view');
 }
 
 // ── Landing Card Clicks ─────────────────────────────────────────────────
@@ -2762,6 +3283,786 @@ function scrollCarouselTo(index) {
   carousel.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+//  AJARKAN ANAKKU — Functions
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ── Render Input View ─────────────────────────────────────────────────────────
+
+function renderAjarkanView() {
+  renderAjarkanAgePills();
+  renderAjarkanPopular();
+  renderAjarkanCategories();
+  initAjarkanSearch();
+  initAjarkanFilter();
+}
+
+function renderAjarkanAgePills() {
+  document.querySelectorAll('.ak-age-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const age = pill.dataset.age;
+      ajarkanAgeGroup = age;
+      document.querySelectorAll('.ak-age-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      logEvent(age === 'under7' ? 'ajarkan_age_under7_selected' : 'ajarkan_age_7plus_selected');
+      // Remove warning if any
+      const warn = document.querySelector('.ak-age-warning');
+      if (warn) warn.remove();
+    });
+  });
+}
+
+function renderAjarkanPopular() {
+  const container = document.getElementById('ak-popular-pills');
+  if (!container) return;
+  container.innerHTML = '';
+  AJARKAN_POPULAR.forEach(q => {
+    const pill = document.createElement('button');
+    pill.className = 'ak-popular-pill';
+    pill.textContent = q.text;
+    pill.addEventListener('click', () => {
+      if (!ensureAjarkanAge()) return;
+      logEvent('ajarkan_question_selected', { question_id: q.questionId, source: 'popular' });
+      fetchAjarkanPreset(q.questionId);
+    });
+    container.appendChild(pill);
+  });
+}
+
+function renderAjarkanCategories() {
+  const grid = document.getElementById('ak-category-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  AJARKAN_CATEGORIES.forEach(cat => {
+    const total = cat.subcategories.reduce((s, sc) => s + sc.questions.length, 0);
+    const card = document.createElement('button');
+    card.className = 'ak-category-card';
+    card.innerHTML = `
+      <span class="ak-category-emoji">${cat.emoji}</span>
+      <span class="ak-category-label">${cat.label}</span>
+      <span class="ak-category-count">${total} pertanyaan</span>
+    `;
+    card.addEventListener('click', () => {
+      logEvent('ajarkan_category_tapped', { category: cat.id });
+      expandAjarkanCategory(cat.id);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function expandAjarkanCategory(catId) {
+  ajarkanExpandedCatId = catId;
+  const cat = AJARKAN_CATEGORIES.find(c => c.id === catId);
+  if (!cat) return;
+
+  const container = document.getElementById('ajarkan-expanded');
+  container.innerHTML = `
+    <div class="panduan-expanded-inner">
+      <button class="panduan-expanded-back" id="ak-expanded-back-btn">
+        ${BACK_ARROW_SVG} Kembali
+      </button>
+      <div class="panduan-expanded-header">
+        <span class="panduan-expanded-emoji">${cat.emoji}</span>
+        <h3 class="panduan-expanded-title">${cat.label}</h3>
+        <p class="panduan-expanded-desc">${cat.subcategories.length} topik</p>
+      </div>
+      <div class="sub-questions-list" id="ak-subcategory-list"></div>
+    </div>
+  `;
+
+  const list = container.querySelector('#ak-subcategory-list');
+  cat.subcategories.forEach(sub => {
+    // Subcategory header
+    const header = document.createElement('div');
+    header.className = 'ak-subcategory-header';
+    header.style.cssText = 'font-size:13px;font-weight:700;color:var(--text-mid);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px;';
+    header.textContent = `${sub.name} (${sub.questions.length})`;
+    list.appendChild(header);
+
+    // Questions
+    sub.questions.forEach(q => {
+      const row = document.createElement('button');
+      row.className = 'sub-question-row';
+      row.innerHTML = `<span>${escapeHtml(q.text)}</span>${CHEVRON_RIGHT_SVG}`;
+      row.addEventListener('click', () => {
+        if (!ensureAjarkanAge()) return;
+        logEvent('ajarkan_question_selected', { question_id: q.id, source: 'category' });
+        fetchAjarkanPreset(q.id);
+      });
+      list.appendChild(row);
+    });
+  });
+
+  container.classList.remove('hidden');
+  container.classList.remove('slide-down');
+  container.classList.add('slide-up');
+
+  container.querySelector('#ak-expanded-back-btn').addEventListener('click', collapseAjarkanCategory);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function collapseAjarkanCategory() {
+  ajarkanExpandedCatId = null;
+  const container = document.getElementById('ajarkan-expanded');
+  container.classList.remove('slide-up');
+  container.classList.add('slide-down');
+  setTimeout(() => {
+    container.classList.add('hidden');
+    container.classList.remove('slide-down');
+  }, 250);
+}
+
+function ensureAjarkanAge() {
+  if (ajarkanAgeGroup) return true;
+  // Show warning
+  if (!document.querySelector('.ak-age-warning')) {
+    const warn = document.createElement('p');
+    warn.className = 'ak-age-warning';
+    warn.textContent = 'Pilih kelompok usia anak dulu';
+    const selector = document.querySelector('.ak-age-selector');
+    if (selector) selector.after(warn);
+  }
+  return false;
+}
+
+function initAjarkanSearch() {
+  const input   = document.getElementById('ajarkan-input');
+  const clear   = document.getElementById('ajarkan-clear');
+  const submit  = document.getElementById('ajarkan-submit');
+  if (!input || !submit) return;
+
+  input.addEventListener('input', () => {
+    const hasText = input.value.trim().length > 0;
+    clear.classList.toggle('hidden', !hasText);
+    submit.classList.toggle('hidden', !hasText);
+  });
+
+  clear.addEventListener('click', () => {
+    input.value = '';
+    clear.classList.add('hidden');
+    submit.classList.add('hidden');
+    input.focus();
+  });
+
+  submit.addEventListener('click', () => {
+    const query = input.value.trim();
+    if (!query) return;
+    if (!ensureAjarkanAge()) return;
+    logEvent('ajarkan_search_started', { query_length: query.length });
+    fetchAjarkanFreeform(query);
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit.click();
+    }
+  });
+}
+
+function initAjarkanFilter() {
+  const filterInput = document.getElementById('ak-filter-input');
+  if (!filterInput) return;
+
+  let filterTimeout;
+  filterInput.addEventListener('input', () => {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+      const query = filterInput.value.trim().toLowerCase();
+      filterAjarkanQuestions(query);
+    }, 200);
+  });
+}
+
+function filterAjarkanQuestions(query) {
+  const grid = document.getElementById('ak-category-grid');
+  if (!grid) return;
+
+  if (!query || query.length < 2) {
+    // Show categories, hide filtered list
+    grid.style.display = '';
+    const existing = document.getElementById('ak-filtered-results');
+    if (existing) existing.remove();
+    return;
+  }
+
+  logEvent('ajarkan_question_filtered', { query_length: query.length });
+
+  // Hide category grid
+  grid.style.display = 'none';
+
+  // Build flat filtered list
+  const matches = [];
+  AJARKAN_CATEGORIES.forEach(cat => {
+    cat.subcategories.forEach(sub => {
+      sub.questions.forEach(q => {
+        if (q.text.toLowerCase().includes(query)) {
+          matches.push({ ...q, category: cat.label, subcategory: sub.name });
+        }
+      });
+    });
+  });
+
+  let container = document.getElementById('ak-filtered-results');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'ak-filtered-results';
+    container.className = 'ak-filtered-list';
+    grid.parentNode.appendChild(container);
+  }
+  container.innerHTML = '';
+
+  if (matches.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">Tidak ada pertanyaan yang cocok</p>';
+    return;
+  }
+
+  matches.slice(0, 20).forEach(m => {
+    const item = document.createElement('button');
+    item.className = 'ak-filtered-item';
+    item.innerHTML = `<span>${escapeHtml(m.text)}</span><span class="ak-filtered-cat">${m.subcategory}</span>`;
+    item.addEventListener('click', () => {
+      if (!ensureAjarkanAge()) return;
+      logEvent('ajarkan_question_selected', { question_id: m.id, source: 'filter' });
+      fetchAjarkanPreset(m.id);
+    });
+    container.appendChild(item);
+  });
+
+  if (matches.length > 20) {
+    const more = document.createElement('p');
+    more.style.cssText = 'text-align:center;color:var(--text-muted);font-size:12px;padding:8px;';
+    more.textContent = `+${matches.length - 20} pertanyaan lainnya`;
+    container.appendChild(more);
+  }
+}
+
+// ── Fetch Functions ───────────────────────────────────────────────────────────
+
+async function fetchAjarkanPreset(questionId) {
+  ajarkanCurrentQId = questionId;
+  // Find question text for display
+  let questionText = '';
+  for (const cat of AJARKAN_CATEGORIES) {
+    for (const sub of cat.subcategories) {
+      const q = sub.questions.find(q => q.id === questionId);
+      if (q) { questionText = q.text; break; }
+    }
+    if (questionText) break;
+  }
+  currentFeeling = questionText;
+  switchView('verses-view');
+  showLoading();
+
+  try {
+    const res = await fetch('/api/get-ayat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'ajarkan',
+        questionId,
+        ageGroup: ajarkanAgeGroup,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+    if (data.error === 'not_available') {
+      logEvent('ajarkan_not_available', { question_id: questionId });
+      showNotRelevant(data.message || 'Pertanyaan ini belum tersedia. Silakan coba pertanyaan lain.');
+    } else {
+      logEvent('ajarkan_search_completed', { question_id: questionId, age_group: ajarkanAgeGroup });
+      ajarkanCurrentData = data;
+      renderAjarkanResults(data);
+    }
+  } catch (err) {
+    stopLoadingSteps();
+    logEvent('ajarkan_search_completed', { outcome: 'error' });
+    showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+  }
+}
+
+async function fetchAjarkanFreeform(query) {
+  ajarkanCurrentQId = null;
+  currentFeeling = query;
+  switchView('verses-view');
+  showLoading();
+
+  try {
+    const res = await fetch('/api/get-ayat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'ajarkan',
+        feeling: query,
+        ageGroup: ajarkanAgeGroup,
+        freeform: true,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+
+    if (data.error === 'not_available') {
+      logEvent('ajarkan_not_available', { query_length: query.length });
+      // Show suggestions if available
+      if (data.suggestions && data.suggestions.length > 0) {
+        showAjarkanSuggestions(data.message, data.suggestions);
+      } else {
+        showNotRelevant(data.message || 'Pertanyaan ini belum tersedia.');
+      }
+    } else {
+      ajarkanCurrentQId = data.question_id;
+      ajarkanCurrentData = data;
+      if (data.also_relevant) {
+        logEvent('ajarkan_search_partial_match', { question_id: data.question_id });
+      } else {
+        logEvent('ajarkan_search_completed', { question_id: data.question_id, age_group: ajarkanAgeGroup });
+      }
+      renderAjarkanResults(data);
+    }
+  } catch (err) {
+    stopLoadingSteps();
+    logEvent('ajarkan_search_completed', { outcome: 'error' });
+    showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+  }
+}
+
+function showAjarkanSuggestions(message, suggestions) {
+  stopLoadingSteps();
+  const carousel = document.getElementById('verses-carousel');
+  carousel.innerHTML = `
+    <div class="verse-slide">
+      <div class="intro-chat">
+        <div class="chat-thread">
+          <div class="chat-bubble chat-bubble--app">
+            <p style="margin-bottom:12px;">${escapeHtml(message)}</p>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Mungkin maksudmu:</p>
+            <div id="ak-suggestion-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+        </div>
+        <button class="find-more-btn" id="ak-suggestions-back">← Coba pertanyaan lain</button>
+      </div>
+    </div>
+  `;
+  const list = carousel.querySelector('#ak-suggestion-list');
+  suggestions.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'sub-question-row';
+    btn.style.cssText = 'font-size:13px;padding:10px 12px;';
+    btn.innerHTML = `<span>${escapeHtml(s.text)}</span>${CHEVRON_RIGHT_SVG}`;
+    btn.addEventListener('click', () => {
+      logEvent('ajarkan_suggestion_tapped', { question_id: s.questionId });
+      fetchAjarkanPreset(s.questionId);
+    });
+    list.appendChild(btn);
+  });
+  carousel.querySelector('#ak-suggestions-back').addEventListener('click', () => switchView('ajarkan-view'));
+}
+
+// ── Result Renderers ──────────────────────────────────────────────────────────
+
+function renderAjarkanResults(data) {
+  stopLoadingSteps();
+  const carousel = document.getElementById('verses-carousel');
+  carousel.innerHTML = '';
+
+  // Ensure pembuka_percakapan is an object (may come as string from DB)
+  if (typeof data.pembuka_percakapan === 'string') {
+    try { data.pembuka_percakapan = JSON.parse(data.pembuka_percakapan); } catch { data.pembuka_percakapan = {}; }
+  }
+
+  const verses = data.ayat || [];
+  // Cards: Penjelasan + Ide Ngobrol + Coba Lakukan + N verse cards
+  totalVerseCards = 3 + verses.length;
+  currentCardIndex = 0;
+
+  // Card 0: Penjelasan
+  carousel.appendChild(buildAjarkanPenjelasanCard(data, verses));
+  // Card 1: Ide Ngobrol
+  carousel.appendChild(buildAjarkanNgobrolCard(data));
+  // Card 2: Coba Lakukan
+  carousel.appendChild(buildAjarkanAktivitasCard(data));
+  // Cards 3-N: Verse cards
+  verses.forEach((v, i) => {
+    carousel.appendChild(buildAjarkanVerseCard(v, data, i));
+  });
+
+  renderDots();
+  updateCounter();
+
+  // Set up carousel snapping
+  setupCarouselSnapping();
+
+  // Hide actions/feedback for ajarkan
+  document.getElementById('verse-actions').classList.add('hidden');
+  document.getElementById('verse-feedback').classList.add('hidden');
+
+  // Typewriter on penjelasan_anak
+  const typeEl = document.getElementById('ak-penjelasan-text');
+  if (typeEl && data.penjelasan_anak) {
+    typewriterActive = true;
+    typewriteAjarkan(typeEl, data.penjelasan_anak, 12);
+  }
+}
+
+function typewriteAjarkan(el, text, speed) {
+  el.innerHTML = '';
+  let i = 0;
+  const cursor = document.createElement('span');
+  cursor.className = 'ak-typewriter-cursor';
+  el.appendChild(cursor);
+
+  const timer = setInterval(() => {
+    if (!typewriterActive) { clearInterval(timer); cursor.remove(); return; }
+    if (i < text.length) {
+      cursor.before(document.createTextNode(text.charAt(i)));
+      i++;
+    } else {
+      clearInterval(timer);
+      setTimeout(() => cursor.remove(), 1200);
+    }
+  }, speed);
+}
+
+function setupCarouselSnapping() {
+  const carousel = document.getElementById('verses-carousel');
+  let touchStartX = 0, isDragging = false;
+
+  carousel.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    isDragging = true;
+  }, { passive: true });
+
+  carousel.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      const newIdx = diff > 0
+        ? Math.min(currentCardIndex + 1, totalVerseCards - 1)
+        : Math.max(currentCardIndex - 1, 0);
+      scrollCarouselTo(newIdx);
+    }
+  }, { passive: true });
+}
+
+// ── Card Builders ─────────────────────────────────────────────────────────────
+
+function buildAjarkanPenjelasanCard(data, verses) {
+  const slide = document.createElement('div');
+  slide.className = 'verse-slide';
+
+  const firstVerse = verses[0];
+  let verseTeaserHtml = '';
+  if (firstVerse) {
+    verseTeaserHtml = `
+      <div class="ak-verse-teaser">
+        <div class="ak-verse-teaser-label">Referensi Ayat</div>
+        <div class="ak-verse-teaser-row" data-ak-toggle="vt">
+          <span class="ak-verse-teaser-name">${escapeHtml(firstVerse.surah_name || '')} \u2022 Ayat ${firstVerse.ayah || ''}</span>
+          <span class="ak-verse-teaser-action">lihat ayat <span class="ak-verse-teaser-chevron">\u25BC</span></span>
+        </div>
+        <div class="ak-verse-teaser-detail">
+          ${firstVerse.verse_relevance ? `<div style="display:flex;gap:8px;margin-bottom:14px;"><span style="font-size:14px;flex-shrink:0;margin-top:2px;">\uD83D\uDCCC</span><span style="font-size:13.5px;font-style:italic;color:var(--text-mid);line-height:1.6;">${escapeHtml(firstVerse.verse_relevance)}</span></div>` : ''}
+          <p class="ak-verse-arabic">${firstVerse.arabic || ''}</p>
+          <p class="ak-verse-translation">${escapeHtml(firstVerse.translation || '')}</p>
+          <div class="ak-action-row">
+            <button class="ak-action-btn" data-ak-audio="${firstVerse.surah || ''}:${firstVerse.ayah || ''}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
+            </button>
+            <button class="ak-action-btn" data-ak-share="${0}">Bagikan Ayat</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const ageLabel = (data.age_group === 'under7') ? 'Di bawah 7 tahun' : '7 tahun ke atas';
+  const otherAge = (data.age_group === 'under7') ? '7plus' : 'under7';
+  const otherLabel = (data.age_group === 'under7') ? 'Ganti ke 7+' : 'Ganti ke <7';
+
+  slide.innerHTML = `
+    <div class="ak-age-badge" data-ak-switch-age="${otherAge}" title="${otherLabel}">${ageLabel}</div>
+    <div class="ak-card"><div class="ak-card-body">
+      <div class="ak-section-label"><span class="ak-sl-icon">\uD83E\uDDD2</span> Penjelasan untuk anak</div>
+      <h2 class="ak-intro-question">${escapeHtml(data.question_text || currentFeeling)}</h2>
+      <div style="position:relative;">
+        <span class="ak-explanation-text" id="ak-penjelasan-text"></span>
+        <span class="ak-inline-salin" data-ak-copy="penjelasan"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
+      </div>
+      ${verseTeaserHtml}
+    </div></div>
+    <div class="ak-swipe-cta" data-ak-goto="1">
+      <span class="ak-swipe-cta-icon">\uD83D\uDCAC</span>
+      <span class="ak-swipe-cta-text">Ide ngobrol bareng anak</span>
+      <span class="ak-swipe-cta-arrow">Geser \u2192</span>
+    </div>
+  `;
+
+  wireAjarkanCardEvents(slide, data, verses);
+  return slide;
+}
+
+function buildAjarkanNgobrolCard(data) {
+  const slide = document.createElement('div');
+  slide.className = 'verse-slide';
+  const p = data.pembuka_percakapan || {};
+
+  slide.innerHTML = `
+    <div class="ak-card"><div class="ak-card-body">
+      <div class="ak-section-label"><span class="ak-sl-icon">\uD83D\uDCAC</span> Ide ngobrol bareng anak</div>
+
+      <div class="ak-pembuka-opt">
+        <div class="ak-approach-label">Mulai dari Pertanyaan</div>
+        <div style="position:relative;">
+          <span class="ak-pembuka-text">${escapeHtml(p.pertanyaan || '')}</span>
+          <span class="ak-inline-salin" data-ak-copy="pertanyaan"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
+        </div>
+        <p class="ak-panduan-text">${escapeHtml(p.panduan_pertanyaan || '')}</p>
+        <div class="ak-expand-row" data-ak-expand>
+          <span class="ak-expand-row-icon">\uD83C\uDF19</span>
+          <span class="ak-expand-row-label">Lihat penjelasan untuk anak</span>
+          <span class="ak-expand-row-chevron">\u25BC</span>
+        </div>
+        <div class="ak-expand-content">
+          <p class="ak-expand-text">${escapeHtml(data.penjelasan_anak || '')}</p>
+        </div>
+      </div>
+
+      <div class="ak-pembuka-opt">
+        <div class="ak-approach-label">Mulai dari Cerita</div>
+        <div style="position:relative;">
+          <span class="ak-pembuka-text">${escapeHtml(p.cerita || '')}</span>
+          <span class="ak-inline-salin" data-ak-copy="cerita"><span class="ak-salin-icon">\uD83D\uDCCB</span><span class="ak-salin-tooltip">Tersalin!</span></span>
+        </div>
+        <p class="ak-panduan-text">${escapeHtml(p.panduan_cerita || '')}</p>
+        <div class="ak-expand-row" data-ak-expand>
+          <span class="ak-expand-row-icon">\uD83C\uDF19</span>
+          <span class="ak-expand-row-label">Lihat penjelasan untuk anak</span>
+          <span class="ak-expand-row-chevron">\u25BC</span>
+        </div>
+        <div class="ak-expand-content">
+          <p class="ak-expand-text">${escapeHtml(data.penjelasan_anak || '')}</p>
+        </div>
+      </div>
+
+      <div class="ak-mini-cta" data-ak-goto="2">
+        <span class="ak-mini-cta-icon">\u2728</span>
+        <span class="ak-mini-cta-text">Coba lakukan bersama anak</span>
+        <span class="ak-mini-cta-arrow">\u2192</span>
+      </div>
+    </div></div>
+  `;
+
+  wireAjarkanCardEvents(slide, data);
+  return slide;
+}
+
+function buildAjarkanAktivitasCard(data) {
+  const slide = document.createElement('div');
+  slide.className = 'verse-slide';
+  const p = data.pembuka_percakapan || {};
+  const hasVerses = (data.ayat || []).length > 0;
+
+  slide.innerHTML = `
+    <div class="ak-card"><div class="ak-card-body">
+      <div class="ak-section-label"><span class="ak-sl-icon">\u2728</span> Coba lakukan bersama anak</div>
+      <div class="ak-activity-box"><p class="ak-activity-text">${data.aktivitas_bersama || ''}</p></div>
+
+      <div class="ak-expand-row" data-ak-expand>
+        <span class="ak-expand-row-icon">\uD83C\uDF19</span>
+        <span class="ak-expand-row-label">Lihat penjelasan untuk anak</span>
+        <span class="ak-expand-row-chevron">\u25BC</span>
+      </div>
+      <div class="ak-expand-content">
+        <p class="ak-expand-text">${escapeHtml(data.penjelasan_anak || '')}</p>
+      </div>
+      <div class="ak-expand-row" data-ak-expand>
+        <span class="ak-expand-row-icon">\uD83D\uDCAC</span>
+        <span class="ak-expand-row-label">Lihat kalimat pembuka untuk anak</span>
+        <span class="ak-expand-row-chevron">\u25BC</span>
+      </div>
+      <div class="ak-expand-content">
+        <p class="ak-xref-approach">Mulai dari Pertanyaan</p>
+        <p class="ak-xref-pembuka">${escapeHtml(p.pertanyaan || '')}</p>
+        <p class="ak-xref-panduan">${escapeHtml(p.panduan_pertanyaan || '')}</p>
+      </div>
+
+      ${hasVerses ? `<div class="ak-mini-cta" data-ak-goto="3">
+        <span class="ak-mini-cta-icon">\uD83D\uDCD6</span>
+        <span class="ak-mini-cta-text">Referensi ayat pendukung lainnya</span>
+        <span class="ak-mini-cta-arrow">\u2192</span>
+      </div>` : ''}
+    </div></div>
+  `;
+
+  wireAjarkanCardEvents(slide, data);
+  return slide;
+}
+
+function buildAjarkanVerseCard(verse, data, index) {
+  const slide = document.createElement('div');
+  slide.className = 'verse-slide';
+  const p = data.pembuka_percakapan || {};
+  // Alternate between pertanyaan and cerita for cross-refs
+  const isEven = index % 2 === 0;
+  const approachLabel = isEven ? 'Mulai dari Cerita' : 'Mulai dari Pertanyaan';
+  const approachText = isEven ? (p.cerita || '') : (p.pertanyaan || '');
+  const approachGuide = isEven ? (p.panduan_cerita || '') : (p.panduan_pertanyaan || '');
+
+  slide.innerHTML = `
+    <div class="ak-card"><div class="ak-card-body">
+      <div class="ak-section-label"><span class="ak-sl-icon">\uD83D\uDCD6</span> Ayat dari Al-Qur'an</div>
+      ${verse.verse_relevance ? `
+        <div class="ak-verse-relevance">
+          <span class="ak-verse-relevance-icon">\uD83D\uDCCC</span>
+          <p class="ak-verse-relevance-text">${escapeHtml(verse.verse_relevance)}</p>
+        </div>` : ''}
+      <div class="ak-verse-row" data-ak-toggle="verse">
+        <span class="ak-verse-name">${escapeHtml(verse.surah_name || '')} \u2022 Ayat ${verse.ayah || ''}</span>
+        <span class="ak-verse-toggle">lihat ayat <span class="ak-verse-chevron">\u25BC</span></span>
+      </div>
+      <div class="ak-verse-dropdown">
+        <p class="ak-verse-arabic">${verse.arabic || ''}</p>
+        <p class="ak-verse-translation">${escapeHtml(verse.translation || '')}</p>
+      </div>
+      <div class="ak-action-row">
+        <button class="ak-action-btn" data-ak-audio="${verse.surah || ''}:${verse.ayah || ''}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Dengarkan
+        </button>
+        <button class="ak-action-btn" data-ak-share="${index}">Bagikan Ayat</button>
+      </div>
+      <div class="ak-verse-refs">
+        <div class="ak-expand-row" data-ak-expand>
+          <span class="ak-expand-row-icon">\uD83C\uDF19</span>
+          <span class="ak-expand-row-label">Lihat penjelasan untuk anak</span>
+          <span class="ak-expand-row-chevron">\u25BC</span>
+        </div>
+        <div class="ak-expand-content">
+          <p class="ak-expand-text">${escapeHtml(data.penjelasan_anak || '')}</p>
+        </div>
+        <div class="ak-expand-row" data-ak-expand>
+          <span class="ak-expand-row-icon">\uD83D\uDCAC</span>
+          <span class="ak-expand-row-label">Lihat kalimat pembuka untuk anak</span>
+          <span class="ak-expand-row-chevron">\u25BC</span>
+        </div>
+        <div class="ak-expand-content">
+          <p class="ak-xref-approach">${approachLabel}</p>
+          <p class="ak-xref-pembuka">${escapeHtml(approachText)}</p>
+          <p class="ak-xref-panduan">${escapeHtml(approachGuide)}</p>
+        </div>
+        <div class="ak-expand-row" data-ak-expand>
+          <span class="ak-expand-row-icon">\u2728</span>
+          <span class="ak-expand-row-label">Lihat aktivitas bersama anak</span>
+          <span class="ak-expand-row-chevron">\u25BC</span>
+        </div>
+        <div class="ak-expand-content">
+          <p class="ak-expand-text">${data.aktivitas_bersama || ''}</p>
+        </div>
+      </div>
+    </div></div>
+  `;
+
+  wireAjarkanCardEvents(slide, data);
+  return slide;
+}
+
+// ── Card Event Wiring ─────────────────────────────────────────────────────────
+
+function wireAjarkanCardEvents(slide, data, verses) {
+  // Expand/collapse rows
+  slide.querySelectorAll('[data-ak-expand]').forEach(row => {
+    row.addEventListener('click', () => {
+      row.classList.toggle('open');
+      const content = row.nextElementSibling;
+      if (content) content.classList.toggle('open');
+    });
+  });
+
+  // Verse teaser toggle
+  slide.querySelectorAll('[data-ak-toggle="vt"]').forEach(row => {
+    row.addEventListener('click', () => {
+      const detail = row.nextElementSibling;
+      if (detail) detail.classList.toggle('open');
+      row.querySelector('.ak-verse-teaser-action')?.classList.toggle('open');
+    });
+  });
+
+  // Verse dropdown toggle
+  slide.querySelectorAll('[data-ak-toggle="verse"]').forEach(row => {
+    row.addEventListener('click', () => {
+      const dd = row.nextElementSibling;
+      if (dd) dd.classList.toggle('open');
+      row.querySelector('.ak-verse-toggle')?.classList.toggle('open');
+      logEvent('ajarkan_verse_expanded');
+    });
+  });
+
+  // Inline copy
+  slide.querySelectorAll('[data-ak-copy]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.akCopy;
+      let text = '';
+      if (key === 'penjelasan') text = data.penjelasan_anak || '';
+      else if (key === 'pertanyaan') text = (data.pembuka_percakapan || {}).pertanyaan || '';
+      else if (key === 'cerita') text = (data.pembuka_percakapan || {}).cerita || '';
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        const tip = btn.querySelector('.ak-salin-tooltip');
+        if (tip) tip.classList.add('show');
+        logEvent(key === 'penjelasan' ? 'ajarkan_penjelasan_copied' : 'ajarkan_conversation_copied', { key });
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          if (tip) tip.classList.remove('show');
+        }, 1400);
+      }).catch(() => {});
+    });
+  });
+
+  // CTAs (goto)
+  slide.querySelectorAll('[data-ak-goto]').forEach(el => {
+    el.addEventListener('click', () => {
+      const target = parseInt(el.dataset.akGoto, 10);
+      scrollCarouselTo(target);
+      logEvent('ajarkan_card_swiped', { to: target });
+    });
+  });
+
+  // Audio buttons
+  slide.querySelectorAll('[data-ak-audio]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [surah, ayah] = btn.dataset.akAudio.split(':');
+      if (surah && ayah) {
+        playAudio({ surah: parseInt(surah), ayah: parseInt(ayah) }, btn);
+      }
+    });
+  });
+
+  // Share buttons
+  slide.querySelectorAll('[data-ak-share]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.akShare, 10);
+      const allVerses = data.ayat || [];
+      if (allVerses[idx]) openShareSheet(allVerses[idx]);
+    });
+  });
+
+  // Age switch badge — tap to toggle age group and re-fetch same question
+  slide.querySelectorAll('[data-ak-switch-age]').forEach(badge => {
+    badge.addEventListener('click', () => {
+      const newAge = badge.dataset.akSwitchAge;
+      if (!newAge || !ajarkanCurrentQId) return;
+      ajarkanAgeGroup = newAge;
+      // Update pills on the ajarkan-view too
+      document.querySelectorAll('.ak-age-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.age === newAge);
+      });
+      logEvent(newAge === 'under7' ? 'ajarkan_age_under7_selected' : 'ajarkan_age_7plus_selected', { source: 'badge' });
+      fetchAjarkanPreset(ajarkanCurrentQId);
+    });
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 // Verses-view back button → return to mode parent (or expanded card / juz list)
@@ -2783,6 +4084,8 @@ document.getElementById('back-btn').addEventListener('click', () => {
     const cardToExpand = expandedCardId;
     switchView('panduan-view');
     setTimeout(() => expandPanduanCard(cardToExpand), 50);
+  } else if (currentMode === 'ajarkan') {
+    switchView('ajarkan-view');
   } else {
     switchView(currentMode === 'panduan' ? 'panduan-view' : 'selection-view');
   }
@@ -2795,6 +4098,15 @@ document.getElementById('curhat-back-btn').addEventListener('click', () => switc
 document.getElementById('panduan-back-btn').addEventListener('click', () => {
   if (expandedCardId) {
     collapsePanduanCard();
+  } else {
+    switchView('landing-view');
+  }
+});
+
+// Ajarkan back → landing (or collapse expanded category)
+document.getElementById('ajarkan-back-btn').addEventListener('click', () => {
+  if (ajarkanExpandedCatId) {
+    collapseAjarkanCategory();
   } else {
     switchView('landing-view');
   }
@@ -2913,6 +4225,7 @@ renderSurahBrowser();
 initSearch();
 initPanduanSearch();
 initJelajahiSearch();
+renderAjarkanView();
 initVOTD();
 initA2HS();
 initAbout();
