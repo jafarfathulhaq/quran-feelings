@@ -98,7 +98,6 @@ module.exports = async function handler(req, res) {
 
   const now = new Date();
   const dayOfWeek = now.getUTCDay();
-  const currentHour = now.getUTCHours();
 
   const notificationType = SCHEDULE[dayOfWeek];
   if (!notificationType) {
@@ -113,10 +112,10 @@ module.exports = async function handler(req, res) {
     actions: copy.actions,
   });
 
+  // Hobby plan: daily cron sends to ALL subscribers at once
   const { data: subscribers, error: fetchError } = await supabase
     .from('push_subscriptions')
-    .select('id, endpoint, p256dh, auth')
-    .eq('notify_hour', currentHour);
+    .select('id, endpoint, p256dh, auth');
 
   if (fetchError) {
     console.error('send-notifications fetch error:', fetchError);
@@ -124,7 +123,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (!subscribers || subscribers.length === 0) {
-    return res.status(200).json({ sent: 0, reason: 'No subscribers for this hour' });
+    return res.status(200).json({ sent: 0, reason: 'No subscribers' });
   }
 
   let sent = 0;
