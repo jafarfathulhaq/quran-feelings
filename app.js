@@ -2188,9 +2188,11 @@ function showVerseActions() {
   if (!actionsEl.classList.contains('hidden')) return; // already shown
 
   const parentView = currentMode === 'jelajahi' ? 'jelajahi-view'
-    : currentMode === 'panduan' ? 'panduan-view' : 'selection-view';
+    : currentMode === 'panduan' ? 'panduan-view'
+    : currentMode === 'ajarkan' ? 'ajarkan-view' : 'selection-view';
   const moreLabel  = currentMode === 'jelajahi' ? 'Surah lain'
-    : currentMode === 'panduan' ? 'Topik lain' : 'Perasaan lain';
+    : currentMode === 'panduan' ? 'Topik lain'
+    : currentMode === 'ajarkan' ? 'Pertanyaan lain' : 'Perasaan lain';
 
   // Jelajahi doesn't have "try other verses" (no AI), just back button
   if (currentMode === 'jelajahi') {
@@ -3689,8 +3691,9 @@ function renderAjarkanResults(data) {
   renderDots();
   updateCounter();
 
-  // Set up carousel snapping
+  // Set up carousel snapping + scroll listener for index tracking
   setupCarouselSnapping();
+  carousel.addEventListener('scroll', onCarouselScroll, { passive: true });
 
   // Hide actions/feedback for ajarkan
   document.getElementById('verse-actions').classList.add('hidden');
