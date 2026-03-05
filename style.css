@@ -3432,9 +3432,9 @@ body.about-locked { overflow: hidden; }
 
 /* ── Category Grid ──────────────────────────────────── */
 .ak-category-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 0 16px 40px;
 }
 
