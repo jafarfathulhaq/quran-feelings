@@ -3282,7 +3282,19 @@ function loadNextJelajahiBatch() {
 function scrollCarouselTo(index) {
   const carousel = document.getElementById('verses-carousel');
   const slideWidth = carousel.offsetWidth;
-  carousel.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
+  // Use instant scroll — smooth conflicts with scroll-snap-type: x mandatory.
+  // Instant scrollTo doesn't fire scroll events, so we update state manually.
+  carousel.scrollTo({ left: index * slideWidth, behavior: 'instant' });
+  if (index !== currentCardIndex) {
+    currentCardIndex = index;
+    updateCounter();
+    updateDots();
+    updateProgressBar();
+    if (index > 0 && _swipeHintTimers.length > 0) clearSwipeHints();
+    stopCurrentAudio();
+    logEvent('verse_swiped', { slide_index: index, total: totalVerseCards });
+    if (index === totalVerseCards - 1) showVerseActions();
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
