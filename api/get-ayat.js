@@ -971,7 +971,7 @@ async function handleAjarkan(req, res, { feeling, ip }) {
 
       // Query ajarkan_queries table
       const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+      const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
       const queryRes = await fetch(
         `${supabaseUrl}/rest/v1/ajarkan_queries?question_id=eq.${encodeURIComponent(questionId)}&age_group=eq.${encodeURIComponent(ageGroup)}&select=*`,
@@ -1098,7 +1098,7 @@ Pick 1-2 most relevant subcategory slugs. Confidence = how sure you are that our
     // we'll send the subcategory slugs and let GPT pick from a provided list.
     // For this to work, we need the questions list. We'll query the DB for available questions.
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
     const subcatFilter = categoryMatch.matched_subcategories
       .map(s => `subcategory.eq.${encodeURIComponent(s)}`)
