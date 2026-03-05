@@ -3923,17 +3923,56 @@ body.about-locked { overflow: hidden; }
   .ak-swipe-cta, .ak-mini-cta { display: none; }
 }
 
-/* ── Card 1: Ide Ngobrol ────────────────────────────── */
-.ak-pembuka-opt {
+/* ── Card 1: Ngobrol Toggle ─────────────────────────── */
+.ak-ngobrol-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+.ak-ngobrol-toggle {
+  display: flex;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ak-blue-bg);
+  margin-bottom: 16px;
+}
+.ak-ngobrol-seg {
+  flex: 1;
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--ak-blue-dark);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-ngobrol-seg:first-child {
+  border-right: 1px solid var(--ak-blue-border);
+}
+.ak-ngobrol-seg:hover {
+  background: rgba(74, 127, 181, 0.08);
+}
+.ak-ngobrol-seg.active {
+  background: var(--ak-blue);
+  color: #fff;
+  font-weight: 600;
+}
+.ak-ngobrol-panel {
   background: var(--ak-blue-bg);
   border: 1px solid var(--ak-blue-border);
   border-radius: var(--radius-sm);
   padding: 16px;
   margin-bottom: 12px;
+  animation: akGatedReveal 0.3s ease both;
 }
-.ak-pembuka-opt:last-of-type {
-  margin-bottom: 0;
+.ak-ngobrol-hidden {
+  display: none;
 }
+
 .ak-approach-label {
   font-size: 14px;
   font-weight: 700;

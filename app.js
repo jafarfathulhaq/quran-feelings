@@ -3809,13 +3809,16 @@ function buildAjarkanNgobrolCard(data) {
 
   slide.innerHTML = `
     <div class="ak-card"><div class="ak-card-body">
-      <div class="ak-section-label"><span class="ak-sl-icon">\uD83D\uDCAC</span> Ide ngobrol bareng anak</div>
+      <div class="ak-section-label"><span class="ak-sl-icon">\uD83D\uDCAC</span> Cara ngobrol dengan anak</div>
 
-      <div class="ak-pembuka-opt">
-        <div class="ak-approach-label">Mulai dari Pertanyaan</div>
-        <div style="position:relative;">
-          <span class="ak-pembuka-text">${escapeHtml(p.pertanyaan || '')}</span>
-        </div>
+      <p class="ak-ngobrol-hint">Pilih cara memulai:</p>
+      <div class="ak-ngobrol-toggle">
+        <button class="ak-ngobrol-seg active" data-ak-ngobrol="pertanyaan">\u2753 Pertanyaan</button>
+        <button class="ak-ngobrol-seg" data-ak-ngobrol="cerita">\uD83D\uDCD6 Cerita</button>
+      </div>
+
+      <div class="ak-ngobrol-panel" id="ak-ngobrol-pertanyaan">
+        <span class="ak-pembuka-text">${escapeHtml(p.pertanyaan || '')}</span>
         <p class="ak-panduan-text">${escapeHtml(p.panduan_pertanyaan || '')}</p>
         <div class="ak-expand-row" data-ak-expand>
           <span class="ak-expand-row-icon">\uD83C\uDF19</span>
@@ -3827,11 +3830,8 @@ function buildAjarkanNgobrolCard(data) {
         </div>
       </div>
 
-      <div class="ak-pembuka-opt">
-        <div class="ak-approach-label">Mulai dari Cerita</div>
-        <div style="position:relative;">
-          <span class="ak-pembuka-text">${escapeHtml(p.cerita || '')}</span>
-        </div>
+      <div class="ak-ngobrol-panel ak-ngobrol-hidden" id="ak-ngobrol-cerita">
+        <span class="ak-pembuka-text">${escapeHtml(p.cerita || '')}</span>
         <p class="ak-panduan-text">${escapeHtml(p.panduan_cerita || '')}</p>
         <div class="ak-expand-row" data-ak-expand>
           <span class="ak-expand-row-icon">\uD83C\uDF19</span>
@@ -3850,6 +3850,18 @@ function buildAjarkanNgobrolCard(data) {
       </div>
     </div></div>
   `;
+
+  // Wire ngobrol toggle
+  slide.querySelectorAll('[data-ak-ngobrol]').forEach(seg => {
+    seg.addEventListener('click', () => {
+      const which = seg.dataset.akNgobrol;
+      slide.querySelectorAll('.ak-ngobrol-seg').forEach(s => s.classList.remove('active'));
+      seg.classList.add('active');
+      slide.querySelectorAll('.ak-ngobrol-panel').forEach(p => p.classList.add('ak-ngobrol-hidden'));
+      const panel = slide.querySelector(`#ak-ngobrol-${which}`);
+      if (panel) panel.classList.remove('ak-ngobrol-hidden');
+    });
+  });
 
   wireAjarkanCardEvents(slide, data);
   return slide;
