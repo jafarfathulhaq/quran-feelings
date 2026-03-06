@@ -3168,16 +3168,20 @@ function updateDailyHeaderMode(index) {
   const label = dailyModeLabels[index] || '';
   if (el.textContent === label) return;
 
-  // Slide out to left
+  // Step 1: Slide out to left
   el.classList.add('slide-out');
   setTimeout(() => {
-    el.textContent = label;
-    // Position from right (no transition)
-    el.classList.remove('slide-out');
+    // Step 2: Jump to right (no transition)
     el.classList.add('slide-in');
-    // Force reflow, then slide in from right
-    void el.offsetWidth;
-    el.classList.remove('slide-in');
+    el.classList.remove('slide-out');
+    el.textContent = label;
+    // Step 3: Wait for browser to paint the "from right" position,
+    // then remove slide-in so it transitions to center
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.classList.remove('slide-in');
+      });
+    });
   }, 250);
 }
 
