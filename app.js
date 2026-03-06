@@ -3189,7 +3189,7 @@ function expandDailyCard(slideIndex) {
   if (collapsed) collapsed.style.borderRadius = `var(--radius) var(--radius) 0 0`;
 
   let content = '';
-  const closeBtn = `<button class="daily-close-btn" onclick="collapseDailyCard()">✕</button>`;
+  const closeBtn = `<button class="daily-close-btn" data-daily-close>✕</button>`;
 
   switch (slideIndex) {
     case 0: // VOTD
@@ -3211,6 +3211,10 @@ function expandDailyCard(slideIndex) {
 
   body.innerHTML = content;
   body.classList.remove('hidden');
+
+  // Wire close button
+  const closeBtnEl = body.querySelector('[data-daily-close]');
+  if (closeBtnEl) closeBtnEl.addEventListener('click', collapseDailyCard);
 
   // Wire audio button if present
   const audioBtn = body.querySelector('.votd-audio-btn');
