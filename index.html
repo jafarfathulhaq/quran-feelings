@@ -185,12 +185,22 @@
           <div class="daily-skeleton-dots"></div>
         </div>
 
-        <!-- Collapsed teaser (hidden until data loads) -->
-        <div id="dailyCollapsed" class="daily-collapsed hidden">
-          <div class="daily-header">
+        <!-- Layer 1: Compact header (always visible after load) -->
+        <div id="dailyHeader" class="daily-header hidden">
+          <div class="daily-header-top">
             <span class="daily-header-label">✦ Harian</span>
-            <span id="dailyHeaderDate" class="daily-header-date"></span>
+            <span class="daily-header-right">
+              <span id="dailyHeaderDate" class="daily-header-date"></span>
+              <span class="daily-header-chevron">▾</span>
+            </span>
           </div>
+          <div class="daily-header-mode">
+            <span id="dailyHeaderModeText" class="daily-header-mode-text"></span>
+          </div>
+        </div>
+
+        <!-- Layer 2: Carousel (hidden until header tapped) -->
+        <div id="dailyCarousel" class="daily-carousel">
           <div class="daily-slides-viewport">
             <div id="dailySlidesTrack" class="daily-slides-track">
               <div class="daily-slide" data-slide="0"></div>

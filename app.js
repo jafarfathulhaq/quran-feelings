@@ -2908,19 +2908,23 @@ function switchView(targetId) {
 
 // ── Daily Card (5-Slide Rotating Card) ────────────────────────────────────────
 
-let dailyActiveSlide   = 0;
-let dailyRotateTimer   = null;
-let dailyExpanded      = false;
-let dailyVOTDData      = null;
-let dailyContentData   = null;
-const DAILY_ROTATE_MS  = 4000;
+let dailyActiveSlide         = 0;
+let dailyRotateTimer         = null;
+let dailyExpanded            = false;
+let dailyCarouselOpen        = false;
+let dailyVOTDData            = null;
+let dailyContentData         = null;
+let dailyModeLabels          = [];
+let dailyHeaderRotateTimer   = null;
+const DAILY_ROTATE_MS        = 4000;
+const DAILY_HEADER_ROTATE_MS = 3000;
 
 async function initDailyCard() {
   const wrap = document.getElementById('dailyCardWrap');
   if (!wrap) return;
 
-  const skeleton  = document.getElementById('dailySkeleton');
-  const collapsed = document.getElementById('dailyCollapsed');
+  const skeleton = document.getElementById('dailySkeleton');
+  const header   = document.getElementById('dailyHeader');
 
   try {
     // Fetch both endpoints in parallel
@@ -2946,24 +2950,39 @@ async function initDailyCard() {
       return;
     }
 
-    // Render
+    // Build mode labels for the rotating header text
+    buildDailyModeLabels();
+
+    // Render slides and date
     renderDailySlides();
     renderDailyDate();
 
-    // Show collapsed, hide skeleton
+    // Show Layer 1 header, hide skeleton
     skeleton.classList.add('hidden');
-    collapsed.classList.remove('hidden');
+    header.classList.remove('hidden');
 
     // Wire interactions
+    header.addEventListener('click', toggleDailyCarousel);
     wireDailyDots();
     wireDailySwipe();
     wireDailyVisibility();
 
-    // Start rotation
-    startDailyRotation();
+    // Start header label rotation (Layer 1 only, carousel NOT open yet)
+    startDailyHeaderRotation();
   } catch {
     wrap.remove();
   }
+}
+
+function buildDailyModeLabels() {
+  const d = dailyContentData;
+  dailyModeLabels = [
+    '📖 Ayat Hari Ini',
+    d && d.feeling_label ? `${d.feeling_emoji || '💭'} Curhat: ${d.feeling_label}` : '💭 Curhat',
+    d && d.topic          ? `${d.topic_emoji || '🧭'} Panduan: ${d.topic}` : '🧭 Panduan',
+    d && d.surah_name     ? `📜 Jelajahi: ${d.surah_name}` : '📜 Jelajahi',
+    d && d.ajarkan_question_text ? `${d.ajarkan_category_emoji || '👶'} Ajarkan Anakku` : '👶 Ajarkan Anakku',
+  ];
 }
 
 function renderDailyDate() {
@@ -3096,6 +3115,64 @@ function stopDailyRotation() {
   }
 }
 
+// ── Layer 1 ↔ Layer 2 Toggle ──
+
+function toggleDailyCarousel() {
+  const header   = document.getElementById('dailyHeader');
+  const carousel = document.getElementById('dailyCarousel');
+  if (!header || !carousel) return;
+
+  dailyCarouselOpen = !dailyCarouselOpen;
+
+  if (dailyCarouselOpen) {
+    header.classList.add('open');
+    carousel.classList.add('open');
+    stopDailyHeaderRotation();
+    startDailyRotation();
+    updateDailyHeaderMode(dailyActiveSlide);
+  } else {
+    header.classList.remove('open');
+    carousel.classList.remove('open');
+    stopDailyRotation();
+    // Also collapse Layer 3 if open
+    if (dailyExpanded) collapseDailyCard();
+    startDailyHeaderRotation();
+  }
+}
+
+// ── Header mode label rotation (Layer 1 closed state) ──
+
+function startDailyHeaderRotation() {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  stopDailyHeaderRotation();
+  updateDailyHeaderMode(dailyActiveSlide);
+  if (reducedMotion) return;
+  dailyHeaderRotateTimer = setInterval(() => {
+    dailyActiveSlide = (dailyActiveSlide + 1) % 5;
+    updateDailyHeaderMode(dailyActiveSlide);
+  }, DAILY_HEADER_ROTATE_MS);
+}
+
+function stopDailyHeaderRotation() {
+  if (dailyHeaderRotateTimer) {
+    clearInterval(dailyHeaderRotateTimer);
+    dailyHeaderRotateTimer = null;
+  }
+}
+
+function updateDailyHeaderMode(index) {
+  const el = document.getElementById('dailyHeaderModeText');
+  if (!el) return;
+  const label = dailyModeLabels[index] || '';
+  // If same text, just set it
+  if (el.textContent === label) return;
+  el.classList.add('fade-out');
+  setTimeout(() => {
+    el.textContent = label;
+    el.classList.remove('fade-out');
+  }, 200);
+}
+
 function resetProgressBar() {
   const fill = document.getElementById('dailyProgressFill');
   if (!fill) return;
@@ -3114,6 +3191,9 @@ function goToDailySlide(index) {
   document.querySelectorAll('.daily-dot').forEach((dot, i) => {
     dot.classList.toggle('active', i === index);
   });
+
+  // Sync header mode label
+  updateDailyHeaderMode(index);
 
   resetProgressBar();
 }
@@ -3169,8 +3249,13 @@ function wireDailyVisibility() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stopDailyRotation();
+      stopDailyHeaderRotation();
     } else if (!dailyExpanded) {
-      startDailyRotation();
+      if (dailyCarouselOpen) {
+        startDailyRotation();
+      } else {
+        startDailyHeaderRotation();
+      }
     }
   });
 }
@@ -3184,9 +3269,9 @@ function expandDailyCard(slideIndex) {
   const body = document.getElementById('dailyExpandedBody');
   if (!body) return;
 
-  // Remove rounded bottom corners from collapsed section
-  const collapsed = document.getElementById('dailyCollapsed');
-  if (collapsed) collapsed.style.borderRadius = `var(--radius) var(--radius) 0 0`;
+  // Remove rounded bottom corners from dots (carousel bottom)
+  const dots = document.getElementById('dailyDots');
+  if (dots) dots.style.borderRadius = '0';
 
   let content = '';
   const closeBtn = `<button class="daily-close-btn" data-daily-close>✕</button>`;
@@ -3251,10 +3336,14 @@ function collapseDailyCard() {
     body.classList.add('hidden');
     body.innerHTML = '';
   }
-  const collapsed = document.getElementById('dailyCollapsed');
-  if (collapsed) collapsed.style.borderRadius = '';
+  // Restore dots bottom radius
+  const dots = document.getElementById('dailyDots');
+  if (dots) dots.style.borderRadius = '';
 
-  startDailyRotation();
+  // Resume carousel rotation if carousel is still open
+  if (dailyCarouselOpen) {
+    startDailyRotation();
+  }
 }
 
 function renderDailyVOTDExpanded(closeBtn) {
