@@ -2801,16 +2801,6 @@ body.about-locked { overflow: hidden; }
   color: rgba(255,255,255,0.75);
   display: inline-block;
   white-space: nowrap;
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
-.daily-header-mode-text.slide-out {
-  opacity: 0;
-  transform: translateX(-30px);
-}
-.daily-header-mode-text.slide-in {
-  opacity: 0;
-  transform: translateX(30px);
-  transition: none;
 }
 
 /* ── Layer 2: Carousel (accordion) ── */

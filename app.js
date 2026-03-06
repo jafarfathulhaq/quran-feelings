@@ -3168,21 +3168,34 @@ function updateDailyHeaderMode(index) {
   const label = dailyModeLabels[index] || '';
   if (el.textContent === label) return;
 
-  // Step 1: Slide out to left
-  el.classList.add('slide-out');
-  setTimeout(() => {
-    // Step 2: Jump to right (no transition)
-    el.classList.add('slide-in');
-    el.classList.remove('slide-out');
+  // First render — just show the text, no animation
+  if (!el.textContent) {
     el.textContent = label;
-    // Step 3: Wait for browser to paint the "from right" position,
-    // then remove slide-in so it transitions to center
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.classList.remove('slide-in');
-      });
-    });
-  }, 250);
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(0)';
+    return;
+  }
+
+  // Step 1: Slide out to left (animated)
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.opacity = '0';
+  el.style.transform = 'translateX(-30px)';
+
+  setTimeout(() => {
+    // Step 2: Jump to right position instantly (no transition)
+    el.style.transition = 'none';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(30px)';
+    el.textContent = label;
+
+    // Step 3: Small timeout guarantees browser paints the start position
+    // before we re-enable the transition (more reliable than rAF)
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateX(0)';
+    }, 20);
+  }, 300);
 }
 
 function resetProgressBar() {
