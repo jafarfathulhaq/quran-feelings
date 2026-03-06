@@ -327,9 +327,19 @@ async function resubscribeIfNeeded() {
   } catch (_) { /* will retry next visit */ }
 }
 
-function showPushPermissionCard() {
+function showPushPermissionCard(source) {
   const existing = document.getElementById('pushPermissionCard');
   if (existing) existing.remove();
+
+  // Context-aware copy
+  let body;
+  if (source === 'post_search') {
+    body = 'Ayat ini menyentuh hatimu? Kami bisa kirim satu ayat setiap pagi.';
+  } else if (source === 'post_install') {
+    body = 'TemuQuran sudah terpasang! Mau diingatkan satu ayat setiap pagi?';
+  } else {
+    body = 'Mau diingatkan satu ayat setiap pagi? Tanpa spam, cuma satu.';
+  }
 
   const card = document.createElement('div');
   card.id = 'pushPermissionCard';
@@ -338,55 +348,46 @@ function showPushPermissionCard() {
   card.innerHTML = `
     <div class="ppc-icon">\u{1F514}</div>
     <div class="ppc-title">Pengingat harian dari Al-Qur'an</div>
-    <div class="ppc-body">Boleh kami kirim satu ayat setiap hari? Pilih waktu yang cocok untukmu.</div>
-    <div class="ppc-times">
-      ${NOTIFY_TIME_OPTIONS.map((t, i) =>
-        `<button class="ppc-time-btn${i === 1 ? ' selected' : ''}" data-hour="${t.hour}">${escapeHtml(t.label)}</button>`
-      ).join('')}
-    </div>
-    <div class="ppc-privacy">\u{1F512} <span>Tidak ada data pribadimu yang disimpan. Hanya waktu pengingat.</span></div>
+    <div class="ppc-body">${escapeHtml(body)}</div>
     <div class="ppc-actions">
-      <button class="ppc-confirm-btn">Ya, aktifkan pengingat</button>
+      <button class="ppc-confirm-btn">Ya, ingatkan aku</button>
       <button class="ppc-dismiss-btn">Nanti saja</button>
     </div>
   `;
-
-  let selectedHour = NOTIFY_TIME_OPTIONS[1].hour;
-  card.querySelectorAll('.ppc-time-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      card.querySelectorAll('.ppc-time-btn').forEach((b) => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedHour = parseInt(btn.dataset.hour, 10);
-    });
-  });
 
   card.querySelector('.ppc-confirm-btn').addEventListener('click', async () => {
     card.remove();
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      await subscribeToPush(selectedHour);
+      await subscribeToPush(NOTIFY_TIME_OPTIONS[1].hour); // default Pagi 07:00
     } else {
-      logEvent('push_permission_denied', {});
+      logEvent('push_permission_denied', { source: source || 'engagement' });
     }
   });
 
   card.querySelector('.ppc-dismiss-btn').addEventListener('click', () => {
     card.remove();
-    localStorage.setItem('push_dismissed_until', (Date.now() + 3 * 24 * 60 * 60 * 1000).toString());
-    logEvent('push_permission_dismissed', {});
+    localStorage.setItem('push_dismissed_until', (Date.now() + 1 * 24 * 60 * 60 * 1000).toString());
+    logEvent('push_permission_dismissed', { source: source || 'engagement' });
   });
 
-  const a2hsCard = document.getElementById('a2hsCard');
-  if (a2hsCard) {
-    a2hsCard.after(card);
+  // Place card: on landing page or inside verses view for post-search
+  if (source === 'post_search') {
+    const versesView = document.getElementById('verses-view');
+    if (versesView) versesView.appendChild(card);
   } else {
-    document.getElementById('landing-view').prepend(card);
+    const a2hsCard = document.getElementById('a2hsCard');
+    if (a2hsCard) {
+      a2hsCard.after(card);
+    } else {
+      document.getElementById('landing-view').prepend(card);
+    }
   }
 }
 
-function requestPushPermission() {
+function requestPushPermission(source) {
   if (!canShowPushPrompt()) return;
-  showPushPermissionCard();
+  showPushPermissionCard(source);
 }
 
 // ── Bismillah Handling ───────────────────────────────────────────────────────
@@ -2980,6 +2981,8 @@ async function fetchAyat(feeling, { method = 'text', emotionId, refresh = false 
         from_cache: !!data._fromClientCache,
       });
       renderVerses(data);
+      // Path 4 — Post-search: ask after 5s on results page (high-intent moment)
+      setTimeout(() => requestPushPermission('post_search'), 5000);
     }
   } catch (err) {
     stopLoadingSteps();
@@ -5389,17 +5392,17 @@ resubscribeIfNeeded();
 
 // Path 1 — Android: ask immediately after install
 window.addEventListener('appinstalled', () => {
-  setTimeout(requestPushPermission, 2000);
+  setTimeout(() => requestPushPermission('post_install'), 2000);
 });
 
 // Path 2 — iOS standalone: ask on next launch
 if (window.matchMedia('(display-mode: standalone)').matches) {
-  setTimeout(requestPushPermission, 3000);
+  setTimeout(() => requestPushPermission('post_install'), 3000);
 }
 
 // Path 3 — Regular mobile browser: ask after 60 cumulative seconds
 if (!window.matchMedia('(display-mode: standalone)').matches) {
-  const THRESHOLD_SECONDS = 60;
+  const THRESHOLD_SECONDS = 20;
   let _engagementTimer = null;
   let _prompted = false;
 
