@@ -2723,6 +2723,10 @@ body.about-locked { overflow: hidden; }
   margin: 8px 0 24px;
 }
 
+/* ── Hidden states ── */
+.daily-skeleton.hidden { display: none; }
+.daily-collapsed.hidden { display: none; }
+
 /* ── Skeleton ── */
 .daily-skeleton {
   border-radius: var(--radius);
