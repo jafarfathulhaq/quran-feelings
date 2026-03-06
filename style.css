@@ -2721,6 +2721,7 @@ body.about-locked { overflow: hidden; }
 ════════════════════════════════════════════════════════ */
 .daily-card-wrap {
   margin: 8px 0 24px;
+  padding: 0 20px;
 }
 
 /* ── Hidden states ── */
@@ -2731,7 +2732,7 @@ body.about-locked { overflow: hidden; }
 .daily-skeleton {
   border-radius: var(--radius);
   background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 60%, #0A5C7A 100%);
-  padding: 20px 22px;
+  padding: 24px 24px;
   animation: votdPulse 1.5s ease-in-out infinite;
 }
 .daily-skeleton-header {
@@ -2766,8 +2767,8 @@ body.about-locked { overflow: hidden; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px 0;
-  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 60%);
+  padding: 16px 22px 12px;
+  background: #0A0F1E;
 }
 .daily-header-label {
   font-size: 10px;
@@ -2795,8 +2796,8 @@ body.about-locked { overflow: hidden; }
 .daily-slide {
   width: 20%;
   flex-shrink: 0;
-  min-height: 130px;
-  padding: 18px 22px 14px;
+  min-height: 150px;
+  padding: 20px 24px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2822,14 +2823,23 @@ body.about-locked { overflow: hidden; }
   background: linear-gradient(135deg, #1A2A4A 0%, #4A7FB5 100%);
 }
 
-/* Decorative circle on each slide */
+/* Decorative circles on each slide */
 .daily-slide::before {
   content: '';
   position: absolute;
-  bottom: -50px; right: -50px;
-  width: 160px; height: 160px;
+  bottom: -60px; right: -60px;
+  width: 200px; height: 200px;
   border-radius: 50%;
-  border: 1px solid rgba(201,168,76,0.12);
+  border: 1px solid rgba(201,168,76,0.15);
+  pointer-events: none;
+}
+.daily-slide::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; right: -30px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.10);
   pointer-events: none;
 }
 
@@ -2839,23 +2849,23 @@ body.about-locked { overflow: hidden; }
   color: var(--gold);
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 5px;
 }
 .daily-teaser-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: #fff;
   line-height: 1.4;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .daily-teaser-preview {
   font-size: 13px;
   line-height: 1.6;
   color: rgba(255,255,255,0.65);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2907,8 +2917,8 @@ body.about-locked { overflow: hidden; }
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 12px 0;
-  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 100%);
+  padding: 14px 0 16px;
+  background: #0A0F1E;
 }
 .daily-dot {
   width: 7px;
@@ -2932,7 +2942,7 @@ body.about-locked { overflow: hidden; }
 .daily-expanded-body {
   background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 60%, #0A5C7A 100%);
   border-radius: 0 0 var(--radius) var(--radius);
-  padding: 0 22px 24px;
+  padding: 0 24px 28px;
   color: white;
   position: relative;
   overflow: hidden;
