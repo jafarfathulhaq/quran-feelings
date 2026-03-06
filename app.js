@@ -2976,12 +2976,14 @@ async function initDailyCard() {
 
 function buildDailyModeLabels() {
   const d = dailyContentData;
+  const v = dailyVOTDData;
+  const votdRef = v ? (v.ref || `QS. ${v.surah_name}: ${v.verse_number}`) : '';
   dailyModeLabels = [
-    '📖 Ayat Hari Ini',
-    d && d.feeling_label ? `${d.feeling_emoji || '💭'} Curhat: ${d.feeling_label}` : '💭 Curhat',
-    d && d.topic          ? `${d.topic_emoji || '🧭'} Panduan: ${d.topic}` : '🧭 Panduan',
-    d && d.surah_name     ? `📜 Jelajahi: ${d.surah_name}` : '📜 Jelajahi',
-    d && d.ajarkan_question_text ? `${d.ajarkan_category_emoji || '👶'} Ajarkan Anakku` : '👶 Ajarkan Anakku',
+    v ? `✦ Ayat Hari Ini: ${votdRef}` : '✦ Ayat Hari Ini',
+    d && d.feeling_label ? `${d.feeling_emoji || '💭'} Perasaan Hari Ini: ${d.feeling_label}` : '✦ Perasaan Hari Ini',
+    d && d.topic          ? `${d.topic_emoji || '🕯'} Panduan Hari Ini: ${d.topic}` : '✦ Panduan Hari Ini',
+    d && d.surah_name     ? `📜 Surat Hari Ini: ${d.surah_name}` : '✦ Surat Hari Ini',
+    d ? `${d.ajarkan_category_emoji || '👶'} Ajarkan Anakku Hari Ini` : '✦ Ajarkan Anakku Hari Ini',
   ];
 }
 
@@ -3164,13 +3166,19 @@ function updateDailyHeaderMode(index) {
   const el = document.getElementById('dailyHeaderModeText');
   if (!el) return;
   const label = dailyModeLabels[index] || '';
-  // If same text, just set it
   if (el.textContent === label) return;
-  el.classList.add('fade-out');
+
+  // Slide out to left
+  el.classList.add('slide-out');
   setTimeout(() => {
     el.textContent = label;
-    el.classList.remove('fade-out');
-  }, 200);
+    // Position from right (no transition)
+    el.classList.remove('slide-out');
+    el.classList.add('slide-in');
+    // Force reflow, then slide in from right
+    void el.offsetWidth;
+    el.classList.remove('slide-in');
+  }, 250);
 }
 
 function resetProgressBar() {

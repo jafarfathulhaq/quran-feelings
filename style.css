@@ -2760,35 +2760,27 @@ body.about-locked { overflow: hidden; }
 .daily-header {
   border-radius: var(--radius);
   background: #0A0F1E;
-  padding: 16px 22px 14px;
+  padding: 15px 20px;
   cursor: pointer;
   transition: border-radius 0.3s ease;
   animation: fadeUp 0.5s ease both;
-}
-.daily-header.open {
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-.daily-header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  gap: 12px;
 }
-.daily-header-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 1.8px;
+.daily-header.open {
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 .daily-header-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 .daily-header-date {
   font-size: 11px;
-  color: rgba(255,255,255,0.40);
+  color: rgba(255,255,255,0.35);
   font-weight: 400;
 }
 .daily-header-chevron {
@@ -2801,19 +2793,27 @@ body.about-locked { overflow: hidden; }
   transform: rotate(180deg);
 }
 .daily-header-mode {
-  height: 20px;
+  flex: 1;
+  height: 22px;
   overflow: hidden;
   position: relative;
 }
 .daily-header-mode-text {
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
   display: inline-block;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  white-space: nowrap;
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
-.daily-header-mode-text.fade-out {
+.daily-header-mode-text.slide-out {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateX(-30px);
+}
+.daily-header-mode-text.slide-in {
+  opacity: 0;
+  transform: translateX(30px);
+  transition: none;
 }
 
 /* ── Layer 2: Carousel (accordion) ── */
@@ -3166,7 +3166,7 @@ body.about-locked { overflow: hidden; }
   .daily-header { animation: none; transition: none; }
   .daily-carousel { transition: none; }
   .daily-header-chevron { transition: none; }
-  .daily-header-mode-text { transition: none; }
+  .daily-header-mode-text { transition: none !important; }
   .daily-expanded-body { animation: none; }
   .daily-teaser-cta::after { transition: none; }
   .daily-dot { transition: none; }
