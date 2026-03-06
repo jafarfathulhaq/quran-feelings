@@ -1451,35 +1451,35 @@ function showSharePanelText() {
 
 // ── Share Text Composition ──────────────────────────────────────────────────
 function composeShareText(verse, prefs) {
-  const SEP = '─────────────────────────';
+  const SEP = '─────';
   const parts = [];
 
   // Feeling / topic block
   if (prefs.feeling) {
     if (currentMode === 'curhat' && currentFeeling) {
       parts.push('🌙 Perasaan: ' + currentFeeling);
-      parts.push(SEP);
+      parts.push('\n' + SEP + '\n');
     } else if (currentMode === 'panduan' && currentFeeling) {
       parts.push('🧭 Topik: ' + currentFeeling);
-      parts.push(SEP);
+      parts.push('\n' + SEP + '\n');
     } else if (currentMode === 'ajarkan' && ajarkanCurrentQId) {
       parts.push('👶 Pertanyaan: ' + (verse._userQuestion || ajarkanCurrentQId));
-      parts.push(SEP);
+      parts.push('\n' + SEP + '\n');
     }
   }
 
   // Verse block
   const verseLines = [];
   if (prefs.arabic)      verseLines.push(verse.arabic);
-  if (prefs.translation) verseLines.push('\n"' + verse.translation + '"');
+  if (prefs.translation) verseLines.push('\n\u201C' + verse.translation + '\u201D');
   if (prefs.reference)   verseLines.push('\n— ' + verse.ref);
   if (verseLines.length > 0) parts.push(verseLines.join('\n'));
 
   // Reflection block
   const reflectionText = verse.resonance || verse.relevance;
   if (prefs.reflection && reflectionText) {
-    parts.push(SEP);
-    parts.push('💭 Refleksi:\n' + reflectionText);
+    parts.push('\n' + SEP + '\n');
+    parts.push('Refleksi:\n' + reflectionText);
   }
 
   // Tafsir block
@@ -1487,20 +1487,22 @@ function composeShareText(verse, prefs) {
     const summary = verse.tafsir_summary;
     const summaryText = summary && summary.makna_utama && summary.makna_utama.text;
     if (summaryText) {
-      if (!prefs.reflection || !reflectionText) parts.push(SEP);
-      parts.push('📖 Tafsir:\n' + summaryText);
+      if (!prefs.reflection || !reflectionText) parts.push('\n' + SEP + '\n');
+      else parts.push('');
+      parts.push('Tafsir:\n' + summaryText);
     }
   } else if (prefs.tafsir === 'lengkap') {
     const fullText = verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir;
     if (fullText) {
-      if (!prefs.reflection || !reflectionText) parts.push(SEP);
-      parts.push('📖 Tafsir Ibnu Katsir:\n' + fullText);
+      if (!prefs.reflection || !reflectionText) parts.push('\n' + SEP + '\n');
+      else parts.push('');
+      parts.push('Tafsir Ibnu Katsir:\n' + fullText);
     }
   }
 
   // Attribution — always
-  parts.push(SEP);
-  parts.push('Ditemukan di TemuQuran.com');
+  parts.push('\n' + SEP + '\n');
+  parts.push('Ayat dan penjelasan dari TemuQuran.com');
 
   return parts.join('\n');
 }
