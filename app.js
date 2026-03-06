@@ -1628,11 +1628,10 @@ function updateShareTextPreview() {
   el.textContent = text;
 }
 
-// ── WhatsApp / Copy handlers ────────────────────────────────────────────────
-function sendToWhatsApp() {
+// ── Share text / Copy handlers ──────────────────────────────────────────────
+async function shareTextNative() {
   if (!shareActiveVerse) return;
   const text = composeShareText(shareActiveVerse, shareTextPrefs);
-  const encoded = encodeURIComponent(text);
 
   logEvent('share_wa_sent', {
     feeling_on:     shareTextPrefs.feeling,
@@ -1644,7 +1643,19 @@ function sendToWhatsApp() {
     tafsir_mode:    shareTextPrefs.tafsir || 'off',
   });
 
-  window.open('https://wa.me/?text=' + encoded, '_blank');
+  if (navigator.share) {
+    try {
+      await navigator.share({ text });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Teks berhasil disalin');
+  } catch (_) {}
 }
 
 function copyShareText() {
@@ -5229,8 +5240,8 @@ document.getElementById('shareBackImgBtn').addEventListener('click', showSharePa
 // Panel B-Text — Back button
 document.getElementById('shareBackTxtBtn').addEventListener('click', showSharePanelA);
 
-// Panel B-Text — Send to WhatsApp
-document.getElementById('shareSendWA').addEventListener('click', sendToWhatsApp);
+// Panel B-Text — Share text via native share picker
+document.getElementById('shareSendWA').addEventListener('click', shareTextNative);
 
 // Panel B-Text — Copy text
 document.getElementById('shareCopyText').addEventListener('click', copyShareText);
