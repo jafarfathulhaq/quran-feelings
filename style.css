@@ -2793,11 +2793,20 @@ body.about-locked { overflow: hidden; }
   font-weight: 400;
 }
 .daily-header-chevron {
-  color: rgba(10,15,30,0.30);
-  font-size: 12px;
-  transition: transform 0.3s ease;
-  display: inline-block;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.12);
+  color: var(--gold);
+  font-size: 10px;
+  transition: transform 0.3s ease, background 0.2s ease;
   flex-shrink: 0;
+}
+.daily-header:hover .daily-header-chevron {
+  background: rgba(201,168,76,0.20);
 }
 .daily-header.open .daily-header-chevron {
   transform: rotate(180deg);
@@ -2927,11 +2936,11 @@ body.about-locked { overflow: hidden; }
   cursor: pointer;
 }
 .daily-teaser-cta::after {
-  content: '→';
+  content: '↓';
   transition: transform 0.2s ease;
 }
 .daily-slide:hover .daily-teaser-cta::after {
-  transform: translateX(3px);
+  transform: translateY(2px);
 }
 
 /* ── Progress bar ── */

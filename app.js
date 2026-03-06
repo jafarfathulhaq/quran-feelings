@@ -3007,7 +3007,7 @@ function renderDailySlides() {
       <span class="daily-teaser-mode">✦ Ayat Hari Ini</span>
       <div class="daily-teaser-title">${escapeHtml(ref)}</div>
       <div class="daily-teaser-preview">"${escapeHtml(dailyVOTDData.translation)}"</div>
-      <span class="daily-teaser-cta">Baca Ayat</span>
+      <span class="daily-teaser-cta">Baca Ayat Lengkap</span>
     `;
   } else {
     slides[0].innerHTML = `
@@ -3023,14 +3023,14 @@ function renderDailySlides() {
       <span class="daily-teaser-mode">${dailyContentData.feeling_emoji || '💭'} Curhat</span>
       <div class="daily-teaser-title">Lagi ${escapeHtml(dailyContentData.feeling_label)}?</div>
       <div class="daily-teaser-preview">${dailyContentData.feeling_verse?.reflection ? escapeHtml(dailyContentData.feeling_verse.reflection) : 'Ada ayat yang cocok untukmu hari ini.'}</div>
-      <span class="daily-teaser-cta">Temukan Ayatnya</span>
+      <span class="daily-teaser-cta">Temukan Detail Ayat Dan Refleksinya</span>
     `;
   } else {
     slides[1].innerHTML = `
       <span class="daily-teaser-mode">💭 Curhat</span>
       <div class="daily-teaser-title">Ceritakan perasaanmu</div>
       <div class="daily-teaser-preview">Temukan ayat yang sesuai dengan perasaanmu.</div>
-      <span class="daily-teaser-cta">Mulai Curhat</span>
+      <span class="daily-teaser-cta">Temukan Detail Ayat Dan Refleksinya</span>
     `;
   }
 
@@ -3040,14 +3040,14 @@ function renderDailySlides() {
       <span class="daily-teaser-mode">${dailyContentData.topic_emoji || '🧭'} Panduan</span>
       <div class="daily-teaser-title">${escapeHtml(dailyContentData.topic)}</div>
       <div class="daily-teaser-preview">${dailyContentData.topic_verse?.reflection ? escapeHtml(dailyContentData.topic_verse.reflection) : 'Ada panduan dari Al-Quran untuk topik ini.'}</div>
-      <span class="daily-teaser-cta">Cari Panduan</span>
+      <span class="daily-teaser-cta">Baca Penjelasan</span>
     `;
   } else {
     slides[2].innerHTML = `
       <span class="daily-teaser-mode">🧭 Panduan</span>
       <div class="daily-teaser-title">Cari panduan hidup</div>
       <div class="daily-teaser-preview">Temukan jawaban dari Al-Quran untuk pertanyaanmu.</div>
-      <span class="daily-teaser-cta">Mulai Cari</span>
+      <span class="daily-teaser-cta">Baca Penjelasan</span>
     `;
   }
 
@@ -3058,14 +3058,14 @@ function renderDailySlides() {
       <span class="daily-teaser-mode">📜 Jelajahi</span>
       <div class="daily-teaser-title">Surah ${escapeHtml(dailyContentData.surah_name)}</div>
       <div class="daily-teaser-preview">${escapeHtml(dailyContentData.surah_name_arabic)} · ${dailyContentData.surah_verse_count} ayat · ${typeLabel}</div>
-      <span class="daily-teaser-cta">Buka Surah</span>
+      <span class="daily-teaser-cta">Baca Surah</span>
     `;
   } else {
     slides[3].innerHTML = `
       <span class="daily-teaser-mode">📜 Jelajahi</span>
       <div class="daily-teaser-title">Jelajahi Al-Qur'an</div>
       <div class="daily-teaser-preview">Baca dan pelajari surah pilihanmu.</div>
-      <span class="daily-teaser-cta">Mulai Jelajahi</span>
+      <span class="daily-teaser-cta">Baca Surah</span>
     `;
   }
 
@@ -3075,14 +3075,14 @@ function renderDailySlides() {
       <span class="daily-teaser-mode">${dailyContentData.ajarkan_category_emoji || '👶'} Ajarkan Anakku</span>
       <div class="daily-teaser-title">${escapeHtml(dailyContentData.ajarkan_question_text)}</div>
       <div class="daily-teaser-preview">${dailyContentData.ajarkan_category ? escapeHtml(dailyContentData.ajarkan_category) : 'Pertanyaan anak tentang Islam'}</div>
-      <span class="daily-teaser-cta">Lihat Jawaban</span>
+      <span class="daily-teaser-cta">Temukan Jawaban</span>
     `;
   } else {
     slides[4].innerHTML = `
       <span class="daily-teaser-mode">👶 Ajarkan Anakku</span>
       <div class="daily-teaser-title">Jawab pertanyaan si kecil</div>
       <div class="daily-teaser-preview">Bantu anak memahami Islam dengan bahasa mereka.</div>
-      <span class="daily-teaser-cta">Lihat Pertanyaan</span>
+      <span class="daily-teaser-cta">Temukan Jawaban</span>
     `;
   }
 
@@ -3130,7 +3130,7 @@ function toggleDailyCarousel() {
     header.classList.add('open');
     carousel.classList.add('open');
     stopDailyHeaderRotation();
-    updateDailyHeaderMode(dailyActiveSlide);
+    goToDailySlide(dailyActiveSlide);  // sync carousel to currently displayed label
   } else {
     header.classList.remove('open');
     carousel.classList.remove('open');
