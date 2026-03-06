@@ -127,6 +127,66 @@ function logEvent(eventType, properties = {}) {
   }
 }
 
+// ── Client-Side Result Cache ──────────────────────────────────────────────────
+// Privacy-safe: keys are SHA-256 hashed (no plaintext queries stored).
+// Repeat queries return instantly from localStorage — no API call needed.
+// User can force-refresh with the "Muat ulang" button on cached results.
+
+const CLIENT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CLIENT_CACHE_MAX = 30;                   // max entries (~3-5 KB each ≈ ~150 KB)
+const CLIENT_CACHE_PREFIX = 'tq_c_';
+
+async function _hashKey(str) {
+  try {
+    const encoded = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-256', encoded);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  } catch { return btoa(str).slice(0, 16); }
+}
+
+function _cacheNormalise(mode, feeling) {
+  return `${mode}:${feeling.trim().replace(/\s+/g, ' ').toLowerCase()}`;
+}
+
+function getClientCache(hashedKey) {
+  try {
+    const raw = localStorage.getItem(CLIENT_CACHE_PREFIX + hashedKey);
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    if (Date.now() > entry.expiresAt) {
+      localStorage.removeItem(CLIENT_CACHE_PREFIX + hashedKey);
+      return null;
+    }
+    return entry.data;
+  } catch { return null; }
+}
+
+function setClientCache(hashedKey, data) {
+  try {
+    // Evict oldest entries if at capacity
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(CLIENT_CACHE_PREFIX)) {
+        try {
+          const entry = JSON.parse(localStorage.getItem(k));
+          keys.push({ key: k, expiresAt: entry.expiresAt || 0 });
+        } catch { keys.push({ key: k, expiresAt: 0 }); }
+      }
+    }
+    if (keys.length >= CLIENT_CACHE_MAX) {
+      keys.sort((a, b) => a.expiresAt - b.expiresAt);
+      for (let i = 0; i < keys.length - CLIENT_CACHE_MAX + 1; i++) {
+        localStorage.removeItem(keys[i].key);
+      }
+    }
+    localStorage.setItem(CLIENT_CACHE_PREFIX + hashedKey, JSON.stringify({
+      data,
+      expiresAt: Date.now() + CLIENT_CACHE_TTL,
+    }));
+  } catch { /* localStorage full or unavailable — silently ignore */ }
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let currentFeeling    = '';
@@ -2208,6 +2268,15 @@ function renderVerses(data) {
   typewriterActive = true;
   let pos = 0;
 
+  function finishTypewriter() {
+    const appBubble = introTextEl.closest('.chat-bubble--app');
+    if (appBubble) appBubble.classList.remove('chat-bubble--typing-active');
+    typewriterActive = false;
+    const hint = document.getElementById('intro-swipe-hint');
+    if (hint) hint.style.display = '';
+    startSwipeHintSequence();
+  }
+
   function tick() {
     if (!typewriterActive) return;
     pos = Math.min(pos + 3, reflection.length);
@@ -2215,24 +2284,33 @@ function renderVerses(data) {
     if (pos < reflection.length) {
       setTimeout(tick, 15);
     } else {
-      // Remove blinking cursor
-      const appBubble = introTextEl.closest('.chat-bubble--app');
-      if (appBubble) appBubble.classList.remove('chat-bubble--typing-active');
-      typewriterActive = false;
-      // Show swipe hint + start hint sequence
-      const hint = document.getElementById('intro-swipe-hint');
-      if (hint) hint.style.display = '';
-      startSwipeHintSequence();
+      finishTypewriter();
     }
   }
 
-  if (reflection) tick(); else {
-    const appBubble = introTextEl.closest('.chat-bubble--app');
-    if (appBubble) appBubble.classList.remove('chat-bubble--typing-active');
-    typewriterActive = false;
-    const hint = document.getElementById('intro-swipe-hint');
-    if (hint) hint.style.display = '';
-    startSwipeHintSequence();
+  // Tap-to-complete: user taps intro card → show full reflection instantly
+  if (introSlide) {
+    introSlide.addEventListener('click', () => {
+      if (typewriterActive && pos < reflection.length) {
+        introTextEl.textContent = reflection;
+        finishTypewriter();
+      }
+    }, { once: true });
+  }
+
+  if (reflection) {
+    // Short reflections (< 80 chars): skip typewriter, use instant reveal
+    if (reflection.length < 80) {
+      introTextEl.textContent = reflection;
+      introTextEl.style.opacity = '0';
+      introTextEl.style.transition = 'opacity 0.4s ease';
+      requestAnimationFrame(() => { introTextEl.style.opacity = '1'; });
+      finishTypewriter();
+    } else {
+      tick();
+    }
+  } else {
+    finishTypewriter();
   }
 
   // ── E: Scroll listener for carousel ─────────────────────────────────────────
@@ -2253,21 +2331,21 @@ function startSwipeHintSequence() {
   const carousel = document.getElementById('verses-carousel');
   if (!carousel || totalVerseCards < 2) return;
 
-  // 1. Peek nudge after 1.5s — reveal edge of next card
+  // 1. Peek nudge after 1s — reveal edge of next card
   _swipeHintTimers.push(setTimeout(() => {
     if (currentCardIndex !== 0) return;
     carousel.scrollTo({ left: 50, behavior: 'smooth' });
     setTimeout(() => {
       if (currentCardIndex === 0) carousel.scrollTo({ left: 0, behavior: 'smooth' });
     }, 600);
-  }, 1500));
+  }, 1000));
 
-  // 2. Auto-advance to first verse after 5s
+  // 2. Auto-advance to first verse after 3s
   _swipeHintTimers.push(setTimeout(() => {
     if (currentCardIndex !== 0) return;
     const slideWidth = carousel.offsetWidth;
     carousel.scrollTo({ left: slideWidth, behavior: 'smooth' });
-  }, 5000));
+  }, 3000));
 }
 
 function clearSwipeHints() {
@@ -2541,6 +2619,18 @@ function showNotRelevant(message) {
 // ── API Call ──────────────────────────────────────────────────────────────────
 
 async function callAPI(feeling, { refresh = false } = {}) {
+  // ── Client-side cache check (privacy-safe: hashed keys) ─────────────────
+  const normKey = _cacheNormalise(currentMode, feeling);
+  const hashedKey = await _hashKey(normKey);
+  if (!refresh) {
+    const cached = getClientCache(hashedKey);
+    if (cached) {
+      logEvent('search_cached', { source: 'client' });
+      cached._fromClientCache = true;
+      return cached;
+    }
+  }
+
   const res = await fetch('/api/get-ayat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2548,7 +2638,13 @@ async function callAPI(feeling, { refresh = false } = {}) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
-  if (res.headers.get('X-Cache') === 'HIT') logEvent('search_cached');
+  if (res.headers.get('X-Cache') === 'HIT') logEvent('search_cached', { source: 'server' });
+
+  // Cache successful results client-side (skip not_relevant and error payloads)
+  if (!data.not_relevant && data.ayat) {
+    setClientCache(hashedKey, data);
+  }
+
   return data;
 }
 
@@ -2556,19 +2652,29 @@ async function fetchAyat(feeling, { method = 'text', emotionId, refresh = false 
   currentFeeling   = feeling;
   currentSearchCtx = { method, emotionId: emotionId || null };
   switchView('verses-view');
-  showLoading();
 
   const startProps = { method };
   if (emotionId) startProps.emotion_id = emotionId;
   logEvent('search_started', startProps);
 
   try {
+    // Check client cache first — if hit, skip loading animation entirely
+    const normKey = _cacheNormalise(currentMode, feeling);
+    const hashedKey = await _hashKey(normKey);
+    const quickCached = !refresh && getClientCache(hashedKey);
+
+    if (!quickCached) showLoading();
+
     const data = await callAPI(feeling, { refresh });
     if (data.not_relevant) {
       logEvent('search_completed', { outcome: 'not_relevant' });
       showNotRelevant(data.message);
     } else {
-      logEvent('search_completed', { outcome: 'success', verse_count: data.ayat?.length ?? 0 });
+      logEvent('search_completed', {
+        outcome: 'success',
+        verse_count: data.ayat?.length ?? 0,
+        from_cache: !!data._fromClientCache,
+      });
       renderVerses(data);
     }
   } catch (err) {
@@ -2800,68 +2906,514 @@ function switchView(targetId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── Verse of the Day ──────────────────────────────────────────────────────────
+// ── Daily Card (5-Slide Rotating Card) ────────────────────────────────────────
 
-async function initVOTD() {
-  const section = document.getElementById('votd-section');
-  if (!section) return;
+let dailyActiveSlide   = 0;
+let dailyRotateTimer   = null;
+let dailyExpanded      = false;
+let dailyVOTDData      = null;
+let dailyContentData   = null;
+const DAILY_ROTATE_MS  = 4000;
 
-  // Show a subtle placeholder while loading
-  section.innerHTML = '<div class="votd-skeleton"></div>';
+async function initDailyCard() {
+  const wrap = document.getElementById('dailyCardWrap');
+  if (!wrap) return;
+
+  const skeleton  = document.getElementById('dailySkeleton');
+  const collapsed = document.getElementById('dailyCollapsed');
 
   try {
-    const res = await fetch('/api/verse-of-day');
-    if (!res.ok) throw new Error('unavailable');
-    const verse = await res.json();
-    renderVOTD(verse, section);
+    // Fetch both endpoints in parallel
+    const [votdRes, dailyRes] = await Promise.allSettled([
+      fetch('/api/verse-of-day'),
+      fetch('/api/daily-content'),
+    ]);
+
+    // Parse VOTD
+    if (votdRes.status === 'fulfilled' && votdRes.value.ok) {
+      dailyVOTDData = await votdRes.value.json();
+    }
+
+    // Parse daily content
+    if (dailyRes.status === 'fulfilled' && dailyRes.value.ok) {
+      const d = await dailyRes.value.json();
+      if (d && d.content_date) dailyContentData = d;
+    }
+
+    // If both fail → hide entire card
+    if (!dailyVOTDData && !dailyContentData) {
+      wrap.remove();
+      return;
+    }
+
+    // Render
+    renderDailySlides();
+    renderDailyDate();
+
+    // Show collapsed, hide skeleton
+    skeleton.classList.add('hidden');
+    collapsed.classList.remove('hidden');
+
+    // Wire interactions
+    wireDailyDots();
+    wireDailySwipe();
+    wireDailyVisibility();
+
+    // Start rotation
+    startDailyRotation();
   } catch {
-    section.remove(); // silently hide when offline or endpoint missing
+    wrap.remove();
   }
 }
 
-function renderVOTD(verse, container) {
-  const today   = new Date();
-  const dateStr = today.toLocaleDateString('id-ID', {
+function renderDailyDate() {
+  const dateEl = document.getElementById('dailyHeaderDate');
+  if (!dateEl) return;
+  const today = new Date();
+  dateEl.textContent = today.toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+}
 
-  // Local curated verses use surah_name + verse_number; API verses have ref
-  const ref     = verse.ref || `QS. ${verse.surah_name}: ${verse.verse_number}`;
+function renderDailySlides() {
+  const slides = document.querySelectorAll('.daily-slide');
+  const hasDaily = !!dailyContentData;
 
-  const CHEVRON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+  // Slide 0 — VOTD
+  if (dailyVOTDData) {
+    const ref = dailyVOTDData.ref || `QS. ${dailyVOTDData.surah_name}: ${dailyVOTDData.verse_number}`;
+    slides[0].innerHTML = `
+      <span class="daily-teaser-mode">✦ Ayat Hari Ini</span>
+      <div class="daily-teaser-title">${escapeHtml(ref)}</div>
+      <div class="daily-teaser-preview">"${escapeHtml(dailyVOTDData.translation)}"</div>
+      <span class="daily-teaser-cta">Baca Ayat</span>
+    `;
+  } else {
+    slides[0].innerHTML = `
+      <span class="daily-teaser-mode">✦ Ayat Hari Ini</span>
+      <div class="daily-teaser-title">Tidak tersedia</div>
+      <div class="daily-teaser-preview">Ayat hari ini sedang tidak tersedia</div>
+    `;
+  }
 
-  container.innerHTML = `
-    <div class="votd-wrap">
-      <button class="votd-trigger" aria-expanded="false">
-        <div class="votd-trigger-info">
-          <span class="votd-label">✦ Ayat Hari Ini</span>
-          <span class="votd-date">${dateStr}</span>
-        </div>
-        <span class="votd-chevron">${CHEVRON}</span>
-      </button>
-      <div class="votd-body">
-        <div class="votd-card">
-          <p class="votd-arabic">${escapeHtml(verse.arabic)}</p>
-          <p class="votd-translation">"${escapeHtml(verse.translation)}"</p>
-          <p class="votd-ref">${escapeHtml(ref)}</p>
-          <div class="votd-actions">
-            <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  // Slide 1 — Curhat
+  if (hasDaily && dailyContentData.feeling_label) {
+    slides[1].innerHTML = `
+      <span class="daily-teaser-mode">${dailyContentData.feeling_emoji || '💭'} Curhat</span>
+      <div class="daily-teaser-title">Lagi ${escapeHtml(dailyContentData.feeling_label)}?</div>
+      <div class="daily-teaser-preview">${dailyContentData.feeling_verse?.reflection ? escapeHtml(dailyContentData.feeling_verse.reflection) : 'Ada ayat yang cocok untukmu hari ini.'}</div>
+      <span class="daily-teaser-cta">Temukan Ayatnya</span>
+    `;
+  } else {
+    slides[1].innerHTML = `
+      <span class="daily-teaser-mode">💭 Curhat</span>
+      <div class="daily-teaser-title">Ceritakan perasaanmu</div>
+      <div class="daily-teaser-preview">Temukan ayat yang sesuai dengan perasaanmu.</div>
+      <span class="daily-teaser-cta">Mulai Curhat</span>
+    `;
+  }
 
-  // Toggle expand/collapse
-  container.querySelector('.votd-trigger').addEventListener('click', function () {
-    const expanded = this.getAttribute('aria-expanded') === 'true';
-    this.setAttribute('aria-expanded', !expanded);
-    container.querySelector('.votd-body').classList.toggle('open', !expanded);
+  // Slide 2 — Panduan
+  if (hasDaily && dailyContentData.topic) {
+    slides[2].innerHTML = `
+      <span class="daily-teaser-mode">${dailyContentData.topic_emoji || '🧭'} Panduan</span>
+      <div class="daily-teaser-title">${escapeHtml(dailyContentData.topic)}</div>
+      <div class="daily-teaser-preview">${dailyContentData.topic_verse?.reflection ? escapeHtml(dailyContentData.topic_verse.reflection) : 'Ada panduan dari Al-Quran untuk topik ini.'}</div>
+      <span class="daily-teaser-cta">Cari Panduan</span>
+    `;
+  } else {
+    slides[2].innerHTML = `
+      <span class="daily-teaser-mode">🧭 Panduan</span>
+      <div class="daily-teaser-title">Cari panduan hidup</div>
+      <div class="daily-teaser-preview">Temukan jawaban dari Al-Quran untuk pertanyaanmu.</div>
+      <span class="daily-teaser-cta">Mulai Cari</span>
+    `;
+  }
+
+  // Slide 3 — Jelajahi
+  if (hasDaily && dailyContentData.surah_name) {
+    const typeLabel = dailyContentData.surah_type === 'Makkiyah' ? 'Makkiyah' : 'Madaniyah';
+    slides[3].innerHTML = `
+      <span class="daily-teaser-mode">📜 Jelajahi</span>
+      <div class="daily-teaser-title">Surah ${escapeHtml(dailyContentData.surah_name)}</div>
+      <div class="daily-teaser-preview">${escapeHtml(dailyContentData.surah_name_arabic)} · ${dailyContentData.surah_verse_count} ayat · ${typeLabel}</div>
+      <span class="daily-teaser-cta">Buka Surah</span>
+    `;
+  } else {
+    slides[3].innerHTML = `
+      <span class="daily-teaser-mode">📜 Jelajahi</span>
+      <div class="daily-teaser-title">Jelajahi Al-Qur'an</div>
+      <div class="daily-teaser-preview">Baca dan pelajari surah pilihanmu.</div>
+      <span class="daily-teaser-cta">Mulai Jelajahi</span>
+    `;
+  }
+
+  // Slide 4 — Ajarkan
+  if (hasDaily && dailyContentData.ajarkan_question_text) {
+    slides[4].innerHTML = `
+      <span class="daily-teaser-mode">${dailyContentData.ajarkan_category_emoji || '👶'} Ajarkan Anakku</span>
+      <div class="daily-teaser-title">${escapeHtml(dailyContentData.ajarkan_question_text)}</div>
+      <div class="daily-teaser-preview">${dailyContentData.ajarkan_category ? escapeHtml(dailyContentData.ajarkan_category) : 'Pertanyaan anak tentang Islam'}</div>
+      <span class="daily-teaser-cta">Lihat Jawaban</span>
+    `;
+  } else {
+    slides[4].innerHTML = `
+      <span class="daily-teaser-mode">👶 Ajarkan Anakku</span>
+      <div class="daily-teaser-title">Jawab pertanyaan si kecil</div>
+      <div class="daily-teaser-preview">Bantu anak memahami Islam dengan bahasa mereka.</div>
+      <span class="daily-teaser-cta">Lihat Pertanyaan</span>
+    `;
+  }
+
+  // Wire click-to-expand on each slide
+  slides.forEach((slide, i) => {
+    slide.addEventListener('click', () => {
+      logEvent('daily_card_expanded', { slide: i });
+      expandDailyCard(i);
+    });
+  });
+}
+
+// ── Daily Card Rotation ──
+
+function startDailyRotation() {
+  if (dailyExpanded) return;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) return;
+
+  stopDailyRotation();
+  resetProgressBar();
+  dailyRotateTimer = setInterval(() => {
+    const totalSlides = 5;
+    goToDailySlide((dailyActiveSlide + 1) % totalSlides);
+  }, DAILY_ROTATE_MS);
+}
+
+function stopDailyRotation() {
+  if (dailyRotateTimer) {
+    clearInterval(dailyRotateTimer);
+    dailyRotateTimer = null;
+  }
+}
+
+function resetProgressBar() {
+  const fill = document.getElementById('dailyProgressFill');
+  if (!fill) return;
+  fill.classList.add('reset');
+  // Force reflow to restart animation
+  void fill.offsetWidth;
+  fill.classList.remove('reset');
+}
+
+function goToDailySlide(index) {
+  dailyActiveSlide = index;
+  const track = document.getElementById('dailySlidesTrack');
+  if (track) track.style.transform = `translateX(-${index * 20}%)`;
+
+  // Update dots
+  document.querySelectorAll('.daily-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
   });
 
-  container.querySelector('.votd-audio-btn').addEventListener('click',
-    e => playAudio(verse, e.currentTarget)
-  );
+  resetProgressBar();
+}
+
+function wireDailyDots() {
+  const dots = document.querySelectorAll('.daily-dot');
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.dataset.dot, 10);
+      goToDailySlide(idx);
+      stopDailyRotation();
+      startDailyRotation();
+    });
+  });
+}
+
+function wireDailySwipe() {
+  const viewport = document.querySelector('.daily-slides-viewport');
+  if (!viewport) return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  viewport.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+
+  viewport.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // Only act on horizontal swipes (not vertical scroll)
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+
+    const totalSlides = 5;
+    if (dx < 0 && dailyActiveSlide < totalSlides - 1) {
+      goToDailySlide(dailyActiveSlide + 1);
+      logEvent('daily_card_swiped', { direction: 'left', to: dailyActiveSlide });
+    } else if (dx > 0 && dailyActiveSlide > 0) {
+      goToDailySlide(dailyActiveSlide - 1);
+      logEvent('daily_card_swiped', { direction: 'right', to: dailyActiveSlide });
+    }
+    stopDailyRotation();
+    startDailyRotation();
+  }, { passive: true });
+}
+
+function wireDailyVisibility() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopDailyRotation();
+    } else if (!dailyExpanded) {
+      startDailyRotation();
+    }
+  });
+}
+
+// ── Daily Card Expand / Collapse ──
+
+function expandDailyCard(slideIndex) {
+  dailyExpanded = true;
+  stopDailyRotation();
+
+  const body = document.getElementById('dailyExpandedBody');
+  if (!body) return;
+
+  // Remove rounded bottom corners from collapsed section
+  const collapsed = document.getElementById('dailyCollapsed');
+  if (collapsed) collapsed.style.borderRadius = `var(--radius) var(--radius) 0 0`;
+
+  let content = '';
+  const closeBtn = `<button class="daily-close-btn" onclick="collapseDailyCard()">✕</button>`;
+
+  switch (slideIndex) {
+    case 0: // VOTD
+      content = renderDailyVOTDExpanded(closeBtn);
+      break;
+    case 1: // Curhat
+      content = renderDailyCurhatExpanded(closeBtn);
+      break;
+    case 2: // Panduan
+      content = renderDailyPanduanExpanded(closeBtn);
+      break;
+    case 3: // Jelajahi
+      content = renderDailyJelajahiExpanded(closeBtn);
+      break;
+    case 4: // Ajarkan
+      content = renderDailyAjarkanExpanded(closeBtn);
+      break;
+  }
+
+  body.innerHTML = content;
+  body.classList.remove('hidden');
+
+  // Wire audio button if present
+  const audioBtn = body.querySelector('.votd-audio-btn');
+  if (audioBtn && dailyVOTDData) {
+    audioBtn.addEventListener('click', e => playAudio(dailyVOTDData, e.currentTarget));
+  }
+
+  // Wire verse audio for curhat/panduan expanded
+  const verseAudioBtn = body.querySelector('.daily-verse-audio-btn');
+  if (verseAudioBtn) {
+    const verseData = slideIndex === 1 ? dailyContentData?.feeling_verse : dailyContentData?.topic_verse;
+    if (verseData) {
+      verseAudioBtn.addEventListener('click', e => playAudio(verseData, e.currentTarget));
+    }
+  }
+
+  // Wire CTA
+  const ctaBtn = body.querySelector('.daily-cta-btn');
+  if (ctaBtn) {
+    ctaBtn.addEventListener('click', () => {
+      logEvent('daily_card_cta_tapped', { slide: slideIndex });
+      handleDailyCTA(slideIndex);
+    });
+  }
+
+  // Scroll into view
+  body.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function collapseDailyCard() {
+  dailyExpanded = false;
+  const body = document.getElementById('dailyExpandedBody');
+  if (body) {
+    body.classList.add('hidden');
+    body.innerHTML = '';
+  }
+  const collapsed = document.getElementById('dailyCollapsed');
+  if (collapsed) collapsed.style.borderRadius = '';
+
+  startDailyRotation();
+}
+
+function renderDailyVOTDExpanded(closeBtn) {
+  if (!dailyVOTDData) return `<div class="daily-expanded-header"><span class="daily-expanded-title">Ayat Hari Ini</span>${closeBtn}</div><p style="color:rgba(255,255,255,0.6)">Tidak tersedia</p>`;
+
+  const ref = dailyVOTDData.ref || `QS. ${dailyVOTDData.surah_name}: ${dailyVOTDData.verse_number}`;
+  return `
+    <div class="daily-expanded-header">
+      <span class="daily-expanded-title">✦ Ayat Hari Ini</span>
+      ${closeBtn}
+    </div>
+    <p class="votd-arabic">${escapeHtml(dailyVOTDData.arabic)}</p>
+    <p class="votd-translation">"${escapeHtml(dailyVOTDData.translation)}"</p>
+    <p class="votd-ref">${escapeHtml(ref)}</p>
+    <div class="votd-actions">
+      <button class="vc-btn votd-audio-btn">${PLAY_ICON} Putar</button>
+    </div>
+  `;
+}
+
+function renderDailyCurhatExpanded(closeBtn) {
+  const d = dailyContentData;
+  if (!d || !d.feeling_verse) {
+    return `
+      <div class="daily-expanded-header"><span class="daily-expanded-title">${d?.feeling_emoji || '💭'} Curhat</span>${closeBtn}</div>
+      <p style="color:rgba(255,255,255,0.6)">Konten belum tersedia hari ini.</p>
+      <button class="daily-cta-btn">💭 Mulai Curhat</button>
+    `;
+  }
+  const v = d.feeling_verse;
+  const ref = v.ref || `QS. ${v.surah_name || ''}: ${v.verse_number || ''}`;
+  return `
+    <div class="daily-expanded-header">
+      <span class="daily-expanded-title">${d.feeling_emoji || '💭'} Lagi ${escapeHtml(d.feeling_label)}?</span>
+      ${closeBtn}
+    </div>
+    ${v.reflection ? `<div class="daily-reflection">${escapeHtml(v.reflection)}</div>` : ''}
+    <p class="votd-arabic">${escapeHtml(v.arabic || '')}</p>
+    <p class="votd-translation">"${escapeHtml(v.translation || '')}"</p>
+    <p class="votd-ref">${escapeHtml(ref)}</p>
+    <div class="votd-actions">
+      <button class="vc-btn daily-verse-audio-btn">${PLAY_ICON} Putar</button>
+    </div>
+    <button class="daily-cta-btn">💭 Temukan Lebih Banyak</button>
+  `;
+}
+
+function renderDailyPanduanExpanded(closeBtn) {
+  const d = dailyContentData;
+  if (!d || !d.topic_verse) {
+    return `
+      <div class="daily-expanded-header"><span class="daily-expanded-title">${d?.topic_emoji || '🧭'} Panduan</span>${closeBtn}</div>
+      <p style="color:rgba(255,255,255,0.6)">Konten belum tersedia hari ini.</p>
+      <button class="daily-cta-btn">🧭 Cari Panduan</button>
+    `;
+  }
+  const v = d.topic_verse;
+  const ref = v.ref || `QS. ${v.surah_name || ''}: ${v.verse_number || ''}`;
+  return `
+    <div class="daily-expanded-header">
+      <span class="daily-expanded-title">${d.topic_emoji || '🧭'} ${escapeHtml(d.topic)}</span>
+      ${closeBtn}
+    </div>
+    ${v.reflection ? `<div class="daily-reflection">${escapeHtml(v.reflection)}</div>` : ''}
+    <p class="votd-arabic">${escapeHtml(v.arabic || '')}</p>
+    <p class="votd-translation">"${escapeHtml(v.translation || '')}"</p>
+    <p class="votd-ref">${escapeHtml(ref)}</p>
+    <div class="votd-actions">
+      <button class="vc-btn daily-verse-audio-btn">${PLAY_ICON} Putar</button>
+    </div>
+    <button class="daily-cta-btn">🧭 Temukan Lebih Banyak</button>
+  `;
+}
+
+function renderDailyJelajahiExpanded(closeBtn) {
+  const d = dailyContentData;
+  if (!d || !d.surah_name) {
+    return `
+      <div class="daily-expanded-header"><span class="daily-expanded-title">📜 Jelajahi</span>${closeBtn}</div>
+      <p style="color:rgba(255,255,255,0.6)">Konten belum tersedia hari ini.</p>
+      <button class="daily-cta-btn">📜 Jelajahi Al-Qur'an</button>
+    `;
+  }
+  const typeLabel = d.surah_type === 'Makkiyah' ? 'Makkiyah' : 'Madaniyah';
+  return `
+    <div class="daily-expanded-header">
+      <span class="daily-expanded-title">📜 Surah Hari Ini</span>
+      ${closeBtn}
+    </div>
+    <div class="daily-surah-info">
+      <div class="daily-surah-arabic">${escapeHtml(d.surah_name_arabic)}</div>
+      <div class="daily-surah-name">Surah ${escapeHtml(d.surah_name)}</div>
+      <div class="daily-surah-meta">${d.surah_verse_count} ayat · ${typeLabel} · Surah ke-${d.surah_number}</div>
+    </div>
+    <button class="daily-cta-btn">📜 Buka Surah ${escapeHtml(d.surah_name)}</button>
+  `;
+}
+
+function renderDailyAjarkanExpanded(closeBtn) {
+  const d = dailyContentData;
+  if (!d || !d.ajarkan_question_text) {
+    return `
+      <div class="daily-expanded-header"><span class="daily-expanded-title">👶 Ajarkan Anakku</span>${closeBtn}</div>
+      <p style="color:rgba(255,255,255,0.6)">Konten belum tersedia hari ini.</p>
+      <button class="daily-cta-btn">👶 Lihat Pertanyaan</button>
+    `;
+  }
+  return `
+    <div class="daily-expanded-header">
+      <span class="daily-expanded-title">${d.ajarkan_category_emoji || '👶'} Ajarkan Anakku</span>
+      ${closeBtn}
+    </div>
+    <div class="daily-ajarkan-category">${d.ajarkan_category_emoji || ''} ${escapeHtml(d.ajarkan_category || '')}</div>
+    <div class="daily-ajarkan-question">${escapeHtml(d.ajarkan_question_text)}</div>
+    <button class="daily-cta-btn">👶 Lihat Jawaban</button>
+  `;
+}
+
+function handleDailyCTA(slideIndex) {
+  collapseDailyCard();
+
+  switch (slideIndex) {
+    case 0: // VOTD — no deeper action, already expanded
+      break;
+    case 1: // Curhat — select mode and search with the daily feeling
+      if (dailyContentData?.feeling) {
+        selectMode('curhat');
+        fetchAyat(dailyContentData.feeling, { method: 'text' });
+      } else {
+        selectMode('curhat');
+      }
+      break;
+    case 2: // Panduan — select mode and search with the daily topic
+      if (dailyContentData?.topic_query) {
+        selectMode('panduan');
+        fetchAyat(dailyContentData.topic_query, { method: 'text' });
+      } else {
+        selectMode('panduan');
+      }
+      break;
+    case 3: // Jelajahi — load surah directly
+      if (dailyContentData?.surah_number) {
+        selectMode('jelajahi');
+        loadSurahFromBrowser(dailyContentData.surah_number, 'daily_card');
+      } else {
+        selectMode('jelajahi');
+      }
+      break;
+    case 4: // Ajarkan — load preset question (or route to age selection)
+      if (dailyContentData?.ajarkan_question_id) {
+        selectMode('ajarkan');
+        if (!ajarkanAgeGroup) {
+          // Store question ID so it auto-loads after age selection
+          ajarkanCurrentQId = dailyContentData.ajarkan_question_id;
+          // User will select age, then the normal flow picks up ajarkanCurrentQId
+        } else {
+          fetchAjarkanPreset(dailyContentData.ajarkan_question_id);
+        }
+      } else {
+        selectMode('ajarkan');
+      }
+      break;
+  }
 }
 
 // ── Mode Selection ────────────────────────────────────────────────────────
@@ -4337,9 +4889,43 @@ initSearch();
 initPanduanSearch();
 initJelajahiSearch();
 renderAjarkanView();
-initVOTD();
+initDailyCard();
 initA2HS();
 initAbout();
+
+// ── Pre-warm top emotion cards in background ─────────────────────────────────
+// Silently fetches results for the 3 most-used emotion shortcuts so that
+// the first tap delivers an instant cache-hit instead of a 6-12 s wait.
+(function preWarmEmotionCards() {
+  const TOP_EMOTIONS = ['sad', 'anxious', 'hopeless'];  // highest-traffic cards
+  const PRE_WARM_DELAY = 3000;  // wait 3 s after page load
+
+  setTimeout(async () => {
+    for (const eid of TOP_EMOTIONS) {
+      const emo = emotions.find(e => e.id === eid);
+      if (!emo) continue;
+
+      const normKey = _cacheNormalise('curhat', emo.feeling);
+      const hashedKey = await _hashKey(normKey);
+
+      // Skip if already cached
+      if (getClientCache(hashedKey)) continue;
+
+      try {
+        const res = await fetch('/api/get-ayat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feeling: emo.feeling, mode: 'curhat' }),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data.not_relevant && data.ayat) {
+          setClientCache(hashedKey, data);
+        }
+      } catch { /* silent — pre-warm is best-effort */ }
+    }
+  }, PRE_WARM_DELAY);
+})();
 
 // ── Service Worker ─────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {

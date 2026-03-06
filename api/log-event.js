@@ -67,6 +67,11 @@ const VALID_EVENTS = new Set([
   'push_subscribed',
   'push_permission_denied',
   'push_permission_dismissed',
+  // Daily card events
+  'daily_card_expanded',
+  'daily_card_cta_tapped',
+  'daily_card_swiped',
+  'daily_content_generated',
 ]);
 
 module.exports = async function handler(req, res) {

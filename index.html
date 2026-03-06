@@ -177,8 +177,43 @@
 
       <hr class="landing-section-divider" />
 
-      <div class="landing-votd">
-        <div id="votd-section" class="votd-section"></div>
+      <div id="dailyCardWrap" class="daily-card-wrap">
+        <!-- Skeleton (visible while fetching) -->
+        <div id="dailySkeleton" class="daily-skeleton">
+          <div class="daily-skeleton-header"></div>
+          <div class="daily-skeleton-body"></div>
+          <div class="daily-skeleton-dots"></div>
+        </div>
+
+        <!-- Collapsed teaser (hidden until data loads) -->
+        <div id="dailyCollapsed" class="daily-collapsed hidden">
+          <div class="daily-header">
+            <span class="daily-header-label">✦ Harian</span>
+            <span id="dailyHeaderDate" class="daily-header-date"></span>
+          </div>
+          <div class="daily-slides-viewport">
+            <div id="dailySlidesTrack" class="daily-slides-track">
+              <div class="daily-slide" data-slide="0"></div>
+              <div class="daily-slide" data-slide="1"></div>
+              <div class="daily-slide" data-slide="2"></div>
+              <div class="daily-slide" data-slide="3"></div>
+              <div class="daily-slide" data-slide="4"></div>
+            </div>
+          </div>
+          <div class="daily-progress">
+            <div id="dailyProgressFill" class="daily-progress-fill"></div>
+          </div>
+          <div id="dailyDots" class="daily-dots">
+            <button class="daily-dot active" data-dot="0" aria-label="Slide 1"></button>
+            <button class="daily-dot" data-dot="1" aria-label="Slide 2"></button>
+            <button class="daily-dot" data-dot="2" aria-label="Slide 3"></button>
+            <button class="daily-dot" data-dot="3" aria-label="Slide 4"></button>
+            <button class="daily-dot" data-dot="4" aria-label="Slide 5"></button>
+          </div>
+        </div>
+
+        <!-- Expanded content area (hidden by default) -->
+        <div id="dailyExpandedBody" class="daily-expanded-body hidden"></div>
       </div>
 
       <!-- iOS A2HS Guide -->

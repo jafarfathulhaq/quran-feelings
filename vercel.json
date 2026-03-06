@@ -2,12 +2,19 @@
   "functions": {
     "api/get-ayat.js": {
       "maxDuration": 30
+    },
+    "api/generate-daily-content.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
     {
       "path": "/api/send-notifications",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/generate-daily-content",
+      "schedule": "5 17 * * *"
     }
   ],
   "redirects": [
