@@ -211,6 +211,30 @@ let shareIncludeQuestion = false;
 let shareActiveVerse     = null;      // verse object being shared
 let shareLastPlatform    = 'wa_chat'; // last selected platform (for preview aspect ratio)
 
+// ── Share Text (WA) state ────────────────────────────────────────────────────
+const DEFAULT_SHARE_PREFS = {
+  feeling:     true,
+  arabic:      true,
+  translation: true,
+  reference:   true,
+  reflection:  false,
+  tafsir:      false,   // false | 'ringkasan' | 'lengkap'
+};
+
+function loadSharePrefs() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('share_prefs'));
+    if (stored && typeof stored === 'object') return { ...DEFAULT_SHARE_PREFS, ...stored };
+  } catch { /* ignore */ }
+  return { ...DEFAULT_SHARE_PREFS };
+}
+
+function saveSharePrefs(prefs) {
+  localStorage.setItem('share_prefs', JSON.stringify(prefs));
+}
+
+let shareTextPrefs = loadSharePrefs();
+
 // ── Push Notification ─────────────────────────────────────────────────────────
 
 const VAPID_PUBLIC_KEY = 'BKSz_3Z4dVpGuwI3W5i2sFtt8HfvJpJvJsjGoL_P2pRTS1FH__D7NiOdZerX2Tv7rL9epRjpBBVYxJsJS8FF-mE';
@@ -1334,7 +1358,7 @@ async function generateShareImage(verse, platform) {
   );
 }
 
-// Open the share bottom sheet
+// Open the share bottom sheet — now shows Panel A (mode select) first
 function openShareSheet(verse) {
   shareActiveVerse = verse;
 
@@ -1348,27 +1372,8 @@ function openShareSheet(verse) {
   const overlay = document.getElementById('share-overlay');
   const sheet   = document.getElementById('share-sheet');
 
-  // Show/hide question toggle based on mode
-  const qToggle = document.getElementById('share-toggle-question');
-  if (currentMode === 'jelajahi' || currentMode === 'ajarkan' || !currentFeeling) {
-    qToggle.style.display = 'none';
-  } else {
-    qToggle.style.display = '';
-  }
-
-  // Reset toggles
-  document.getElementById('share-include-question').checked = false;
-  shareIncludeQuestion = false;
-
-  // Reset theme to light
-  shareTheme = 'light';
-  document.querySelectorAll('.theme-pill').forEach(p => {
-    p.classList.toggle('active', p.dataset.theme === 'light');
-  });
-
-  // Reset preview aspect ratio
-  const preview = document.getElementById('share-preview');
-  preview.classList.remove('ratio-story');
+  // Show Panel A, hide B-Image and B-Text
+  showSharePanelA();
 
   // Show sheet
   overlay.classList.remove('hidden');
@@ -1377,9 +1382,6 @@ function openShareSheet(verse) {
     overlay.classList.add('visible');
     sheet.classList.add('visible');
   });
-
-  // Render initial preview
-  updateSharePreview();
 }
 
 // Close the share bottom sheet
@@ -1400,6 +1402,270 @@ function closeShareSheet() {
   }, 300);
 
   shareActiveVerse = null;
+}
+
+// ── Share Panel Switching ───────────────────────────────────────────────────
+function showSharePanelA() {
+  document.getElementById('sharePanelA').style.display = '';
+  document.getElementById('sharePanelImage').style.display = 'none';
+  document.getElementById('sharePanelText').style.display = 'none';
+}
+
+function showSharePanelImage() {
+  document.getElementById('sharePanelA').style.display = 'none';
+  document.getElementById('sharePanelImage').style.display = '';
+  document.getElementById('sharePanelText').style.display = 'none';
+
+  logEvent('share_mode_selected', { mode: 'image' });
+
+  // Reset image share state
+  const qToggle = document.getElementById('share-toggle-question');
+  if (currentMode === 'jelajahi' || currentMode === 'ajarkan' || !currentFeeling) {
+    qToggle.style.display = 'none';
+  } else {
+    qToggle.style.display = '';
+  }
+  document.getElementById('share-include-question').checked = false;
+  shareIncludeQuestion = false;
+  shareTheme = 'light';
+  document.querySelectorAll('.theme-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.theme === 'light');
+  });
+  const preview = document.getElementById('share-preview');
+  preview.classList.remove('ratio-story');
+  updateSharePreview();
+}
+
+function showSharePanelText() {
+  document.getElementById('sharePanelA').style.display = 'none';
+  document.getElementById('sharePanelImage').style.display = 'none';
+  document.getElementById('sharePanelText').style.display = '';
+
+  logEvent('share_mode_selected', { mode: 'whatsapp' });
+
+  // Load prefs and render toggles + preview
+  shareTextPrefs = loadSharePrefs();
+  renderShareToggles();
+  updateShareTextPreview();
+}
+
+// ── Share Text Composition ──────────────────────────────────────────────────
+function composeShareText(verse, prefs) {
+  const SEP = '─────────────────────────';
+  const parts = [];
+
+  // Feeling / topic block
+  if (prefs.feeling) {
+    if (currentMode === 'curhat' && currentFeeling) {
+      parts.push('🌙 Perasaan: ' + currentFeeling);
+      parts.push(SEP);
+    } else if (currentMode === 'panduan' && currentFeeling) {
+      parts.push('🧭 Topik: ' + currentFeeling);
+      parts.push(SEP);
+    } else if (currentMode === 'ajarkan' && ajarkanCurrentQId) {
+      parts.push('👶 Pertanyaan: ' + (verse._userQuestion || ajarkanCurrentQId));
+      parts.push(SEP);
+    }
+  }
+
+  // Verse block
+  const verseLines = [];
+  if (prefs.arabic)      verseLines.push(verse.arabic);
+  if (prefs.translation) verseLines.push('\n"' + verse.translation + '"');
+  if (prefs.reference)   verseLines.push('\n— ' + verse.ref);
+  if (verseLines.length > 0) parts.push(verseLines.join('\n'));
+
+  // Reflection block
+  const reflectionText = verse.resonance || verse.relevance;
+  if (prefs.reflection && reflectionText) {
+    parts.push(SEP);
+    parts.push('💭 Refleksi:\n' + reflectionText);
+  }
+
+  // Tafsir block
+  if (prefs.tafsir === 'ringkasan') {
+    const summary = verse.tafsir_summary;
+    const summaryText = summary && summary.makna_utama && summary.makna_utama.text;
+    if (summaryText) {
+      if (!prefs.reflection || !reflectionText) parts.push(SEP);
+      parts.push('📖 Tafsir:\n' + summaryText);
+    }
+  } else if (prefs.tafsir === 'lengkap') {
+    const fullText = verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir;
+    if (fullText) {
+      if (!prefs.reflection || !reflectionText) parts.push(SEP);
+      parts.push('📖 Tafsir Ibnu Katsir:\n' + fullText);
+    }
+  }
+
+  // Attribution — always
+  parts.push(SEP);
+  parts.push('Ditemukan di TemuQuran.com');
+
+  return parts.join('\n');
+}
+
+// ── Toggle Rendering ────────────────────────────────────────────────────────
+function renderShareToggles() {
+  const container = document.getElementById('shareToggles');
+  if (!container || !shareActiveVerse) return;
+
+  const verse = shareActiveVerse;
+  const prefs = shareTextPrefs;
+
+  // Define toggles — conditionally include/hide based on mode
+  const toggleDefs = [];
+
+  // Feeling / topic toggle
+  const showFeeling = (currentMode === 'curhat' || currentMode === 'panduan');
+  const showAjarkanQ = (currentMode === 'ajarkan');
+  if (showFeeling) {
+    toggleDefs.push({
+      key: 'feeling',
+      label: currentMode === 'curhat' ? 'Perasaan' : 'Topik',
+      sub: currentMode === 'curhat' ? currentFeeling : currentFeeling,
+    });
+  } else if (showAjarkanQ && ajarkanCurrentQId) {
+    toggleDefs.push({
+      key: 'feeling',
+      label: 'Pertanyaan',
+      sub: verse._userQuestion || ajarkanCurrentQId,
+    });
+  }
+  // (jelajahi / votd: no feeling toggle)
+
+  // Arabic
+  toggleDefs.push({ key: 'arabic', label: 'Ayat Arab', sub: 'Teks asli Al-Qur\'an' });
+
+  // Translation
+  toggleDefs.push({ key: 'translation', label: 'Terjemahan', sub: 'Bahasa Indonesia' });
+
+  // Reference
+  toggleDefs.push({ key: 'reference', label: 'Referensi surah', sub: verse.ref || '' });
+
+  // Reflection (hide for ajarkan — no reflection in ajarkan)
+  const reflectionText = verse.resonance || verse.relevance;
+  if (currentMode !== 'ajarkan' && reflectionText) {
+    toggleDefs.push({ key: 'reflection', label: 'Refleksi', sub: 'Penjelasan singkat' });
+  }
+
+  // Tafsir (hide for ajarkan — no tafsir fields)
+  const hasTafsir = verse.tafsir_summary && verse.tafsir_summary.makna_utama;
+  if (currentMode !== 'ajarkan' && hasTafsir) {
+    toggleDefs.push({ key: 'tafsir', label: 'Tafsir', sub: 'Ringkasan atau Ibnu Katsir Lengkap', isTafsir: true });
+  }
+
+  // Build HTML
+  let html = '';
+  for (const def of toggleDefs) {
+    const isOn = def.key === 'tafsir' ? !!prefs.tafsir : prefs[def.key];
+    html += `
+      <div class="share-toggle-row" data-toggle-key="${def.key}">
+        <div class="share-toggle-info">
+          <span class="share-toggle-label">${def.label}</span>
+          <span class="share-toggle-sub">${def.sub}</span>
+        </div>
+        <label class="share-toggle-switch">
+          <input type="checkbox" data-share-key="${def.key}" ${isOn ? 'checked' : ''} />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>`;
+
+    // Tafsir sub-radio (shown only when tafsir is ON)
+    if (def.isTafsir && isOn) {
+      const tafsirMode = prefs.tafsir || 'ringkasan';
+      const hasIbnuKathir = !!(verse.tafsir_ibnu_kathir_id || verse.tafsir_ibnu_kathir);
+      html += `
+        <div class="share-tafsir-sub" id="shareTafsirSub">
+          <label><input type="radio" name="shareTafsirType" value="ringkasan" ${tafsirMode === 'ringkasan' ? 'checked' : ''} /> Ringkasan</label>
+          ${hasIbnuKathir ? `<label><input type="radio" name="shareTafsirType" value="lengkap" ${tafsirMode === 'lengkap' ? 'checked' : ''} /> Ibnu Katsir Lengkap</label>` : ''}
+        </div>`;
+      if (tafsirMode === 'lengkap') {
+        html += '<div class="share-tafsir-note">ℹ️ Pesan akan lebih panjang (~300–600 kata)</div>';
+      }
+    }
+  }
+
+  container.innerHTML = html;
+
+  // Wire toggle event listeners
+  container.querySelectorAll('input[data-share-key]').forEach(input => {
+    input.addEventListener('change', () => {
+      const key = input.dataset.shareKey;
+      if (key === 'tafsir') {
+        shareTextPrefs.tafsir = input.checked ? (shareTextPrefs.tafsir || 'ringkasan') : false;
+      } else {
+        shareTextPrefs[key] = input.checked;
+      }
+
+      // Enforce: arabic + translation can't both be off
+      if (!shareTextPrefs.arabic && !shareTextPrefs.translation) {
+        shareTextPrefs.arabic = true;
+      }
+
+      saveSharePrefs(shareTextPrefs);
+      renderShareToggles(); // re-render for tafsir sub-radio and enforce
+      updateShareTextPreview();
+    });
+  });
+
+  // Wire tafsir sub-radio
+  container.querySelectorAll('input[name="shareTafsirType"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      shareTextPrefs.tafsir = radio.value;
+      saveSharePrefs(shareTextPrefs);
+      renderShareToggles(); // re-render for length note
+      updateShareTextPreview();
+    });
+  });
+}
+
+// ── Live Preview Update ─────────────────────────────────────────────────────
+function updateShareTextPreview() {
+  const el = document.getElementById('sharePreviewText');
+  if (!el || !shareActiveVerse) return;
+  const text = composeShareText(shareActiveVerse, shareTextPrefs);
+  el.textContent = text;
+}
+
+// ── WhatsApp / Copy handlers ────────────────────────────────────────────────
+function sendToWhatsApp() {
+  if (!shareActiveVerse) return;
+  const text = composeShareText(shareActiveVerse, shareTextPrefs);
+  const encoded = encodeURIComponent(text);
+
+  logEvent('share_wa_sent', {
+    feeling_on:     shareTextPrefs.feeling,
+    arabic_on:      shareTextPrefs.arabic,
+    translation_on: shareTextPrefs.translation,
+    reference_on:   shareTextPrefs.reference,
+    reflection_on:  shareTextPrefs.reflection,
+    tafsir_on:      !!shareTextPrefs.tafsir,
+    tafsir_mode:    shareTextPrefs.tafsir || 'off',
+  });
+
+  window.open('https://wa.me/?text=' + encoded, '_blank');
+}
+
+function copyShareText() {
+  if (!shareActiveVerse) return;
+  const text = composeShareText(shareActiveVerse, shareTextPrefs);
+
+  logEvent('share_wa_copied', {
+    feeling_on:     shareTextPrefs.feeling,
+    arabic_on:      shareTextPrefs.arabic,
+    translation_on: shareTextPrefs.translation,
+    reference_on:   shareTextPrefs.reference,
+    reflection_on:  shareTextPrefs.reflection,
+    tafsir_on:      !!shareTextPrefs.tafsir,
+    tafsir_mode:    shareTextPrefs.tafsir || 'off',
+  });
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Teks berhasil disalin ✓');
+  }).catch(() => {
+    showToast('Gagal menyalin teks');
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4953,7 +5219,23 @@ document.getElementById('share-sheet-close').addEventListener('click', closeShar
   });
 }
 
-// Theme picker
+// Panel A — Mode select buttons
+document.getElementById('shareModeImg').addEventListener('click', showSharePanelImage);
+document.getElementById('shareModeWA').addEventListener('click', showSharePanelText);
+
+// Panel B-Image — Back button
+document.getElementById('shareBackImgBtn').addEventListener('click', showSharePanelA);
+
+// Panel B-Text — Back button
+document.getElementById('shareBackTxtBtn').addEventListener('click', showSharePanelA);
+
+// Panel B-Text — Send to WhatsApp
+document.getElementById('shareSendWA').addEventListener('click', sendToWhatsApp);
+
+// Panel B-Text — Copy text
+document.getElementById('shareCopyText').addEventListener('click', copyShareText);
+
+// Theme picker (inside Panel B-Image)
 document.getElementById('share-theme-picker').addEventListener('click', e => {
   const pill = e.target.closest('.theme-pill');
   if (!pill) return;
@@ -4963,12 +5245,12 @@ document.getElementById('share-theme-picker').addEventListener('click', e => {
   updateSharePreview();
 });
 
-// Content toggles
+// Content toggles (inside Panel B-Image)
 document.getElementById('share-include-question').addEventListener('change', e => {
   shareIncludeQuestion = e.target.checked;
   updateSharePreview();
 });
-// Platform buttons
+// Platform buttons (inside Panel B-Image)
 document.querySelectorAll('.share-platform-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const platform = btn.dataset.platform;

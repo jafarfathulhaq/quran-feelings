@@ -542,50 +542,92 @@
       </button>
     </div>
 
-    <!-- Live preview -->
-    <div class="share-preview-wrap">
-      <div id="share-preview" class="share-preview"></div>
-      <p class="share-preview-label">Pratinjau</p>
-    </div>
-
-    <!-- Theme picker -->
-    <div class="share-section">
-      <p class="share-section-label">Tema</p>
-      <div class="share-theme-picker" id="share-theme-picker">
-        <button class="theme-pill active" data-theme="light">Light</button>
-        <button class="theme-pill" data-theme="dark">Dark</button>
-        <button class="theme-pill" data-theme="classic">Classic</button>
+    <!-- Panel A — Mode select -->
+    <div id="sharePanelA" class="share-panel">
+      <div class="share-panel-title">Bagikan Ayat Ini</div>
+      <div class="share-modes">
+        <button class="share-mode-btn" id="shareModeImg">
+          <span class="share-mode-icon">🖼️</span>
+          <span class="share-mode-label">Gambar</span>
+          <span class="share-mode-desc">Bagikan sebagai foto</span>
+        </button>
+        <button class="share-mode-btn" id="shareModeWA">
+          <span class="share-mode-icon">💬</span>
+          <span class="share-mode-label">Teks WA</span>
+          <span class="share-mode-desc">Pesan lengkap dengan konteks</span>
+        </button>
       </div>
     </div>
 
-    <!-- Content toggles -->
-    <div class="share-section" id="share-toggles">
-      <label class="share-toggle" id="share-toggle-question">
-        <input type="checkbox" id="share-include-question" />
-        <span>Sertakan perasaan / pertanyaanmu</span>
-      </label>
+    <!-- Panel B-Image — Existing image share flow (hidden initially) -->
+    <div id="sharePanelImage" class="share-panel" style="display:none">
+      <button class="share-back-btn" id="shareBackImgBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Gambar
+      </button>
+
+      <!-- Live preview -->
+      <div class="share-preview-wrap">
+        <div id="share-preview" class="share-preview"></div>
+        <p class="share-preview-label">Pratinjau</p>
+      </div>
+
+      <!-- Theme picker -->
+      <div class="share-section">
+        <p class="share-section-label">Tema</p>
+        <div class="share-theme-picker" id="share-theme-picker">
+          <button class="theme-pill active" data-theme="light">Light</button>
+          <button class="theme-pill" data-theme="dark">Dark</button>
+          <button class="theme-pill" data-theme="classic">Classic</button>
+        </div>
+      </div>
+
+      <!-- Content toggles -->
+      <div class="share-section" id="share-toggles">
+        <label class="share-toggle" id="share-toggle-question">
+          <input type="checkbox" id="share-include-question" />
+          <span>Sertakan perasaan / pertanyaanmu</span>
+        </label>
+      </div>
+
+      <!-- Platform buttons -->
+      <div class="share-section">
+        <p class="share-section-label">Bagikan ke</p>
+        <div class="share-platform-grid">
+          <button class="share-platform-btn" data-platform="ig_story">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>
+            <span>IG Story</span>
+          </button>
+          <button class="share-platform-btn" data-platform="wa_status">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="currentColor"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            <span>WA Status</span>
+          </button>
+          <button class="share-platform-btn" data-platform="wa_chat">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="currentColor"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            <span>WA Chat</span>
+          </button>
+          <button class="share-platform-btn" data-platform="download">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- Platform buttons -->
-    <div class="share-section">
-      <p class="share-section-label">Bagikan ke</p>
-      <div class="share-platform-grid">
-        <button class="share-platform-btn" data-platform="ig_story">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>
-          <span>IG Story</span>
-        </button>
-        <button class="share-platform-btn" data-platform="wa_status">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="currentColor"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-          <span>WA Status</span>
-        </button>
-        <button class="share-platform-btn" data-platform="wa_chat">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="currentColor"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-          <span>WA Chat</span>
-        </button>
-        <button class="share-platform-btn" data-platform="download">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Download</span>
-        </button>
+    <!-- Panel B-Text — WhatsApp text share config (hidden initially) -->
+    <div id="sharePanelText" class="share-panel" style="display:none">
+      <button class="share-back-btn" id="shareBackTxtBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Teks WhatsApp
+      </button>
+      <div id="shareToggles" class="share-toggles"></div>
+      <div id="sharePreviewBubble" class="share-preview-bubble">
+        <div id="sharePreviewText" class="share-preview-text"></div>
+        <div class="share-preview-fade"></div>
+      </div>
+      <div class="share-send-row">
+        <button id="shareSendWA" class="share-btn-wa">💬 Kirim ke WhatsApp</button>
+        <button id="shareCopyText" class="share-btn-copy">📋 Salin</button>
       </div>
     </div>
   </div>

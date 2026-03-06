@@ -3602,6 +3602,235 @@ body.about-locked { overflow: hidden; }
   color: var(--text-muted);
 }
 
+/* ── Share Panel Structure ── */
+.share-panel { /* panels inside share-sheet (A, B-Image, B-Text) */ }
+
+/* ── Panel A — Mode Select ── */
+.share-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+.share-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.share-mode-btn {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-mode-btn:active {
+  background: rgba(201,168,76,0.06);
+  border-color: var(--gold);
+}
+.share-mode-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+}
+.share-mode-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: block;
+}
+.share-mode-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ── Back button (used in Panel B-Image and Panel B-Text) ── */
+.share-back-btn {
+  background: none;
+  border: none;
+  color: var(--text-mid);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-back-btn:active { opacity: 0.6; }
+.share-back-btn svg { flex-shrink: 0; }
+
+/* ── Panel B-Text — Toggle rows ── */
+.share-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.share-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(226,232,240,0.5);
+  gap: 12px;
+}
+.share-toggle-row:last-child { border-bottom: none; }
+.share-toggle-info {
+  flex: 1;
+  min-width: 0;
+}
+.share-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  display: block;
+}
+.share-toggle-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+/* iOS-style toggle switch */
+.share-toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.share-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.share-toggle-switch .toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #CBD5E1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.share-toggle-switch .toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.share-toggle-switch input:checked + .toggle-slider {
+  background: var(--teal-dark);
+}
+.share-toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* Tafsir sub-radio (visible only when tafsir toggle ON) */
+.share-tafsir-sub {
+  padding: 4px 0 8px 0;
+  display: flex;
+  gap: 16px;
+}
+.share-tafsir-sub label {
+  font-size: 12px;
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.share-tafsir-sub input[type="radio"] {
+  accent-color: var(--teal-dark);
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+.share-tafsir-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 0 8px;
+  line-height: 1.4;
+}
+
+/* ── Panel B-Text — Preview bubble ── */
+.share-preview-bubble {
+  position: relative;
+  background: rgba(10,92,122,0.05);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 14px 0;
+  max-height: 130px;
+  overflow: hidden;
+}
+.share-preview-text {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-mid);
+  white-space: pre-wrap;
+  direction: auto;
+  unicode-bidi: plaintext;
+}
+.share-preview-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(transparent, rgba(10,92,122,0.05));
+  pointer-events: none;
+}
+
+/* ── Panel B-Text — Send / copy row ── */
+.share-send-row {
+  display: flex;
+  gap: 10px;
+}
+.share-btn-wa {
+  flex: 1;
+  background: var(--teal-dark);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-btn-wa:active { opacity: 0.8; }
+.share-btn-copy {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-btn-copy:active {
+  background: rgba(0,0,0,0.04);
+  border-color: var(--text-muted);
+}
+
 /* ════════════════════════════════════════════════════════
    SHARE IMAGE RENDER (off-screen, captured by html2canvas)
 ════════════════════════════════════════════════════════ */
