@@ -2760,23 +2760,19 @@ body.about-locked { overflow: hidden; }
 .daily-header {
   border-radius: var(--radius);
   background: #0A0F1E;
-  padding: 15px 20px;
+  padding: 14px 20px 12px;
   cursor: pointer;
   transition: border-radius 0.3s ease;
   animation: fadeUp 0.5s ease both;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 .daily-header.open {
   border-radius: var(--radius) var(--radius) 0 0;
 }
-.daily-header-right {
+.daily-header-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 .daily-header-date {
   font-size: 11px;
@@ -2788,6 +2784,7 @@ body.about-locked { overflow: hidden; }
   font-size: 12px;
   transition: transform 0.3s ease;
   display: inline-block;
+  flex-shrink: 0;
 }
 .daily-header.open .daily-header-chevron {
   transform: rotate(180deg);

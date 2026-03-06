@@ -187,13 +187,13 @@
 
         <!-- Layer 1: Compact header (always visible after load) -->
         <div id="dailyHeader" class="daily-header hidden">
-          <span class="daily-header-mode">
-            <span id="dailyHeaderModeText" class="daily-header-mode-text"></span>
-          </span>
-          <span class="daily-header-right">
-            <span id="dailyHeaderDate" class="daily-header-date"></span>
+          <div class="daily-header-row">
+            <span class="daily-header-mode">
+              <span id="dailyHeaderModeText" class="daily-header-mode-text"></span>
+            </span>
             <span class="daily-header-chevron">▾</span>
-          </span>
+          </div>
+          <div id="dailyHeaderDate" class="daily-header-date"></div>
         </div>
 
         <!-- Layer 2: Carousel (hidden until header tapped) -->
