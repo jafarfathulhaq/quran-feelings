@@ -2793,20 +2793,22 @@ body.about-locked { overflow: hidden; }
   font-weight: 400;
 }
 .daily-header-chevron {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(201,168,76,0.12);
+  background: rgba(201,168,76,0.10);
   color: var(--gold);
-  font-size: 10px;
   transition: transform 0.3s ease, background 0.2s ease;
   flex-shrink: 0;
 }
+.daily-header-chevron svg {
+  display: block;
+}
 .daily-header:hover .daily-header-chevron {
-  background: rgba(201,168,76,0.20);
+  background: rgba(201,168,76,0.18);
 }
 .daily-header.open .daily-header-chevron {
   transform: rotate(180deg);
