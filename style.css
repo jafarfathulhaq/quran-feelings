@@ -2759,11 +2759,24 @@ body.about-locked { overflow: hidden; }
 /* ── Layer 1: Header (always visible after load) ── */
 .daily-header {
   border-radius: var(--radius);
-  background: #0A0F1E;
-  padding: 14px 20px 12px;
+  background: var(--card-bg);
+  border: 1px solid rgba(226,232,240,0.8);
+  box-shadow: var(--shadow-card);
+  padding: 14px 20px 12px 18px;
   cursor: pointer;
-  transition: border-radius 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  transition: border-radius 0.3s ease, border-color 0.18s ease;
   animation: fadeUp 0.5s ease both;
+}
+/* Gold vertical accent bar on the left */
+.daily-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold), var(--gold-light), transparent);
+  border-radius: 0 2px 2px 0;
 }
 .daily-header.open {
   border-radius: var(--radius) var(--radius) 0 0;
@@ -2776,11 +2789,11 @@ body.about-locked { overflow: hidden; }
 }
 .daily-header-date {
   font-size: 11px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(10,15,30,0.40);
   font-weight: 400;
 }
 .daily-header-chevron {
-  color: rgba(255,255,255,0.40);
+  color: rgba(10,15,30,0.30);
   font-size: 12px;
   transition: transform 0.3s ease;
   display: inline-block;
@@ -2798,7 +2811,7 @@ body.about-locked { overflow: hidden; }
 .daily-header-mode-text {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255,255,255,0.75);
+  color: var(--text-dark);
   display: inline-block;
   white-space: nowrap;
 }
