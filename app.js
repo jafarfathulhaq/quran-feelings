@@ -36,6 +36,31 @@ function initA2HS() {
     return;
   }
 
+  // Delayed entrance: slide in + fade after 1s, then glow pulse
+  setTimeout(() => {
+    card.classList.add('a2hs-visible');
+    setTimeout(() => card.classList.add('a2hs-glow'), 500);
+  }, 1000);
+
+  // Rotating copy
+  const a2hsCopies = [
+    'Buka TemuQuran kapan saja, langsung dari layar utama',
+    'Jadikan TemuQuran aplikasi di HP',
+    'Simpan TemuQuran di HP \u2014 akses ayat kapan saja',
+  ];
+  const textEl = document.getElementById('a2hsText');
+  let a2hsCopyIdx = 1; // starts at 1 because HTML already shows copy index 1 (0-indexed: copies[1])
+  if (textEl) {
+    setInterval(() => {
+      a2hsCopyIdx = (a2hsCopyIdx + 1) % a2hsCopies.length;
+      textEl.classList.add('a2hs-text-fade');
+      setTimeout(() => {
+        textEl.textContent = a2hsCopies[a2hsCopyIdx];
+        textEl.classList.remove('a2hs-text-fade');
+      }, 400);
+    }, 5000);
+  }
+
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   // iOS guide overlay helpers

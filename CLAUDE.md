@@ -103,7 +103,7 @@ Valid event types:
 `verse_saved`, `verse_unsaved`, `verse_shared`, `verse_played`, `tafsir_opened`, `tafsir_tab`,
 `asbabun_nuzul_opened`, `card_expanded`, `sub_question_selected`, `tulis_sendiri_opened`, `verse_swiped`,
 `jelajahi_search`, `jelajahi_juz_surah_selected`, `jelajahi_surah_browser`, `jelajahi_juz_group_opened`, `jelajahi_multi_selected`,
-`share_sheet_opened`, `share_theme_selected`, `share_completed`,
+`share_sheet_opened`, `share_theme_selected`, `share_completed`, `share_mode_selected`, `share_wa_sent`, `share_wa_copied`,
 `tafsir_summary_opened`, `tafsir_summary_swiped`, `tafsir_full_opened`, `tafsir_full_tab_switched`, `tafsir_overlay_closed`,
 `a2hs_tapped`, `a2hs_installed`, `about_opened`, `about_faq_tapped`, `qris_saved`,
 `ajarkan_search_started`, `ajarkan_search_completed`, `ajarkan_search_partial_match`, `ajarkan_not_available`,
@@ -142,7 +142,8 @@ GROUP BY event_type ORDER BY count DESC;
 - `jelajahiSurahInfo` — surah metadata for the intro card
 - `juzSurahListVisible` — whether the juz surah list overlay is showing
 - `lastJuzSurahTapped` — surah number if user came from juz list (for back nav)
-- `shareTheme` / `shareIncludeQuestion` / `shareIncludeTafsir` / `shareActiveVerse` / `shareLastPlatform` — share sheet state
+- `shareTheme` / `shareIncludeQuestion` / `shareIncludeTafsir` / `shareActiveVerse` / `shareLastPlatform` — image share sheet state
+- `shareTextPrefs` — text share toggle states (loaded from `localStorage.share_prefs` via `loadSharePrefs()`)
 - `_swipeHintTimers` — array of setTimeout IDs for the swipe hint sequence (peek nudge + auto-advance); cleared on first user swipe
 - `ajarkanAgeGroup` — `'under7'` | `'7plus'` | `null`
 - `ajarkanExpandedCatId` — expanded category ID in the drill-down overlay
@@ -213,13 +214,26 @@ Each verse card has three elements below the translation + resonance text:
 - **Bottom sheet**: Opens `#share-sheet` with overlay (`#share-overlay`). Slides up with 300ms animation. Dismissible by: (1) overlay tap, (2) X close button in header, (3) swipe-down gesture.
 - **Swipe-down dismiss**: Touch handlers on `#share-sheet` track drag distance. `touchmove` uses `{ passive: false }` + `e.preventDefault()` to block browser pull-to-refresh. Threshold: 80px drag = dismiss. Only activates when `sheet.scrollTop === 0`.
 - **X close button**: `#share-sheet-close` in `.share-sheet-header`, positioned absolute top-right next to the drag handle.
-- **Live preview**: Full uncropped preview (`.share-preview`, ~60% width) in a `.share-preview-wrap` with "Pratinjau" label. Updates in real-time when theme or toggles change. NOT canvas-rendered — uses the same `.si-wrap` / `.si-theme-*` classes at reduced font sizes. Shows complete translation (no truncation) + "TemuQuran.com" footer branding.
-- **3 themes**: Light (#FFFFFF bg), Dark (#1A1D2E deep navy), Classic (#F5EFE0 parchment). Theme picker is horizontal pill buttons. Theme colors defined as `.si-theme-light`, `.si-theme-dark`, `.si-theme-classic` CSS classes.
-- **Content toggles**: "Sertakan pertanyaan" (curhat/panduan only, hidden in jelajahi/ajarkan) and "Sertakan tafsir" (all modes). Both unchecked by default.
-- **Platform buttons**: 2×2 grid — IG Story (1080×1920), WA Status (1080×1920), WA Chat (1080×1080), Download (1080×1080). Preview aspect ratio changes when story platforms selected.
-- **Image generation**: `buildShareElement()` creates an off-screen div in `#share-render`, styled per theme. `html2canvas` renders at `scale: 2` for crisp output. Branding footer "TemuQuran.com" on every image.
-- **Share flow**: Web Share API (`navigator.share({files})`) if supported, fallback to download. In-app browsers (Instagram/Facebook/TikTok/LINE) show toast warning.
-- **In-app browser detection**: `IS_IN_APP_BROWSER` flag set from user-agent regex at startup.
+- **Two-step flow**: Panel A (mode select) → Panel B-Image or Panel B-Text.
+  - **Panel A** (`#sharePanelA`): Two card buttons — 🖼️ Gambar ("Bagikan sebagai foto") and 💬 Teks WA ("Pesan lengkap dengan konteks").
+  - **Panel B-Image** (`#sharePanelImage`): Existing image share flow (unchanged), with back button to Panel A.
+  - **Panel B-Text** (`#sharePanelText`): Text share config with toggles, preview bubble, and send/copy buttons. Back button to Panel A.
+- **Panel B-Image details**:
+  - **Live preview**: Full uncropped preview (`.share-preview`, ~60% width) in a `.share-preview-wrap` with "Pratinjau" label. Updates in real-time when theme or toggles change. NOT canvas-rendered — uses the same `.si-wrap` / `.si-theme-*` classes at reduced font sizes. Shows complete translation (no truncation) + "TemuQuran.com" footer branding.
+  - **3 themes**: Light (#FFFFFF bg), Dark (#1A1D2E deep navy), Classic (#F5EFE0 parchment). Theme picker is horizontal pill buttons. Theme colors defined as `.si-theme-light`, `.si-theme-dark`, `.si-theme-classic` CSS classes.
+  - **Content toggles**: "Sertakan pertanyaan" (curhat/panduan only, hidden in jelajahi/ajarkan) and "Sertakan tafsir" (all modes). Both unchecked by default.
+  - **Platform buttons**: 2×2 grid — IG Story (1080×1920), WA Status (1080×1920), WA Chat (1080×1080), Download (1080×1080). Preview aspect ratio changes when story platforms selected.
+  - **Image generation**: `buildShareElement()` creates an off-screen div in `#share-render`, styled per theme. `html2canvas` renders at `scale: 2` for crisp output. Branding footer "TemuQuran.com" on every image.
+  - **Share flow**: Web Share API (`navigator.share({files})`) if supported, fallback to download. In-app browsers (Instagram/Facebook/TikTok/LINE) show toast warning.
+  - **In-app browser detection**: `IS_IN_APP_BROWSER` flag set from user-agent regex at startup.
+- **Panel B-Text details**:
+  - **iOS-style toggles**: Feeling/Topic (mode-aware), Arabic, Translation, Reference, Reflection (hidden for ajarkan), Tafsir (hidden for ajarkan). Arabic + translation enforced: can't both be off.
+  - **Tafsir sub-radio**: When tafsir toggle ON, shows ringkasan/lengkap radio. "Ibnu Katsir Lengkap" shows length warning note.
+  - **Preview bubble**: Live-updating preview with bottom fade (`.share-preview-bubble`). Shows composed text via `composeShareText()`.
+  - **Compose format**: Feeling header → `─────` divider → Arabic + curly-quoted translation + reference → divider → Refleksi + Tafsir (blank line between) → divider → "Ayat dan penjelasan dari TemuQuran.com". Dividers have breathing room (empty lines before/after). Section labels plain text (no emojis).
+  - **Share prefs**: Stored in `localStorage.share_prefs`, persists across sessions. Default: feeling ON, arabic ON, translation ON, reference ON, reflection OFF, tafsir OFF.
+  - **"📤 Bagikan" button**: Uses `navigator.share({ text })` (native OS share picker, same as image share). Falls back to clipboard copy if Web Share API unavailable.
+  - **"📋 Salin" button**: Copies composed text to clipboard via `navigator.clipboard.writeText()`, shows toast.
 
 ### Tafsir overlay
 - **Overlay**: Full-screen overlay (`openTafsirOverlay(verse)`) with tafsir summary, asbabun nuzul, and "Baca Tafsir Lengkap" accordion.
@@ -313,9 +327,18 @@ API error responses never expose raw OpenAI/Supabase error details. Internal err
 - **Bismillah stripping** — uses NFC Unicode normalization because DB diacritics ordering differs from hardcoded constant. Only applies in Jelajahi mode.
 - **Juz surah list animation** — `showJuzSurahList()` clones the container node to prevent stale `animationend` handlers from re-hiding the list after a view switch interrupts the hide animation.
 - **Jelajahi lazy loading** — triggers 3 slides before the loaded boundary for smooth UX. `jelajahiAllVerses` holds the full array; slides are appended in batches of 15.
-- **Share sheet close** — `closeShareSheet()` must reset inline `transform` and `transition` styles set by the swipe-down drag gesture before removing the `visible` class.
+- **Share sheet close** — `closeShareSheet()` must reset inline `transform` and `transition` styles set by the swipe-down drag gesture before removing the `visible` class. Also resets to Panel A (`showSharePanelA()`) for next open.
 - **Share image themes** — `.si-theme-*` classes in `style.css` define colors for the off-screen share render element AND the live preview. Both share the same class hierarchy (`si-wrap`, `si-arabic`, `si-translation`, `si-ref`, `si-tafsir`, `si-footer`).
 - **OG meta tags** — title is "TemuQuran — Temukan dalam Al-Qur'an", description mentions all 3 modes + privacy + no ads. Theme color is `#2A7C6F` (teal).
 - **Filename case sensitivity** — Vercel deploys on Linux (case-sensitive). `qris.png` ≠ `QRIS.png`. Always use lowercase filenames.
 - **CSP changes** — if you add a new CDN script or connect to a new external API from the frontend, update the CSP in `vercel.json` or the browser will block it. GA4 required additions to `script-src`, `img-src`, and `connect-src`.
 - **CORS changes** — if you add a new custom domain or need localhost dev access, update the `allowedOrigin` in both `api/get-ayat.js` and `api/log-event.js`.
+
+---
+
+## Future feature ideas (discussed, not yet built)
+Priority order agreed with owner:
+1. **Bookmark / Save Ayat** — ❤️ button on verse cards, localStorage-based "Tersimpan" collection. No account needed. `verse_saved`/`verse_unsaved` events already in analytics allowlist.
+2. **Streak counter** — Day counter ("Hari ke-N kamu merenung ✨"). Track `last_visit_date` + streak count in localStorage. Pairs with existing push notifications.
+3. **Reflection history / Journal** — Timeline of past feelings + verses received, stored in localStorage. "3 hari lalu kamu merasa *sedih*..."
+4. **Share deeplinks** — `temuquran.com/?s=2:255` opens exact verse with context. URL param infrastructure already exists.

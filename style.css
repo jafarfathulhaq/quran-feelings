@@ -2268,6 +2268,23 @@ body.tafsir-locked { overflow: hidden; }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  /* Entrance: start hidden, animated by JS */
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.a2hs-card.a2hs-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.a2hs-card.a2hs-glow {
+  animation: a2hsGlow 1.5s ease-in-out;
+}
+@keyframes a2hsGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(10, 92, 122, 0); }
+  30%  { box-shadow: 0 0 8px 2px rgba(10, 92, 122, 0.25); }
+  60%  { box-shadow: 0 0 4px 1px rgba(10, 92, 122, 0.12); }
+  100% { box-shadow: 0 0 0 0 rgba(10, 92, 122, 0); }
 }
 .a2hs-text {
   flex: 1;
@@ -2275,6 +2292,10 @@ body.tafsir-locked { overflow: hidden; }
   font-weight: 500;
   color: var(--text-mid);
   line-height: 1.4;
+  transition: opacity 0.4s ease;
+}
+.a2hs-text.a2hs-text-fade {
+  opacity: 0;
 }
 .a2hs-btn {
   flex-shrink: 0;
