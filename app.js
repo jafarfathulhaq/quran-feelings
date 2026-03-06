@@ -45,7 +45,7 @@ function initA2HS() {
   // Rotating copy
   const a2hsCopies = [
     'Buka TemuQuran kapan saja, langsung dari layar utama',
-    'Jadikan TemuQuran aplikasi di HP',
+    'Jadikan TemuQuran aplikasi di HP \u2014 biar inget dan cepet',
     'Simpan TemuQuran di HP \u2014 akses ayat kapan saja',
   ];
   const textEl = document.getElementById('a2hsText');
