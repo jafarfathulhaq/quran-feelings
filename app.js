@@ -3130,7 +3130,6 @@ function toggleDailyCarousel() {
     header.classList.add('open');
     carousel.classList.add('open');
     stopDailyHeaderRotation();
-    startDailyRotation();
     updateDailyHeaderMode(dailyActiveSlide);
   } else {
     header.classList.remove('open');
@@ -3219,8 +3218,6 @@ function goToDailySlide(index) {
 
   // Sync header mode label
   updateDailyHeaderMode(index);
-
-  resetProgressBar();
 }
 
 function wireDailyDots() {
@@ -3229,8 +3226,6 @@ function wireDailyDots() {
     dot.addEventListener('click', () => {
       const idx = parseInt(dot.dataset.dot, 10);
       goToDailySlide(idx);
-      stopDailyRotation();
-      startDailyRotation();
     });
   });
 }
@@ -3265,8 +3260,6 @@ function wireDailySwipe() {
       goToDailySlide(dailyActiveSlide - 1);
       logEvent('daily_card_swiped', { direction: 'right', to: dailyActiveSlide });
     }
-    stopDailyRotation();
-    startDailyRotation();
   }, { passive: true });
 }
 
@@ -3276,9 +3269,7 @@ function wireDailyVisibility() {
       stopDailyRotation();
       stopDailyHeaderRotation();
     } else if (!dailyExpanded) {
-      if (dailyCarouselOpen) {
-        startDailyRotation();
-      } else {
+      if (!dailyCarouselOpen) {
         startDailyHeaderRotation();
       }
     }
@@ -3365,10 +3356,7 @@ function collapseDailyCard() {
   const dots = document.getElementById('dailyDots');
   if (dots) dots.style.borderRadius = '';
 
-  // Resume carousel rotation if carousel is still open
-  if (dailyCarouselOpen) {
-    startDailyRotation();
-  }
+  // No auto-rotation — user swipes manually
 }
 
 function renderDailyVOTDExpanded(closeBtn) {
