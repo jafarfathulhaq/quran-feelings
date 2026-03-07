@@ -75,6 +75,13 @@ const VALID_EVENTS = new Set([
   'daily_card_cta_tapped',
   'daily_card_swiped',
   'daily_content_generated',
+  // Nuri events
+  'nuri_session_started',
+  'nuri_exchange_completed',
+  'nuri_session_ended_limit',
+  'nuri_optin_toggled',
+  'nuri_feedback',
+  'nuri_error',
 ]);
 
 module.exports = async function handler(req, res) {

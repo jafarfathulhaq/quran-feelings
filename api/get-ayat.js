@@ -507,75 +507,12 @@ module.exports = async function handler(req, res) {
   try {
     const rawFeeling = feeling.trim();
 
-    // ── Step 0.5: Intent decomposition ───────────────────────────────────────
-    // Splits multi-need input into up to 3 distinct spiritual needs.
-    // "ibu sakit + capek merawat + kehabisan uang" → 3 separate needs
-    // → each gets its own targeted HyDE → diverse candidate pool.
-    // Single-need inputs return 1 element → 3-angle fallback (no regression).
-    const decomposeRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model:           'gpt-4o-mini',
-        messages:        [
-          { role: 'system', content: mode === 'panduan' ? DECOMPOSE_PANDUAN : DECOMPOSE_CURHAT },
-          { role: 'user',   content: rawFeeling },
-        ],
-        response_format: { type: 'json_object' },
-        max_tokens:      200,
-        temperature:     0.2,
-      }),
-    });
-
-    // Parse extracted needs — fall back to null on any failure
-    let needs = null;
-    try {
-      if (decomposeRes.ok) {
-        const decompData   = await decomposeRes.json();
-        const decompParsed = JSON.parse(decompData.choices?.[0]?.message?.content || '{}');
-        const extracted    = decompParsed.needs;
-        if (Array.isArray(extracted) && extracted.length >= 1 && extracted.length <= 3) {
-          const valid = extracted.filter(n => typeof n === 'string' && n.trim().length > 0);
-          if (valid.length >= 1) needs = valid;
-        }
-      }
-    } catch (_) { /* fall through — 3-angle fallback below */ }
-
-    const isMultiIntent = needs && needs.length > 1;
-
-    // ── Step 1: HyDE — strategy depends on intent count ──────────────────────
-    // Single intent (or decompose failed) → 3 angles on full input (original behaviour)
-    // Multi-intent (2–3 needs)            → 1 targeted HyDE per need for diversity
-    //
-    // hydeSlots: array of [systemPrompt, userContent] tuples (always 3 slots)
-    // Select HyDE angles based on mode
-    const hydeAngles = mode === 'panduan'
-      ? [HYDE_TOPICAL, HYDE_ETHICAL, HYDE_PRACTICAL]
-      : [HYDE_EMOTIONAL, HYDE_SITUATIONAL, HYDE_DIVINE];
-    const hydeFallback = mode === 'panduan' ? HYDE_PRACTICAL : HYDE_DIVINE;
-
-    let hydeSlots;
-    if (!isMultiIntent) {
-      // 3-angle behaviour — uses mode-appropriate angles
-      hydeSlots = [
-        [hydeAngles[0], rawFeeling],
-        [hydeAngles[1], rawFeeling],
-        [hydeAngles[2], rawFeeling],
-      ];
-    } else {
-      // One focused HyDE per extracted need.
-      // If only 2 needs, pad 3rd slot with a fallback angle on the full input.
-      const slots = needs.slice(0, 3);
-      while (slots.length < 3) slots.push(null); // null = fallback
-      hydeSlots = slots.map(need =>
-        need
-          ? [makeHyDE_need(need), need]       // targeted: user msg = the need itself
-          : [hydeFallback,        rawFeeling] // fallback angle on full input
-      );
-    }
+    // ── Step 0.5 + 1: Intent decomposition & HyDE (parallelised) ──────────────
+    // For short inputs (< 20 words — all emotion cards, most freeform text),
+    // decomposition almost always returns 1 need → skip it entirely to save ~1-2s.
+    // For longer inputs, fire decompose AND the 3 default HyDE calls simultaneously.
+    // If decompose reveals multi-intent (rare), discard defaults and fire targeted HyDEs.
+    // If single-intent or decompose fails → use the already-completed default HyDEs.
 
     const makeHyDE = (systemContent, userContent) =>
       fetch('https://api.openai.com/v1/chat/completions', {
@@ -595,22 +532,96 @@ module.exports = async function handler(req, res) {
         }),
       });
 
-    const [hydeRes1, hydeRes2, hydeRes3] = await Promise.all(
-      hydeSlots.map(([system, user]) => makeHyDE(system, user))
-    );
-
-    // Parse all three, fall back to raw feeling on failure (non-blocking)
+    // Parse HyDE response, fall back to raw feeling on failure (non-blocking)
     const parseHyDE = async (res) => {
       if (!res.ok) return rawFeeling;
       const d = await res.json();
       return d.choices?.[0]?.message?.content?.trim() || rawFeeling;
     };
 
-    const [queryEmotional, querySituational, queryDivine] = await Promise.all([
-      parseHyDE(hydeRes1),
-      parseHyDE(hydeRes2),
-      parseHyDE(hydeRes3),
-    ]);
+    const hydeAngles = mode === 'panduan'
+      ? [HYDE_TOPICAL, HYDE_ETHICAL, HYDE_PRACTICAL]
+      : [HYDE_EMOTIONAL, HYDE_SITUATIONAL, HYDE_DIVINE];
+    const hydeFallback = mode === 'panduan' ? HYDE_PRACTICAL : HYDE_DIVINE;
+
+    const wordCount = rawFeeling.split(/\s+/).length;
+    const skipDecompose = wordCount < 20;
+
+    let queryEmotional, querySituational, queryDivine;
+
+    if (skipDecompose) {
+      // Short input → skip decompose, go straight to 3-angle HyDE (saves ~1-2s)
+      const [hydeRes1, hydeRes2, hydeRes3] = await Promise.all([
+        makeHyDE(hydeAngles[0], rawFeeling),
+        makeHyDE(hydeAngles[1], rawFeeling),
+        makeHyDE(hydeAngles[2], rawFeeling),
+      ]);
+      [queryEmotional, querySituational, queryDivine] = await Promise.all([
+        parseHyDE(hydeRes1), parseHyDE(hydeRes2), parseHyDE(hydeRes3),
+      ]);
+    } else {
+      // Longer input → fire decompose + default 3-angle HyDE in parallel
+      const [decomposeRes, defaultHyde1, defaultHyde2, defaultHyde3] = await Promise.all([
+        fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model:           'gpt-4o-mini',
+            messages:        [
+              { role: 'system', content: mode === 'panduan' ? DECOMPOSE_PANDUAN : DECOMPOSE_CURHAT },
+              { role: 'user',   content: rawFeeling },
+            ],
+            response_format: { type: 'json_object' },
+            max_tokens:      200,
+            temperature:     0.2,
+          }),
+        }),
+        makeHyDE(hydeAngles[0], rawFeeling),
+        makeHyDE(hydeAngles[1], rawFeeling),
+        makeHyDE(hydeAngles[2], rawFeeling),
+      ]);
+
+      // Parse decompose result
+      let needs = null;
+      try {
+        if (decomposeRes.ok) {
+          const decompData   = await decomposeRes.json();
+          const decompParsed = JSON.parse(decompData.choices?.[0]?.message?.content || '{}');
+          const extracted    = decompParsed.needs;
+          if (Array.isArray(extracted) && extracted.length >= 1 && extracted.length <= 3) {
+            const valid = extracted.filter(n => typeof n === 'string' && n.trim().length > 0);
+            if (valid.length >= 1) needs = valid;
+          }
+        }
+      } catch (_) { /* fall through — use default HyDEs */ }
+
+      const isMultiIntent = needs && needs.length > 1;
+
+      if (!isMultiIntent) {
+        // Single-intent or decompose failed → use already-completed default HyDEs (zero extra wait)
+        [queryEmotional, querySituational, queryDivine] = await Promise.all([
+          parseHyDE(defaultHyde1), parseHyDE(defaultHyde2), parseHyDE(defaultHyde3),
+        ]);
+      } else {
+        // Multi-intent (rare) → discard defaults, fire targeted HyDEs per need
+        const slots = needs.slice(0, 3);
+        while (slots.length < 3) slots.push(null);
+        const targetedSlots = slots.map(need =>
+          need
+            ? [makeHyDE_need(need), need]
+            : [hydeFallback,        rawFeeling]
+        );
+        const [tRes1, tRes2, tRes3] = await Promise.all(
+          targetedSlots.map(([system, user]) => makeHyDE(system, user))
+        );
+        [queryEmotional, querySituational, queryDivine] = await Promise.all([
+          parseHyDE(tRes1), parseHyDE(tRes2), parseHyDE(tRes3),
+        ]);
+      }
+    }
 
     // ── Step 2: Embed all three HyDE descriptions in parallel ────────────
     // text-embedding-3-large with dimensions:1536 keeps the pgvector schema
@@ -656,9 +667,9 @@ module.exports = async function handler(req, res) {
     const embedding3 = embedData3.data[0].embedding;
 
     // ── Step 3: Hybrid search — all three embeddings in parallel ──────────
-    // match_count 20 per angle; 3×20 = 60 unique candidates, more than
-    // enough for GPT to pick 3. Lower count reduces Supabase DB load and
-    // prevents statement timeouts on the free tier.
+    // match_count 15 per angle; 3×15 = 45 unique candidates, more than
+    // enough for GPT to pick 3-7. Lower count reduces Supabase DB load,
+    // query latency, and prevents statement timeouts on the free tier.
     const makeSearch = (embedding) =>
       fetch(`${process.env.SUPABASE_URL}/rest/v1/rpc/match_verses_hybrid`, {
         method: 'POST',
@@ -670,7 +681,7 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify({
           query_embedding: embedding,
           query_text:      rawFeeling,
-          match_count:     20,
+          match_count:     15,
         }),
       });
 
@@ -733,7 +744,7 @@ module.exports = async function handler(req, res) {
     });
 
     // Cap candidates sent to GPT to keep prompt size reasonable
-    const TOP_N        = 25;
+    const TOP_N        = 18;
     const topCandidates = diverseCandidates.slice(0, TOP_N);
 
     // ── Step 4: GPT-4o selects the best 1–3 from top candidates ──────────
@@ -767,7 +778,7 @@ module.exports = async function handler(req, res) {
         ],
         response_format: { type: 'json_object' },
         temperature:     0.3,
-        max_tokens:      mode === 'panduan' ? 1800 : 1500, // 3–7 verses: panduan explanation(60w) + 7×verse_relevance(55w)
+        max_tokens:      mode === 'panduan' ? 1500 : 1200, // 3–7 verses: panduan explanation(60w) + 7×verse_relevance(55w)
       }),
     });
 

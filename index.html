@@ -122,7 +122,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="dns-prefetch" href="https://cdn.islamic.network" />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <!-- Vercel Web Analytics — privacy-friendly, no cookies, no fingerprinting -->
   <script defer src="/_vercel/insights/script.js"></script>
@@ -174,6 +174,21 @@
           </div>
         </button>
       </nav>
+
+      <!-- Nuri section -->
+      <div class="nuri-section" id="nuri-landing">
+        <div class="nuri-section-label">✨ Kenalan sama Nuri</div>
+        <div class="nuri-card" id="nuriLandingCard">
+          <div class="nuri-avatar">
+            <span class="nuri-avatar-icon">📖</span>
+          </div>
+          <div class="nuri-card-text">
+            <div class="nuri-card-title">Belajar Bareng Nuri</div>
+            <div class="nuri-card-desc">Tanya apapun soal Al-Qur'an. Ngobrol, bukan belajar.</div>
+          </div>
+        </div>
+        <button class="nuri-card-cta" id="nuriStartBtn">Mulai Ngobrol →</button>
+      </div>
 
       <hr class="landing-section-divider" />
 
@@ -527,6 +542,34 @@
         <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
       </div>
 
+    </section>
+
+    <!-- ── Nuri View (Belajar Bareng Nuri) ────────── -->
+    <section id="nuri-view" class="view">
+      <!-- Header -->
+      <div class="nuri-header">
+        <button class="nuri-back-btn" id="nuriBackBtn">←</button>
+        <div class="nuri-header-title">Nuri</div>
+        <div class="nuri-header-avatar">
+          <span class="nuri-avatar-icon">📖</span>
+        </div>
+      </div>
+
+      <!-- Chat messages -->
+      <div class="nuri-messages" id="nuriMessages">
+        <!-- Bubbles injected here by JS -->
+      </div>
+
+      <!-- Sticky input bar -->
+      <div class="nuri-input-bar">
+        <textarea
+          id="nuriInput"
+          class="nuri-textarea"
+          placeholder="Tulis pesanmu..."
+          rows="1"
+        ></textarea>
+        <button id="nuriSendBtn" class="nuri-send-btn">Kirim →</button>
+      </div>
     </section>
 
   </main>

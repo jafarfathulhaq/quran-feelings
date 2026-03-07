@@ -122,6 +122,41 @@ function initA2HS() {
   });
 }
 
+// ── Nuri — Belajar Bareng Nuri (Mode 5) ──────────────────────────────────────
+// Multi-turn Quran learning companion. Stateful within session.
+
+let nuriMessages = [];           // full conversation array
+let nuriOptedIn = false;         // default off
+let nuriSessionId = null;        // uuid, generated on session start
+let nuriExchangeCount = 0;       // increments per user message
+let nuriConversationMode = null; // 'deep_dive' | 'exploration' | null
+let nuriOptInShown = false;      // track if opt-in card has been shown
+let nuriIsTyping = false;        // prevent double-sends
+
+const NURI_CONFIG = {
+  maxExchanges: 20,              // hard session limit
+  contextWindow: 8,              // last N exchanges sent to API
+  rateLimit: 20,                 // requests/IP/hour (enforced server-side)
+};
+
+const NURI_OPENING_MESSAGES = [
+  `Halo! Saya Nuri \u{1F60A} Saya senang banget bisa ngobrol soal Al-Qur'an bareng kamu.\n\nBoleh saya tanya \u2014 ada surah atau ayat yang sering kamu baca tapi penasaran maknanya lebih dalam? Atau kalau nggak, ada tema kehidupan yang kamu pengin tahu kata Al-Qur'an tentangnya?`,
+  `Assalamu'alaikum! \u{1F60A} Saya Nuri, teman ngobrol Al-Qur'an kamu.\n\nApa yang lagi di pikiran kamu hari ini? Bisa soal ayat tertentu, atau tema apa aja \u2014 sabar, rezeki, keluarga, apa pun. Yuk ngobrol!`,
+  `Halo! Nuri di sini \u{1F4D6} Siap ngobrol soal Al-Qur'an bareng kamu.\n\nMau mulai dari mana? Bisa dari surah favorit kamu, atau kalau ada pertanyaan soal kehidupan yang pengin kamu cari jawabannya di Al-Qur'an \u2014 langsung aja!`,
+];
+
+function getNuriOpeningMessage() {
+  const idx = Math.floor(Math.random() * NURI_OPENING_MESSAGES.length);
+  return NURI_OPENING_MESSAGES[idx];
+}
+
+let nuriLastFailedMessage = null; // for retry on error
+
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
+}
+
 // ── Analytics ──────────────────────────────────────────────────────────────────
 // Fire-and-forget: never blocks UI, never throws, never logs user input text.
 // session_id: random ID per browser tab session (sessionStorage), no PII.
@@ -5387,6 +5422,361 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
 
 // ── Silent re-subscribe if permission granted but subscription lost ──────────
 resubscribeIfNeeded();
+
+// ── Nuri — Chat Functions ─────────────────────────────────────────────────────
+
+function startNuriSession() {
+  // Reset state
+  nuriMessages = [];
+  nuriOptedIn = false;
+  nuriSessionId = generateUUID();
+  nuriExchangeCount = 0;
+  nuriConversationMode = null;
+  nuriOptInShown = false;
+  nuriIsTyping = false;
+  nuriLastFailedMessage = null;
+
+  // Clear chat UI
+  document.getElementById('nuriMessages').innerHTML = '';
+
+  // Re-enable input (may be disabled from previous session limit)
+  const nuriInput = document.getElementById('nuriInput');
+  const nuriSendBtn = document.getElementById('nuriSendBtn');
+  if (nuriInput) nuriInput.disabled = false;
+  if (nuriSendBtn) nuriSendBtn.disabled = false;
+
+  // Switch to nuri view
+  switchView('nuri-view');
+
+  // Show Nuri's opening message immediately (no API call — randomly picked)
+  appendNuriMessage(getNuriOpeningMessage(), false); // false = don't show feedback
+
+  // Show opt-in card after opening message
+  appendOptInCard();
+
+  // Log analytics
+  logEvent('nuri_session_started', { session_id: nuriSessionId });
+}
+
+function appendNuriMessage(text, showFeedback = true) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nuri-bubble-wrap nuri';
+
+  // Avatar
+  const avatar = document.createElement('div');
+  avatar.className = 'nuri-bubble-avatar';
+  avatar.innerHTML = '<span class="nuri-avatar-icon">\u{1F4D6}</span>';
+
+  // Bubble
+  const bubble = document.createElement('div');
+  bubble.className = 'nuri-bubble';
+  bubble.innerHTML = formatNuriMessage(text);
+
+  wrap.appendChild(avatar);
+  wrap.appendChild(bubble);
+  document.getElementById('nuriMessages').appendChild(wrap);
+
+  // Feedback row — only if opted in and showFeedback is true
+  if (nuriOptedIn && showFeedback) {
+    const idx = nuriExchangeCount;
+    const feedbackRow = document.createElement('div');
+    feedbackRow.className = 'nuri-feedback-row';
+    feedbackRow.innerHTML = `
+      <button class="nuri-feedback-btn" data-idx="${idx}" data-signal="positive">\u{1F44D}</button>
+      <button class="nuri-feedback-btn" data-idx="${idx}" data-signal="negative">\u{1F44E}</button>
+    `;
+    feedbackRow.querySelectorAll('.nuri-feedback-btn').forEach(btn => {
+      btn.addEventListener('click', () => handleNuriFeedback(idx, btn.dataset.signal, btn));
+    });
+    document.getElementById('nuriMessages').appendChild(feedbackRow);
+  }
+
+  nuriScrollToBottom();
+}
+
+function appendUserMessage(text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nuri-bubble-wrap user';
+  const bubble = document.createElement('div');
+  bubble.className = 'nuri-bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  document.getElementById('nuriMessages').appendChild(wrap);
+  nuriScrollToBottom();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatNuriMessage(text) {
+  // Detect verse block patterns injected by the backend.
+  // Sanitize content inside markers to prevent XSS from DB data.
+  return text
+    .replace(/\{ARABIC\}([\s\S]*?)\{\/ARABIC\}/g, (_, arabic) =>
+      '<span class="nuri-verse-arabic">' + escapeHtml(arabic.trim()) + '</span>')
+    .replace(/\{TRANSLATION\}([\s\S]*?)\{\/TRANSLATION\}/g, (_, tr) =>
+      '<span class="nuri-verse-translation">"' + escapeHtml(tr.trim()) + '"</span>')
+    .replace(/\{REF\}([\s\S]*?)\{\/REF\}/g, (_, ref) =>
+      '<span class="nuri-verse-ref">\u2014 ' + escapeHtml(ref.trim()) + '</span>')
+    .replace(/\n/g, '<br>');
+}
+
+function showNuriTypingIndicator() {
+  const typing = document.createElement('div');
+  typing.className = 'nuri-typing';
+  typing.id = 'nuriTyping';
+  typing.innerHTML = `
+    <div class="nuri-bubble-avatar"><span class="nuri-avatar-icon">\u{1F4D6}</span></div>
+    <div class="nuri-typing-dots">
+      <div class="nuri-typing-dot"></div>
+      <div class="nuri-typing-dot"></div>
+      <div class="nuri-typing-dot"></div>
+    </div>`;
+  document.getElementById('nuriMessages').appendChild(typing);
+  nuriScrollToBottom();
+}
+
+function hideNuriTypingIndicator() {
+  const el = document.getElementById('nuriTyping');
+  if (el) el.remove();
+}
+
+function nuriScrollToBottom() {
+  const el = document.getElementById('nuriMessages');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function appendOptInCard() {
+  if (nuriOptInShown) return;
+  nuriOptInShown = true;
+
+  const card = document.createElement('div');
+  card.className = 'nuri-optin-card';
+  card.id = 'nuriOptInCard';
+  card.innerHTML = `
+    <div class="nuri-optin-label">\u{1F331} Bantu Nuri berkembang</div>
+    <div class="nuri-optin-desc">
+      Percakapan ini bisa digunakan untuk melatih Nuri agar lebih baik.
+      Tidak ada data pribadi yang disimpan \u2014 hanya isi percakapan ini.
+    </div>
+    <label class="nuri-optin-check">
+      <input type="checkbox" id="nuriOptInCheck"> Saya setuju membantu
+    </label>`;
+
+  document.getElementById('nuriMessages').appendChild(card);
+
+  document.getElementById('nuriOptInCheck')
+    ?.addEventListener('change', (e) => {
+      nuriOptedIn = e.target.checked;
+      logEvent('nuri_optin_toggled', {
+        session_id: nuriSessionId,
+        opted_in: nuriOptedIn,
+      });
+    });
+
+  nuriScrollToBottom();
+}
+
+function appendNuriSessionEndMessage() {
+  const el = document.createElement('div');
+  el.className = 'nuri-session-end';
+  el.textContent =
+    'Kita udah ngobrol banyak hari ini! Simpan yang paling berkesan, dan balik lagi kapan aja ya \u{1F319}';
+  document.getElementById('nuriMessages').appendChild(el);
+  document.getElementById('nuriInput').disabled = true;
+  document.getElementById('nuriSendBtn').disabled = true;
+  nuriScrollToBottom();
+
+  logEvent('nuri_session_ended_limit', { session_id: nuriSessionId });
+}
+
+function handleNuriFeedback(exchangeIndex, signal, btn) {
+  // Visual feedback
+  btn.parentElement.querySelectorAll('.nuri-feedback-btn')
+    .forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  // Log — only if opted in
+  if (!nuriOptedIn) return;
+
+  logEvent('nuri_feedback', {
+    session_id: nuriSessionId,
+    exchange_index: exchangeIndex,
+    signal: signal,
+  });
+}
+
+// ── Send message flow ─────────────────────────────────────────────────────────
+
+function appendNuriRetryButton() {
+  const row = document.createElement('div');
+  row.className = 'nuri-retry-row';
+  row.innerHTML = '<button class="nuri-retry-btn">Coba lagi \u{1F504}</button>';
+  row.querySelector('.nuri-retry-btn').addEventListener('click', () => {
+    row.remove();
+    // Remove the error message bubble above
+    const msgs = document.getElementById('nuriMessages');
+    const lastBubble = msgs.querySelector('.nuri-bubble-wrap.nuri:last-of-type');
+    if (lastBubble) lastBubble.remove();
+    retryNuriMessage();
+  });
+  document.getElementById('nuriMessages').appendChild(row);
+  nuriScrollToBottom();
+}
+
+function retryNuriMessage() {
+  if (!nuriLastFailedMessage) return;
+  const text = nuriLastFailedMessage;
+  nuriLastFailedMessage = null;
+  // Don't pop from nuriMessages — the user message is still valid in history.
+  // Just re-send without re-appending the user bubble.
+  _sendNuriMessageInternal(text, true);
+}
+
+async function sendNuriMessage() {
+  const input = document.getElementById('nuriInput');
+  const text = input.value.trim();
+  if (!text || nuriIsTyping) return;
+  _sendNuriMessageInternal(text, false);
+}
+
+async function _sendNuriMessageInternal(text, isRetry) {
+  if (nuriIsTyping) return;
+
+  // Session limit check
+  if (nuriExchangeCount >= NURI_CONFIG.maxExchanges) {
+    appendNuriSessionEndMessage();
+    return;
+  }
+
+  const input = document.getElementById('nuriInput');
+
+  // Clear input, disable send
+  if (!isRetry) {
+    input.value = '';
+    input.style.height = 'auto';
+  }
+  nuriIsTyping = true;
+  nuriLastFailedMessage = null;
+  document.getElementById('nuriSendBtn').disabled = true;
+
+  // Append user message to UI (skip on retry — bubble already there)
+  if (!isRetry) {
+    appendUserMessage(text);
+    nuriMessages.push({ role: 'user', content: text });
+  }
+
+  // Show typing indicator
+  showNuriTypingIndicator();
+
+  // Build context window — last N exchanges only
+  const contextMessages = nuriMessages.slice(
+    -(NURI_CONFIG.contextWindow * 2) // *2 because each exchange = 2 messages
+  );
+
+  try {
+    const payload = JSON.stringify({
+      mode: 'dewasa',
+      conversation_mode: nuriConversationMode,
+      messages: contextMessages,
+      opted_in: nuriOptedIn,
+      session_id: nuriSessionId,
+      exchange_count: nuriExchangeCount,
+    });
+
+    // Auto-retry once on failure (handles Vercel cold-start 500s)
+    let data = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch('/api/nuri', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+        });
+        if (!res.ok) {
+          if (attempt === 0) { continue; } // silent retry
+          throw new Error(`HTTP ${res.status}`);
+        }
+        data = await res.json();
+        if (data.error) {
+          if (attempt === 0) { data = null; continue; } // silent retry
+        }
+        break; // success
+      } catch (fetchErr) {
+        if (attempt === 0) { continue; } // silent retry
+        throw fetchErr;
+      }
+    }
+
+    hideNuriTypingIndicator();
+
+    if (!data || data.error) {
+      nuriLastFailedMessage = text;
+      appendNuriMessage('Maaf, ada kendala teknis. Coba lagi ya \u{1F64F}', false);
+      appendNuriRetryButton();
+      logEvent('nuri_error', { session_id: nuriSessionId, error_type: data?.error || 'unknown' });
+      return;
+    }
+
+    // Update conversation mode if detected on this exchange
+    if (data.conversation_mode && !nuriConversationMode) {
+      nuriConversationMode = data.conversation_mode;
+    }
+
+    // Add Nuri response to history (plain text with verse refs, no HTML markers)
+    nuriMessages.push({ role: 'assistant', content: data.nuri_response_raw });
+
+    // Render formatted response (with verse blocks)
+    appendNuriMessage(data.nuri_response_formatted);
+
+    nuriExchangeCount++;
+
+    // Log analytics
+    logEvent('nuri_exchange_completed', {
+      session_id: nuriSessionId,
+      exchange_index: nuriExchangeCount,
+      conversation_mode: nuriConversationMode,
+    });
+
+    // Check session limit
+    if (nuriExchangeCount === NURI_CONFIG.maxExchanges) {
+      appendNuriSessionEndMessage();
+    }
+
+  } catch (err) {
+    hideNuriTypingIndicator();
+    nuriLastFailedMessage = text;
+    appendNuriMessage('Maaf, ada kendala teknis. Coba lagi ya \u{1F64F}', false);
+    appendNuriRetryButton();
+    logEvent('nuri_error', { session_id: nuriSessionId, error_type: 'network' });
+  } finally {
+    nuriIsTyping = false;
+    document.getElementById('nuriSendBtn').disabled = false;
+    input.focus();
+  }
+}
+
+// Auto-resize textarea
+document.getElementById('nuriInput')?.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+
+document.getElementById('nuriInput')?.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendNuriMessage();
+  }
+});
+
+// Nuri event listeners
+document.getElementById('nuriSendBtn')?.addEventListener('click', sendNuriMessage);
+document.getElementById('nuriStartBtn')?.addEventListener('click', startNuriSession);
+document.getElementById('nuriLandingCard')?.addEventListener('click', startNuriSession);
+document.getElementById('nuriBackBtn')?.addEventListener('click', () => switchView('landing-view'));
 
 // ── Push Permission Triggers ──────────────────────────────────────────────────
 

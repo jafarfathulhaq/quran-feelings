@@ -1,7 +1,7 @@
 # CLAUDE.md — TemuQuran
 
 ## Project overview
-**TemuQuran** — a privacy-first web app with four modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations, (3) **Jelajahi Al-Qur'an** — users browse and read Quran verses by surah, juz, or natural language query (no AI needed for presets), (4) **Ajarkan Anakku** — helps Muslim parents explain Qur'anic concepts to children using pre-generated, age-appropriate content (no live AI for presets). No user text is ever stored.
+**TemuQuran** — a privacy-first web app with five modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations, (3) **Jelajahi Al-Qur'an** — users browse and read Quran verses by surah, juz, or natural language query (no AI needed for presets), (4) **Ajarkan Anakku** — helps Muslim parents explain Qur'anic concepts to children using pre-generated, age-appropriate content (no live AI for presets), (5) **Belajar Bareng Nuri** — multi-turn conversational Quran learning companion (chat mode). No user text is ever stored.
 
 - **Live URL**: https://temuquran.com (custom domain on Vercel, DNS via Namecheap)
 - **Legacy URL**: https://quran-feelings.vercel.app (redirects to temuquran.com)
@@ -24,11 +24,13 @@
 
 ## Key files
 ```
-index.html          — single-page shell (6 views: landing-view, selection-view, panduan-view, jelajahi-view, ajarkan-view, verses-view)
+index.html          — single-page shell (7 views: landing-view, selection-view, panduan-view, jelajahi-view, ajarkan-view, verses-view, nuri-view)
+package.json        — dependencies: web-push, @supabase/supabase-js, openai
 style.css           — all styles, no framework
 app.js              — all frontend JS, no framework, no build
 api/
   get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select), mode-aware (curhat/panduan/jelajahi/ajarkan)
+  nuri.js           — Nuri chat API (rate-limit → GPT-4o-mini JSON → verse lookup/semantic fallback → tafsir grounding → placeholder replacement)
   log-event.js      — privacy-safe analytics proxy (event allowlist, no user text)
   verse-of-day.js   — serves a daily verse from data/verses.json, cached by day
 data/verses.json    — curated verses for Verse of the Day feature
@@ -110,7 +112,8 @@ Valid event types:
 `ajarkan_suggestion_tapped`, `ajarkan_age_under7_selected`, `ajarkan_age_7plus_selected`,
 `ajarkan_category_tapped`, `ajarkan_question_selected`, `ajarkan_question_filtered`,
 `ajarkan_conversation_copied`, `ajarkan_penjelasan_copied`, `ajarkan_aktivitas_viewed`,
-`ajarkan_verse_expanded`, `ajarkan_card_swiped`, `ajarkan_panduan_fallback`, `ajarkan_query_miss`
+`ajarkan_verse_expanded`, `ajarkan_card_swiped`, `ajarkan_panduan_fallback`, `ajarkan_query_miss`,
+`nuri_session_started`, `nuri_exchange_completed`, `nuri_error`, `nuri_session_ended`
 
 To query analytics:
 ```sql
@@ -125,13 +128,14 @@ GROUP BY event_type ORDER BY count DESC;
 ## Frontend architecture (`app.js`)
 
 ### Views & navigation
-- **Six views**: `landing-view` → `selection-view` (curhat) / `panduan-view` (panduan) / `jelajahi-view` (jelajahi) / `ajarkan-view` (ajarkan) → `verses-view` (results). `switchView(id)` swaps the `.active` class.
-- **Landing**: 4 mode cards (Curhat, Panduan Hidup, Ajarkan Anakku, Jelajahi Al-Qur'an) + VOTD section below a divider + A2HS install card ("Jadikan TemuQuran aplikasi di HP")
+- **Seven views**: `landing-view` → `selection-view` (curhat) / `panduan-view` (panduan) / `jelajahi-view` (jelajahi) / `ajarkan-view` (ajarkan) → `verses-view` (results). `nuri-view` (chat mode). `switchView(id)` swaps the `.active` class.
+- **Landing**: 4 mode cards (Curhat, Panduan Hidup, Ajarkan Anakku, Jelajahi Al-Qur'an) + Nuri section ("✨ KENALAN SAMA NURI" label + dark teal card + "Mulai Ngobrol →" CTA) + VOTD section below a divider + A2HS install card ("Jadikan TemuQuran aplikasi di HP")
 - **Back navigation stack**:
   - Curhat: verses → selection-view → landing
   - Panduan: verses → expanded card (if came from sub-question) → panduan grid → landing
   - Jelajahi: verses → juz surah list (if came from Juz Amma) → jelajahi presets → landing
   - Ajarkan: verses → expanded category (if came from drill-down) → ajarkan-view → landing
+  - Nuri: ← arrow in chat header → landing (scrolls to Nuri section)
 
 ### State variables
 - `currentMode` (`'curhat'`, `'panduan'`, `'jelajahi'`, or `'ajarkan'`)
@@ -297,7 +301,7 @@ All routes serve these security headers:
 | `Strict-Transport-Security` | Vercel adds automatically (`max-age=63072000`) |
 
 ### CORS
-Both API endpoints (`get-ayat.js`, `log-event.js`) restrict `Access-Control-Allow-Origin` to `https://temuquran.com` only. Requests from other origins receive no ACAO header. `Vary: Origin` is set for proper caching.
+API endpoints (`get-ayat.js`, `log-event.js`) restrict `Access-Control-Allow-Origin` to `https://temuquran.com` only. Requests from other origins receive no ACAO header. `Vary: Origin` is set for proper caching. `nuri.js` uses rate limiting (20/hr/IP) but no explicit CORS restriction (same-origin fetch only).
 
 ### Redirect
 `quran-feelings.vercel.app/*` → **308 permanent redirect** → `temuquran.com/*` (configured in `vercel.json` redirects).
@@ -306,20 +310,20 @@ Both API endpoints (`get-ayat.js`, `log-event.js`) restrict `Access-Control-Allo
 API error responses never expose raw OpenAI/Supabase error details. Internal errors are logged with `console.error()` server-side; the client always receives a generic Indonesian error message.
 
 ### XSS protection
-- `escapeHtml()` function escapes `& < > "` — used for all user input AND all DB content (arabic, translation, ref, tafsir) before `innerHTML` insertion.
+- `escapeHtml()` function (uses `div.textContent` → `div.innerHTML` trick) — used for all user input AND all DB content (arabic, translation, ref, tafsir) before `innerHTML` insertion. Also used in `formatNuriMessage()` for Nuri verse blocks.
 - `renderMarkdown()` has its own inline escape (for tafsir markdown content).
 - Typewriter effect uses `textContent` (safe).
 
 ### Secrets
 - `.env` is in `.gitignore` and has **never** been committed to git history.
 - All API keys use `process.env.*` — server-side only in Vercel serverless functions.
-- Zero npm dependencies — no supply chain risk.
+- Minimal npm dependencies (`openai`, `@supabase/supabase-js`, `web-push`) — server-side only, no client-side bundles.
 
 ---
 
 ## Common gotchas
 - **No build step** — edit files directly, push to deploy. No `npm run build`.
-- **Vercel cold starts** — `get-ayat.js` has `maxDuration: 30s`; the AI pipeline takes 3–8 s warm.
+- **Vercel cold starts** — `get-ayat.js` and `nuri.js` both have `maxDuration: 30s`. The AI pipeline takes 3–8 s warm. Nuri follow-up exchanges may hit cold-start 500s (FUNCTION_INVOCATION_FAILED) — frontend auto-retries once silently.
 - **In-memory cache/rate-limit reset on deploy** — each new deploy spins a fresh container.
 - **SUPABASE_ANON_KEY** is the Legacy anon key (from Supabase Dashboard → Settings → API → Legacy Keys). Not the service key.
 - **Embedding model** — stored vectors and query vectors both use `text-embedding-3-large` at `dimensions: 1536`. Don't change the model or dimensions without re-running the embedding script on all DB rows.
@@ -342,3 +346,107 @@ Priority order agreed with owner:
 2. **Streak counter** — Day counter ("Hari ke-N kamu merenung ✨"). Track `last_visit_date` + streak count in localStorage. Pairs with existing push notifications.
 3. **Reflection history / Journal** — Timeline of past feelings + verses received, stored in localStorage. "3 hari lalu kamu merasa *sedih*..."
 4. **Share deeplinks** — `temuquran.com/?s=2:255` opens exact verse with context. URL param infrastructure already exists.
+
+## Nuri — Belajar Bareng Nuri (Mode 5)
+
+### View
+`nuri-view` — full-screen chat UI. Entry: tap `.nuri-card` or `#nuriStartBtn` on landing page → `startNuriSession()`.
+
+### API (`api/nuri.js`)
+- **Method**: POST
+- **Model**: `gpt-4o-mini` with `response_format: { type: 'json_object' }`
+- **Returns**: `{ nuri_response_formatted, nuri_response_raw, conversation_mode, verses[], tafsir_context }`
+- **Rate limit**: 20 requests / IP / hour (in-memory)
+- **maxDuration**: 30s (in `vercel.json`)
+- **Dependencies**: `openai` npm package (in `package.json`)
+
+### Multi-verse placeholder system
+GPT is instructed NEVER to write Arabic, translations, or verse references directly in text.
+GPT places `{VERSE_1}` (and optionally `{VERSE_2}`) in its response text, with a `verse_refs` array in the JSON.
+
+**Backend pipeline** (per verse ref):
+1. `lookupVerse(surah, ayah)` — queries `quran_verses` for arabic, translation, surah_name, + `tafsir_quraish_shihab`
+2. If lookup fails → `semanticFallback(query)` — embeds query via `text-embedding-3-large`, calls `match_verses_hybrid` RPC, enriches top result with tafsir
+3. Replaces `{VERSE_1}` in **formatted** response with: `{ARABIC}...{/ARABIC}\n{TRANSLATION}...{/TRANSLATION}\n{REF}...{/REF}`
+4. Replaces `{VERSE_1}` in **raw** response with: `[Surah Name : Ayah] "translation text"` (plain text for conversation history)
+
+**Safety nets**:
+- If GPT returns `verse_refs: []` (violating prompt rules), backend does a semantic fallback lookup and appends `{VERSE_1}` at the end of the response automatically
+- Backward compatibility: also handles legacy `{VERSE_PLACEHOLDER}` format
+- Unreplaced placeholders are cleaned from both formatted and raw text
+
+**Frontend** (`formatNuriMessage()` in `app.js`):
+- Converts `{ARABIC}...{/ARABIC}` → `<span class="nuri-verse-arabic">`
+- Converts `{TRANSLATION}...{/TRANSLATION}` → `<span class="nuri-verse-translation">`
+- Converts `{REF}...{/REF}` → `<span class="nuri-verse-ref">`
+- All DB content passed through `escapeHtml()` before `innerHTML` injection (XSS prevention)
+
+**NEVER change this 3-layer pattern without updating API → app.js → style.css.**
+
+### Tafsir grounding
+`lookupVerse()` fetches `tafsir_quraish_shihab` alongside verse data. `buildTafsirContext()` assembles tafsir snippets for all resolved verses. Returned as `tafsir_context` in the API response (for future use — not currently sent back to GPT in-conversation, but grounds verse selection accuracy via the FTS index which includes all tafsir columns).
+
+### Conversation history
+- `nuri_response_raw` stores **plain-text** verse references: `[Al-Baqarah : 153] "Hai orang-orang yang beriman..."` — never `{VERSE_PLACEHOLDER}` or HTML markers
+- This ensures GPT sees clean, readable context on follow-up exchanges
+- Context window: last `NURI_CONFIG.contextWindow * 2` messages (user + assistant pairs)
+
+### Auto-retry & error handling
+**Frontend auto-retry** (`_sendNuriMessageInternal` in `app.js`):
+- On first fetch failure (non-200 or `data.error`), silently retries **once** before showing error to user
+- Handles Vercel cold-start `FUNCTION_INVOCATION_FAILED` (500) transparently — user rarely sees errors
+- Checks `res.ok` before parsing JSON (prevents crash on HTML error pages)
+
+**Manual retry button**:
+- On error after auto-retry exhausted: shows "Maaf, ada kendala teknis. Coba lagi ya 🙏" + "Coba lagi 🔄" button
+- `appendNuriRetryButton()` creates `.nuri-retry-row` with `.nuri-retry-btn`
+- `retryNuriMessage()` calls `_sendNuriMessageInternal(text, true)` — `isRetry=true` skips user bubble append and message history push (prevents duplicates)
+- Clicking retry removes the error bubble and retry button before re-sending
+- `nuriLastFailedMessage` state variable tracks the last failed message text
+
+### Varied opening messages
+`NURI_OPENING_MESSAGES` array (3 variants) + `getNuriOpeningMessage()` random picker. Each opening has a different personality angle but same warmth. Displayed when `startNuriSession()` is called.
+
+### System prompt design
+- **Character**: Warm, wise friend — not ustaz, not chatbot. Casual Indonesian, occasionally playful.
+- **Response structure**: Acknowledge → context/insight → verse(s) via placeholder → connect to life → natural closing
+- **Verse rules**: SELALU (always) include ≥1 verse. Only exception: user clarifying a previously mentioned verse.
+- **Format**: JSON with `nuri_response`, `verse_refs[]`, `conversation_mode`
+- **Closing**: Flexible — can be question, warm statement, or reflection prompt (not forced question every time)
+- **Mode detection**: First exchange only — `deep_dive` (specific surah/ayat) vs `exploration` (theme/topic/feeling)
+- **Word limit**: 150 words max per response, `max_tokens: 300`
+
+### State (all session-scoped, no localStorage)
+```
+nuriMessages[]         — full conversation history (plain text verse refs in assistant messages)
+nuriOptedIn            — boolean, default false
+nuriSessionId          — uuid generated at session start
+nuriExchangeCount      — increments per successful exchange
+nuriConversationMode   — 'deep_dive' | 'exploration' | null
+nuriIsTyping           — prevents double-sends
+nuriLastFailedMessage  — text of last failed message (for retry)
+```
+
+### Cost controls
+```
+maxExchanges: 20       — hard session limit
+contextWindow: 8       — last 8 exchanges sent to API (×2 for user+assistant pairs)
+max_tokens: 300        — set in GPT API call
+```
+
+### UI components
+- **Chat bubbles**: User messages (teal, right-aligned), Nuri messages (light bg, left-aligned with avatar)
+- **Typing indicator**: "Nuri sedang mengetik..." with animated dots
+- **Verse blocks**: Arabic (right-aligned, large font) + italic translation + teal reference
+- **Retry button**: `.nuri-retry-btn` — outline style, border-radius 20px, teal accent, hover lifts
+- **Session end**: `.nuri-session-end` message when `maxExchanges` reached
+- **Opt-in card**: "Bantu Nuri berkembang" with checkbox, shown after opening message
+
+### DB tables (opt-in only)
+```
+nuri_sessions          — full conversation JSON, only when opted_in = true
+nuri_feedback          — thumbs up/down per exchange, only when opted_in = true
+```
+
+### MVP scope
+Dewasa mode ONLY. Do not build kids mode.
