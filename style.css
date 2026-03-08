@@ -6168,6 +6168,8 @@ body.about-locked { overflow: hidden; }
   z-index: 10;
 }
 
+.lp-btn-tertiary.hidden { display: none; }
+
 .lp-btn-tertiary {
   padding: 12px 14px;
   background: transparent;
