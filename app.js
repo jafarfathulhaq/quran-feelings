@@ -5591,6 +5591,44 @@ function appendUserMessage(text) {
   nuriScrollToBottom();
 }
 
+function appendNuriVerseCard({ arabicText, translation, verseRef, surah, ayah }) {
+  const card = document.createElement('div');
+  card.className = 'nuri-vc';
+
+  const safeRef = escapeHtml(verseRef || '');
+  const safeArabic = escapeHtml(arabicText || '');
+  const safeTranslation = escapeHtml(translation || '');
+  const hasSurah = surah != null && ayah != null;
+
+  card.innerHTML = `
+    <div class="nuri-vc-header" data-action="toggleNuriVc" role="button" tabindex="0" aria-expanded="false">
+      <div class="nuri-vc-info">
+        <div class="nuri-vc-ref">QS. ${safeRef}</div>
+        <div class="nuri-vc-hint">Ketuk untuk baca ayat</div>
+      </div>
+      <svg class="nuri-vc-chevron" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+    <div class="nuri-vc-body">
+      <div class="nuri-vc-body-inner">
+        <div class="nuri-vc-separator"></div>
+        <div class="nuri-vc-arabic">${safeArabic}</div>
+        ${safeTranslation ? `<div class="nuri-vc-translation">"${safeTranslation}"</div>` : ''}
+        ${hasSurah ? `
+          <button class="nuri-vc-audio-btn" data-action="nuriVcPlayAudio" data-surah="${surah}" data-ayah="${ayah}" aria-label="Dengarkan ayat">
+            <span class="lp-audio-bars"><span></span><span></span><span></span><span></span></span>
+            Dengarkan
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('nuriMessages').appendChild(card);
+  nuriScrollToBottom();
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -6167,10 +6205,15 @@ async function enterGuidedLesson() {
       : `Pelajaran ${gs.lesson} dari ${gs.total_lessons}`;
     appendNuriMessage(`<strong>${lessonLabel}</strong>\n${escapeHtml(gs.lesson_title || '')}`, false);
 
-    // Show verse block
+    // Show verse card (collapsible)
     if (data.verse_text_ar) {
-      const verseHtml = `{ARABIC}${data.verse_text_ar}{/ARABIC}\n{TRANSLATION}${data.verse_text_id || ''}{/TRANSLATION}\n{REF}QS. ${data.verse_ref || ''}{/REF}`;
-      appendNuriMessage(verseHtml, false);
+      appendNuriVerseCard({
+        arabicText: data.verse_text_ar,
+        translation: data.verse_text_id || '',
+        verseRef: data.verse_ref || '',
+        surah: parsedRef ? parsedRef.surah : null,
+        ayah: parsedRef ? parsedRef.ayah : null,
+      });
     }
 
     // Save curriculum progress
@@ -6917,6 +6960,19 @@ document.addEventListener('click', (e) => {
     const text = `\u{1F33F} QS. ${el.dataset.verse}\n\nDari perjalanan "${el.dataset.path}"\n\n\u2014 TemuQuran`;
     if (navigator.share) { navigator.share({ text }).catch(() => {}); }
     else { navigator.clipboard.writeText(text).then(() => showToast('Teks berhasil disalin')).catch(() => {}); }
+  } else if (action === 'toggleNuriVc') {
+    const card = el.closest('.nuri-vc');
+    if (card) {
+      card.classList.toggle('open');
+      el.setAttribute('aria-expanded', card.classList.contains('open'));
+    }
+  } else if (action === 'nuriVcPlayAudio') {
+    e.stopPropagation(); // prevent card toggle
+    const surah = parseInt(el.dataset.surah, 10);
+    const ayah = parseInt(el.dataset.ayah, 10);
+    if (surah && ayah) {
+      playAudio({ id: `${surah}:${ayah}`, surah_name: '' }, el);
+    }
   }
 });
 
