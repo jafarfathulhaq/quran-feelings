@@ -5649,17 +5649,18 @@ body.about-locked { overflow: hidden; }
   gap: 14px;
   padding: 16px 18px;
   background: var(--card-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: var(--radius);
   margin-bottom: 10px;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.25s;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-rest);
 }
 
 .lp-path-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
 }
 
@@ -5700,27 +5701,58 @@ body.about-locked { overflow: hidden; }
   padding: 0 20px 24px;
 }
 
+/* ── Dark Hero for Path Preview ── */
 .lp-preview-hero {
   text-align: center;
-  padding: 24px 0 20px;
+  padding: 32px 24px 28px;
+  background: linear-gradient(160deg, #0A0F1E 0%, #0F2044 30%, #0D3B6E 55%, #0A5C7A 75%, #0D7A7A 100%);
+  border-radius: 0 0 var(--radius) var(--radius);
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-preview-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.12);
+  pointer-events: none;
+}
+
+.lp-preview-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: -40px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.08);
+  pointer-events: none;
 }
 
 .lp-preview-emoji {
   font-size: 3rem;
   margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-preview-title {
   font-size: 1.375rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: #fff;
   margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-preview-desc {
   font-size: 0.875rem;
-  color: var(--text-mid);
+  color: rgba(255,255,255,0.75);
   line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-lessons-list {
@@ -5731,12 +5763,16 @@ body.about-locked { overflow: hidden; }
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border-bottom: none;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  margin-bottom: 8px;
 }
 
 .lp-lesson-item:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .lp-lesson-num {
@@ -5781,7 +5817,7 @@ body.about-locked { overflow: hidden; }
   background: var(--teal-dark);
   color: #fff;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -5799,8 +5835,52 @@ body.about-locked { overflow: hidden; }
   will-change: transform;
 }
 
+/* ── Dark Arabic Section (matches verse card pattern) ── */
 .lp-verse-section {
   margin: 16px 0 24px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-rest);
+}
+
+.lp-verse-dark {
+  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 70%, #0D3B6E 100%);
+  padding: 20px 20px 18px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.lp-verse-dark::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold), var(--gold-light), transparent);
+  border-radius: 0 2px 2px 0;
+}
+
+.lp-verse-dark::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.12);
+  pointer-events: none;
+}
+
+.lp-verse-dark .lp-verse-ref-badge {
+  display: inline-block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--gold);
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
 }
 
 .lp-verse-ref-badge {
@@ -5812,6 +5892,10 @@ body.about-locked { overflow: hidden; }
   padding: 4px 12px;
   border-radius: 20px;
   margin-bottom: 16px;
+}
+
+.lp-verse-dark .lp-arabic-text {
+  color: #fff;
 }
 
 .lp-arabic-text {
@@ -5827,7 +5911,35 @@ body.about-locked { overflow: hidden; }
 .lp-audio-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+}
+
+/* Audio button: outlined on dark bg */
+.lp-verse-dark .lp-audio-btn {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.9);
+}
+
+.lp-verse-dark .lp-audio-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.lp-verse-dark .lp-audio-btn.playing {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201,168,76,0.1);
+  animation: lpAudioPulseGold 2s ease-in-out infinite;
+}
+
+.lp-verse-dark .lp-audio-btn.playing .lp-audio-bars span {
+  background: var(--gold);
+}
+
+@keyframes lpAudioPulseGold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
 }
 
 .lp-audio-btn {
@@ -5843,7 +5955,7 @@ body.about-locked { overflow: hidden; }
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, border-color 0.15s;
   width: 100%;
 }
 
@@ -5894,20 +6006,28 @@ body.about-locked { overflow: hidden; }
   display: flex;
 }
 
+/* Translation in white content section */
+.lp-verse-content {
+  background: var(--card-bg);
+  padding: 16px 20px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
 .lp-translation {
   font-size: 0.9375rem;
   color: var(--text-mid);
   line-height: 1.8;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
+  padding: 0;
+  border-top: none;
 }
 
 .lp-supporting-section {
   margin: 16px 0;
   padding: 16px;
   background: #F8FAFB;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .lp-supporting-label {
@@ -5957,7 +6077,8 @@ body.about-locked { overflow: hidden; }
   margin: 20px 0;
   padding: 16px;
   background: var(--teal-light);
-  border-radius: var(--radius-sm);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  border-left: 3px solid var(--teal-dark);
 }
 
 .lp-why-text {
@@ -5969,9 +6090,9 @@ body.about-locked { overflow: hidden; }
 .lp-reflection-section {
   margin: 20px 0;
   padding: 16px;
-  background: #FFF8F0;
-  border-radius: var(--radius-sm);
-  border-left: 3px solid #F59E0B;
+  background: #F0F7FF;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  border-left: 3px solid var(--teal-dark);
 }
 
 .lp-reflection-text {
@@ -6025,7 +6146,7 @@ body.about-locked { overflow: hidden; }
   background: var(--teal-light);
   color: var(--teal-dark);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
@@ -6042,7 +6163,7 @@ body.about-locked { overflow: hidden; }
   background: var(--teal-dark);
   color: #fff;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
@@ -6055,29 +6176,68 @@ body.about-locked { overflow: hidden; }
 
 /* ── Path Completion ── */
 .lp-complete-content {
-  padding: 48px 20px;
+  padding: 0 0 24px;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
+/* Dark header section for completion */
+.lp-complete-dark-header {
+  background: linear-gradient(160deg, #0A0F1E 0%, #0F2044 30%, #0D3B6E 55%, #0A5C7A 75%, #0D7A7A 100%);
+  padding: 48px 24px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-complete-dark-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.12);
+  pointer-events: none;
+}
+
+.lp-complete-dark-header::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: -40px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.08);
+  pointer-events: none;
+}
+
 .lp-complete-emoji {
   font-size: 3.5rem;
   margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-complete-title {
   font-size: 1.375rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: #fff;
   margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-complete-subtitle {
   font-size: 0.9375rem;
-  color: var(--text-mid);
+  color: rgba(255,255,255,0.75);
   line-height: 1.6;
-  margin-bottom: 32px;
+  margin-bottom: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* White body section */
+.lp-complete-body {
+  padding: 24px 20px 0;
 }
 
 .lp-complete-suggestions {
@@ -6100,7 +6260,7 @@ body.about-locked { overflow: hidden; }
   background: var(--teal-dark);
   color: #fff;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -6117,8 +6277,9 @@ body.about-locked { overflow: hidden; }
   margin: 16px 0;
   padding: 18px;
   background: var(--card-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-rest);
 }
 
 .lp-suggest-label {
@@ -6138,7 +6299,7 @@ body.about-locked { overflow: hidden; }
   background: var(--teal-dark);
   color: #fff;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -6200,26 +6361,27 @@ body.about-locked { overflow: hidden; }
   display: flex;
   gap: 0;
   margin: 8px 0 20px;
-  background: var(--border);
-  border-radius: 10px;
+  background: rgba(226,232,240,0.5);
+  border-radius: 12px;
   padding: 3px;
 }
 .lp-tab {
   flex: 1;
-  padding: 10px 16px;
+  padding: 11px 16px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.2s, color 0.2s;
+  border-radius: 10px;
+  transition: all 0.25s ease;
 }
 .lp-tab.active {
   background: var(--card-bg);
   color: var(--teal-dark);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .lp-tab-panel.hidden { display: none; }
 
@@ -6232,7 +6394,7 @@ body.about-locked { overflow: hidden; }
   margin-top: 4px;
   background: none;
   border: 1.5px dashed var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   color: var(--teal-dark);
   font-size: 0.875rem;
   font-weight: 600;
@@ -6259,9 +6421,36 @@ body.about-locked { overflow: hidden; }
 
 /* ── LP Skeleton Variants ── */
 .lp-skeleton-arabic { height: 48px; margin-bottom: 12px; border-radius: 8px; }
-.lp-skeleton-audio { height: 44px; width: 100%; border-radius: 28px; margin-bottom: 16px; }
+.lp-skeleton-audio { height: 44px; width: 100%; border-radius: 28px; margin-bottom: 0; }
 .lp-skeleton-heading { height: 18px; width: 40%; margin-bottom: 14px; border-radius: 6px; }
-.lp-skeleton-block { margin: 20px 0; padding: 16px; background: #F8FAFB; border-radius: var(--radius-sm); }
+.lp-skeleton-block { margin: 20px 0; padding: 16px; background: #F8FAFB; border-radius: var(--radius); }
+
+/* Dark skeleton for Arabic section */
+.lp-skeleton-dark {
+  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 70%, #0D3B6E 100%);
+  padding: 20px 20px 18px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.lp-skeleton-dark::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold), var(--gold-light), transparent);
+  border-radius: 0 2px 2px 0;
+}
+.lp-skeleton-dark .lp-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: lpShimmer 1.5s infinite;
+}
+.lp-skeleton-light {
+  background: var(--card-bg);
+  padding: 16px 20px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
 
 /* ── LP Resume Card ── */
 .lp-resume-card { margin: 16px 16px 0; }
@@ -6272,9 +6461,10 @@ body.about-locked { overflow: hidden; }
   justify-content: space-between;
   padding: 16px 18px;
   background: var(--card-bg);
-  border: 1.5px solid var(--teal-light);
+  border: none;
   border-left: 3px solid var(--teal);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-rest);
   gap: 12px;
 }
 .lp-resume-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
@@ -6341,7 +6531,7 @@ body.about-locked { overflow: hidden; }
 }
 .lp-confetti-piece:nth-child(3n) { background: var(--gold); width: 6px; height: 10px; }
 .lp-confetti-piece:nth-child(3n+1) { background: var(--teal-dark); border-radius: 50%; }
-.lp-confetti-piece:nth-child(3n+2) { background: #F59E0B; }
+.lp-confetti-piece:nth-child(3n+2) { background: var(--teal-light); }
 @keyframes lpConfettiFall {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(200px) rotate(720deg); opacity: 0; }
@@ -6367,7 +6557,7 @@ body.about-locked { overflow: hidden; }
 .lp-complete-share-btn, .lp-complete-repeat-btn {
   flex: 1;
   padding: 12px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;

@@ -6106,11 +6106,15 @@ async function lpRenderLesson() {
   // Render verse section immediately (placeholder), then load generated content
   content.innerHTML = `
     <div class="lp-verse-section">
-      <span class="lp-verse-ref-badge">${lesson.verse_ref}</span>
-      <div class="lp-skeleton lp-skeleton-arabic"></div>
-      <div class="lp-skeleton lp-skeleton-audio"></div>
-      <div class="lp-skeleton lp-skeleton-line" style="width:90%"></div>
-      <div class="lp-skeleton lp-skeleton-line" style="width:75%"></div>
+      <div class="lp-skeleton-dark">
+        <span class="lp-verse-ref-badge" style="color:var(--gold);background:none;font-size:0.625rem;text-transform:uppercase;letter-spacing:1.2px;padding:0">${lesson.verse_ref}</span>
+        <div class="lp-skeleton lp-skeleton-arabic"></div>
+        <div class="lp-skeleton lp-skeleton-audio"></div>
+      </div>
+      <div class="lp-skeleton-light">
+        <div class="lp-skeleton lp-skeleton-line" style="width:90%"></div>
+        <div class="lp-skeleton lp-skeleton-line" style="width:75%"></div>
+      </div>
     </div>
     <div class="lp-explanation-section">
       <div class="lp-skeleton lp-skeleton-heading"></div>
@@ -6135,6 +6139,9 @@ async function lpRenderLesson() {
     };
 
     let html = '<div class="lp-verse-section">';
+
+    // Dark section: ref badge + Arabic text + audio
+    html += '<div class="lp-verse-dark">';
     html += `<span class="lp-verse-ref-badge">${lesson.verse_ref}</span>`;
 
     if (data.verse_text_ar) {
@@ -6151,12 +6158,14 @@ async function lpRenderLesson() {
         </button>
       </div>`;
     }
+    html += '</div>'; // end .lp-verse-dark
 
+    // Light section: translation
     if (data.verse_text_id) {
-      html += `<div class="lp-translation">"${data.verse_text_id}"</div>`;
+      html += `<div class="lp-verse-content"><div class="lp-translation">"${data.verse_text_id}"</div></div>`;
     }
 
-    html += '</div>';
+    html += '</div>'; // end .lp-verse-section
 
     // Supporting verse
     if (data.supporting_verse_text_ar) {
@@ -6246,28 +6255,32 @@ async function lpShowComplete(pathId) {
   const shareText = `Aku baru selesai perjalanan "${pathTitle}" di TemuQuran! \u{1F4AA}\n\nMulai perjalanan belajar Al-Qur'an kamu juga di temuquran.com`;
 
   container.innerHTML = `
-    <div class="lp-confetti" aria-hidden="true">
-      ${Array.from({length: 30}, (_, i) => `<div class="lp-confetti-piece" style="--i:${i}"></div>`).join('')}
-    </div>
-    <div class="lp-complete-emoji">✨</div>
-    <div class="lp-complete-title">Alhamdulillah! Perjalanan "${escapeHtml(pathTitle)}" selesai</div>
-    <div class="lp-complete-subtitle">Semoga renungan ini bermanfaat untuk perjalanan hidupmu.</div>
-    <div class="lp-complete-stats">
-      <div class="lp-complete-stat">
-        <div class="lp-complete-stat-num">5</div>
-        <div class="lp-complete-stat-label">pelajaran selesai</div>
+    <div class="lp-complete-dark-header">
+      <div class="lp-confetti" aria-hidden="true">
+        ${Array.from({length: 30}, (_, i) => `<div class="lp-confetti-piece" style="--i:${i}"></div>`).join('')}
       </div>
-      <div class="lp-complete-stat">
-        <div class="lp-complete-stat-num">${totalLessons}</div>
-        <div class="lp-complete-stat-label">total pelajaran</div>
+      <div class="lp-complete-emoji">✨</div>
+      <div class="lp-complete-title">Alhamdulillah! Perjalanan "${escapeHtml(pathTitle)}" selesai</div>
+      <div class="lp-complete-subtitle">Semoga renungan ini bermanfaat untuk perjalanan hidupmu.</div>
+    </div>
+    <div class="lp-complete-body">
+      <div class="lp-complete-stats">
+        <div class="lp-complete-stat">
+          <div class="lp-complete-stat-num">5</div>
+          <div class="lp-complete-stat-label">pelajaran selesai</div>
+        </div>
+        <div class="lp-complete-stat">
+          <div class="lp-complete-stat-num">${totalLessons}</div>
+          <div class="lp-complete-stat-label">total pelajaran</div>
+        </div>
       </div>
+      <div class="lp-complete-actions">
+        <button class="lp-complete-share-btn" data-action="shareCompletion" data-text="${escapeHtml(shareText)}">Bagikan</button>
+        <button class="lp-complete-repeat-btn" data-action="showPathPreview" data-path-id="${pathId}">Ulangi</button>
+      </div>
+      ${suggestHtml}
+      <button class="lp-complete-home-btn" data-action="goHome">Kembali ke Beranda</button>
     </div>
-    <div class="lp-complete-actions">
-      <button class="lp-complete-share-btn" data-action="shareCompletion" data-text="${escapeHtml(shareText)}">Bagikan</button>
-      <button class="lp-complete-repeat-btn" data-action="showPathPreview" data-path-id="${pathId}">Ulangi</button>
-    </div>
-    ${suggestHtml}
-    <button class="lp-complete-home-btn" data-action="goHome">Kembali ke Beranda</button>
   `;
 }
 
