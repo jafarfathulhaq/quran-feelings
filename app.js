@@ -5963,7 +5963,7 @@ async function lpShowPathsList(fromView) {
       const progress = lpGetPathProgress(p.id);
       const complete = lpIsPathComplete(p.id);
       html += `
-        <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">`
+        <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">
           <span class="lp-path-emoji">${p.emoji}</span>
           <div class="lp-path-info">
             <div class="lp-path-title">${p.title}</div>
