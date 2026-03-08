@@ -188,6 +188,7 @@
           </div>
         </div>
         <button class="nuri-card-cta" id="nuriStartBtn">Mulai Ngobrol →</button>
+        <button class="nuri-card-cta" style="margin-top:8px;background:var(--teal-light);color:var(--teal-dark)" onclick="lpShowPathsList('landing-view')">Perjalanan Belajar →</button>
       </div>
 
       <hr class="landing-section-divider" />
@@ -539,6 +540,7 @@
       <div class="results-content">
         <div id="verse-actions" class="verse-actions hidden"></div>
         <div id="verse-feedback" class="verse-feedback hidden"></div>
+        <div id="lp-suggest-container"></div>
         <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
       </div>
 
@@ -569,6 +571,51 @@
           rows="1"
         ></textarea>
         <button id="nuriSendBtn" class="nuri-send-btn">Kirim →</button>
+      </div>
+    </section>
+
+    <!-- ═══ Learning Paths: Path List ═══ -->
+    <section id="paths-list-view" class="view">
+      <div class="lp-header">
+        <button class="lp-back-btn" onclick="switchView('landing-view')">←</button>
+        <div class="lp-header-title">Perjalanan Belajar</div>
+      </div>
+      <div class="lp-list-content" id="lpListContent">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ═══ Learning Paths: Path Preview ═══ -->
+    <section id="path-preview-view" class="view">
+      <div class="lp-header">
+        <button class="lp-back-btn" id="pathPreviewBack">←</button>
+        <div class="lp-header-title" id="pathPreviewTitle"></div>
+      </div>
+      <div class="lp-preview-content" id="lpPreviewContent">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ═══ Learning Paths: Lesson View ═══ -->
+    <section id="lesson-view" class="view">
+      <div class="lp-header">
+        <button class="lp-back-btn" id="lessonBackBtn">←</button>
+        <div class="lp-header-title" id="lessonPathTitle"></div>
+        <div class="lp-lesson-progress" id="lessonProgress"></div>
+      </div>
+      <div class="lp-lesson-content" id="lpLessonContent">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="lp-lesson-footer" id="lpLessonFooter">
+        <button class="lp-btn-secondary" id="lessonAskNuri">Tanya Nuri</button>
+        <button class="lp-btn-primary" id="lessonNextBtn">Lanjut →</button>
+      </div>
+    </section>
+
+    <!-- ═══ Learning Paths: Completion ═══ -->
+    <section id="path-complete-view" class="view">
+      <div class="lp-complete-content" id="lpCompleteContent">
+        <!-- Rendered by JS -->
       </div>
     </section>
 

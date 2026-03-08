@@ -5587,3 +5587,565 @@ body.about-locked { overflow: hidden; }
   background: var(--border);
   cursor: not-allowed;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LEARNING PATHS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.lp-back-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--text-dark);
+  padding: 4px 8px;
+}
+
+.lp-header-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  flex: 1;
+}
+
+.lp-lesson-progress {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Path List ── */
+.lp-list-content {
+  padding: 0 20px 24px;
+}
+
+.lp-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 24px 0 12px;
+}
+
+.lp-section-title:first-child {
+  margin-top: 8px;
+}
+
+.lp-path-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.lp-path-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.lp-path-card:active {
+  transform: scale(0.98);
+}
+
+.lp-path-emoji {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.lp-path-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-path-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.lp-path-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.lp-path-check {
+  color: #10B981;
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* ── Path Preview ── */
+.lp-preview-content {
+  padding: 0 20px 24px;
+}
+
+.lp-preview-hero {
+  text-align: center;
+  padding: 24px 0 20px;
+}
+
+.lp-preview-emoji {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.lp-preview-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.lp-preview-desc {
+  font-size: 0.875rem;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+.lp-lessons-list {
+  margin: 20px 0;
+}
+
+.lp-lesson-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.lp-lesson-item:last-child {
+  border-bottom: none;
+}
+
+.lp-lesson-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-lesson-num.viewed {
+  background: var(--teal-dark);
+  color: #fff;
+}
+
+.lp-lesson-item-info {
+  flex: 1;
+}
+
+.lp-lesson-item-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.lp-lesson-item-ref {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.lp-start-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: background 0.15s;
+}
+
+.lp-start-btn:hover {
+  background: var(--teal);
+}
+
+/* ── Lesson View ── */
+.lp-lesson-content {
+  padding: 0 20px 100px;
+}
+
+.lp-verse-section {
+  margin: 16px 0 24px;
+}
+
+.lp-verse-ref-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--teal-dark);
+  background: var(--teal-light);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.lp-arabic-text {
+  font-family: 'Amiri', serif;
+  font-size: 1.625rem;
+  line-height: 2.2;
+  text-align: right;
+  direction: rtl;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.lp-audio-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.lp-audio-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: none;
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lp-audio-btn:hover {
+  background: #cce8e4;
+}
+
+.lp-audio-btn.playing {
+  background: var(--teal-dark);
+  color: #fff;
+}
+
+.lp-translation {
+  font-size: 0.9375rem;
+  color: var(--text-mid);
+  line-height: 1.8;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.lp-supporting-section {
+  margin: 16px 0;
+  padding: 16px;
+  background: #F8FAFB;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.lp-supporting-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.lp-supporting-arabic {
+  font-family: 'Amiri', serif;
+  font-size: 1.25rem;
+  line-height: 2;
+  text-align: right;
+  direction: rtl;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.lp-supporting-translation {
+  font-size: 0.8125rem;
+  color: var(--text-mid);
+  line-height: 1.7;
+}
+
+/* Explanation skeleton/loading */
+.lp-explanation-section {
+  margin: 24px 0;
+}
+
+.lp-section-heading {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+}
+
+.lp-explanation-text {
+  font-size: 0.9375rem;
+  color: var(--text-mid);
+  line-height: 1.8;
+}
+
+.lp-why-section {
+  margin: 20px 0;
+  padding: 16px;
+  background: var(--teal-light);
+  border-radius: var(--radius-sm);
+}
+
+.lp-why-text {
+  font-size: 0.875rem;
+  color: var(--teal-dark);
+  line-height: 1.7;
+}
+
+.lp-reflection-section {
+  margin: 20px 0;
+  padding: 16px;
+  background: #FFF8F0;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #F59E0B;
+}
+
+.lp-reflection-text {
+  font-size: 0.9375rem;
+  color: var(--text-dark);
+  line-height: 1.7;
+  font-style: italic;
+}
+
+/* Skeleton loading */
+.lp-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: lpShimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.lp-skeleton-line {
+  height: 16px;
+  margin-bottom: 10px;
+}
+
+.lp-skeleton-line:last-child {
+  width: 60%;
+}
+
+@keyframes lpShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Lesson Footer ── */
+.lp-lesson-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  max-width: 600px;
+  margin: 0 auto;
+  z-index: 10;
+}
+
+.lp-btn-secondary {
+  flex: 1;
+  padding: 12px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lp-btn-secondary:hover {
+  background: #cce8e4;
+}
+
+.lp-btn-primary {
+  flex: 1;
+  padding: 12px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lp-btn-primary:hover {
+  background: var(--teal);
+}
+
+/* ── Path Completion ── */
+.lp-complete-content {
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.lp-complete-emoji {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+}
+
+.lp-complete-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.lp-complete-subtitle {
+  font-size: 0.9375rem;
+  color: var(--text-mid);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.lp-complete-suggestions {
+  margin: 24px 0;
+}
+
+.lp-complete-suggest-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 12px;
+}
+
+.lp-complete-home-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: background 0.15s;
+}
+
+.lp-complete-home-btn:hover {
+  background: var(--teal);
+}
+
+/* ── Suggestion Card (Curhat/Panduan integration) ── */
+.lp-suggest-card {
+  margin: 16px 0;
+  padding: 18px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.lp-suggest-label {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.lp-suggest-path {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.lp-suggest-btn {
+  padding: 10px 20px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lp-suggest-btn:hover {
+  background: var(--teal);
+}
+
+/* ── Nuri Greeting Paths ── */
+.nuri-paths-section {
+  margin: 16px 0;
+  padding: 0 4px;
+}
+
+.nuri-paths-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.nuri-path-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+  color: var(--text-dark);
+  font-size: 0.9375rem;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.nuri-path-link:hover {
+  color: var(--teal-dark);
+}
+
+.nuri-paths-all {
+  display: block;
+  margin-top: 8px;
+  color: var(--teal-dark);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.nuri-paths-all:hover {
+  text-decoration: underline;
+}

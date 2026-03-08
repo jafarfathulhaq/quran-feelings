@@ -2659,6 +2659,15 @@ function renderVerses(data) {
   // ── F: Hide actions/feedback until last card ────────────────────────────────
   document.getElementById('verse-actions').classList.add('hidden');
   document.getElementById('verse-feedback').classList.add('hidden');
+
+  // ── G: Learning path suggestion card ────────────────────────────────────────
+  const suggestContainer = document.getElementById('lp-suggest-container');
+  if (suggestContainer) {
+    suggestContainer.innerHTML = '';
+    const verseRefs = data.ayat.map(v => `${v.surah_name}: ${v.verse_number}`);
+    const suggestType = currentMode === 'panduan' ? 'topic' : 'situation';
+    lpTrySuggestCard(verseRefs, suggestType, suggestContainer);
+  }
 }
 
 // ── Swipe hint sequence (pill → peek → auto-advance) ─────────────────────────
@@ -5454,6 +5463,12 @@ function startNuriSession() {
   // Show opt-in card after opening message
   appendOptInCard();
 
+  // Show learning path suggestions in greeting
+  const nuriMsgContainer = document.getElementById('nuriMessages');
+  if (nuriMsgContainer) {
+    lpRenderNuriGreetingPaths(nuriMsgContainer);
+  }
+
   // Log analytics
   logEvent('nuri_session_started', { session_id: nuriSessionId });
 }
@@ -5677,6 +5692,15 @@ async function _sendNuriMessageInternal(text, isRetry) {
     -(NURI_CONFIG.contextWindow * 2) // *2 because each exchange = 2 messages
   );
 
+  // Inject lesson context if coming from a learning path
+  if (window._nuriLessonContext && contextMessages.length <= 2) {
+    const ctx = window._nuriLessonContext;
+    contextMessages.unshift({
+      role: 'system',
+      content: `--- LESSON CONTEXT ---\nThe user is on learning path: "${ctx.path_title}"\nCurrently viewing lesson ${ctx.lesson_order} of 5: "${ctx.lesson_title}"\nAnchor verse: ${ctx.verse_ref}\nExplanation provided to user: ${ctx.explanation}\n\nHelp them understand this verse more deeply. Stay within the verse's themes. If they ask something beyond scope, gently guide them back or suggest they continue the path.\n\nSafety clause:\nIf asked about Islamic law, controversial debates, or specific rulings, respond:\n"Pertanyaan ini sebaiknya dijawab oleh ustadz atau ulama yang kompeten. Nuri bisa bantu menjelaskan ayat Al-Qur'an yang berkaitan, tapi untuk hukum fiqih, lebih baik bertanya kepada ahlinya."`
+    });
+  }
+
   try {
     const payload = JSON.stringify({
       mode: 'dewasa',
@@ -5825,4 +5849,430 @@ if (!window.matchMedia('(display-mode: standalone)').matches) {
   });
 
   _startTimer();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LEARNING PATHS (Nuri Perjalanan Belajar)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── State ────────────────────────────────────────────────────────────────────
+let lpAllPaths = null;                 // cached API response
+let lpCurrentPath = null;              // current path detail
+let lpCurrentLessonIdx = 0;            // 0-based index into lessons array
+let lpPreviousView = 'landing-view';   // where to go back from paths list
+let lpLessonContext = null;            // context for Tanya Nuri
+
+// ── Progress (localStorage) ─────────────────────────────────────────────────
+const LP_PROGRESS_KEY = 'nuri-progress';
+
+function lpGetProgress() {
+  try { return JSON.parse(localStorage.getItem(LP_PROGRESS_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function lpMarkLessonViewed(lessonId) {
+  const p = lpGetProgress();
+  p[lessonId] = true;
+  localStorage.setItem(LP_PROGRESS_KEY, JSON.stringify(p));
+}
+
+function lpIsLessonViewed(lessonId) {
+  return !!lpGetProgress()[lessonId];
+}
+
+function lpIsPathComplete(pathId) {
+  const p = lpGetProgress();
+  return [1,2,3,4,5].every(n => p[`${pathId}-${n}`]);
+}
+
+function lpGetPathProgress(pathId) {
+  const p = lpGetProgress();
+  return [1,2,3,4,5].filter(n => p[`${pathId}-${n}`]).length;
+}
+
+// ── Lesson Cache (in-memory) ────────────────────────────────────────────────
+const lpLessonCache = {};
+
+async function lpGetLessonContent(lessonId) {
+  if (lpLessonCache[lessonId]) return lpLessonCache[lessonId];
+  const res = await fetch(`/api/learning-paths/lesson/${lessonId}/generate`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to generate lesson');
+  const data = await res.json();
+  lpLessonCache[lessonId] = data;
+  return data;
+}
+
+// ── Path List Screen ────────────────────────────────────────────────────────
+async function lpShowPathsList(fromView) {
+  if (fromView) lpPreviousView = fromView;
+
+  const container = document.getElementById('lpListContent');
+  container.innerHTML = '<div class="lp-skeleton lp-skeleton-line" style="width:80%;height:20px;margin:24px auto"></div>'.repeat(5);
+  switchView('paths-list-view');
+
+  try {
+    if (!lpAllPaths) {
+      const res = await fetch('/api/learning-paths');
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      if (!data.situation || !data.topic) throw new Error('Invalid data');
+      lpAllPaths = data;
+    }
+
+    let html = '';
+
+    // Situation paths
+    html += '<div class="lp-section-title">Berdasarkan perasaan</div>';
+    for (const p of lpAllPaths.situation) {
+      const progress = lpGetPathProgress(p.id);
+      const complete = lpIsPathComplete(p.id);
+      html += `
+        <div class="lp-path-card" onclick="lpShowPathPreview('${p.id}')">
+          <span class="lp-path-emoji">${p.emoji}</span>
+          <div class="lp-path-info">
+            <div class="lp-path-title">${p.title}</div>
+            <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/5 pelajaran' : '5 pelajaran'}</div>
+          </div>
+          ${complete ? '<span class="lp-path-check">✓</span>' : ''}
+        </div>`;
+    }
+
+    // Topic paths
+    html += '<div class="lp-section-title" style="margin-top:32px">Berdasarkan tema Al-Qur\'an</div>';
+    for (const p of lpAllPaths.topic) {
+      const progress = lpGetPathProgress(p.id);
+      const complete = lpIsPathComplete(p.id);
+      html += `
+        <div class="lp-path-card" onclick="lpShowPathPreview('${p.id}')">
+          <span class="lp-path-emoji">${p.emoji}</span>
+          <div class="lp-path-info">
+            <div class="lp-path-title">${p.title}</div>
+            <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/5 pelajaran' : '5 pelajaran'}</div>
+          </div>
+          ${complete ? '<span class="lp-path-check">✓</span>' : ''}
+        </div>`;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('Failed to load paths:', err);
+    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px">Gagal memuat. Coba lagi.</p>';
+  }
+}
+
+// ── Path Preview Screen ─────────────────────────────────────────────────────
+async function lpShowPathPreview(pathId) {
+  const container = document.getElementById('lpPreviewContent');
+  const titleEl = document.getElementById('pathPreviewTitle');
+  titleEl.textContent = '';
+  container.innerHTML = '<div class="lp-skeleton lp-skeleton-line" style="width:60%;height:24px;margin:32px auto"></div>';
+  switchView('path-preview-view');
+
+  // Back button logic
+  document.getElementById('pathPreviewBack').onclick = () => switchView('paths-list-view');
+
+  try {
+    const res = await fetch(`/api/learning-paths/${pathId}`);
+    if (!res.ok) throw new Error('API error');
+    const path = await res.json();
+    if (!path.lessons) throw new Error('Invalid data');
+    lpCurrentPath = path;
+
+    titleEl.textContent = path.title;
+
+    let html = `
+      <div class="lp-preview-hero">
+        <div class="lp-preview-emoji">${path.emoji}</div>
+        <div class="lp-preview-title">${path.title}</div>
+        <div class="lp-preview-desc">${path.description}</div>
+      </div>
+      <div class="lp-lessons-list">`;
+
+    for (const lesson of path.lessons) {
+      const viewed = lpIsLessonViewed(lesson.id);
+      html += `
+        <div class="lp-lesson-item">
+          <div class="lp-lesson-num ${viewed ? 'viewed' : ''}">${lesson.order_num}</div>
+          <div class="lp-lesson-item-info">
+            <div class="lp-lesson-item-title">${lesson.title}</div>
+            <div class="lp-lesson-item-ref">${lesson.verse_ref}</div>
+          </div>
+        </div>`;
+    }
+
+    // Find first unviewed lesson
+    let startIdx = path.lessons.findIndex(l => !lpIsLessonViewed(l.id));
+    if (startIdx === -1) startIdx = 0;
+
+    html += `</div>
+      <button class="lp-start-btn" onclick="lpStartLesson('${pathId}', ${startIdx})">
+        ${lpGetPathProgress(pathId) > 0 ? 'Lanjutkan Perjalanan' : 'Mulai Perjalanan'}
+      </button>`;
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('Failed to load path:', err);
+    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px">Gagal memuat. Coba lagi.</p>';
+  }
+}
+
+// ── Lesson View Screen ──────────────────────────────────────────────────────
+function lpStartLesson(pathId, lessonIdx) {
+  lpCurrentLessonIdx = lessonIdx;
+  lpRenderLesson();
+}
+
+async function lpRenderLesson() {
+  if (!lpCurrentPath) return;
+  const lesson = lpCurrentPath.lessons[lpCurrentLessonIdx];
+  if (!lesson) return;
+
+  const content = document.getElementById('lpLessonContent');
+  const titleEl = document.getElementById('lessonPathTitle');
+  const progressEl = document.getElementById('lessonProgress');
+  const nextBtn = document.getElementById('lessonNextBtn');
+
+  titleEl.textContent = lpCurrentPath.title;
+  progressEl.textContent = `${lpCurrentLessonIdx + 1} / ${lpCurrentPath.lessons.length}`;
+  switchView('lesson-view');
+
+  // Back button
+  document.getElementById('lessonBackBtn').onclick = () => lpShowPathPreview(lpCurrentPath.id);
+
+  // Next/Finish button
+  const isLast = lpCurrentLessonIdx === lpCurrentPath.lessons.length - 1;
+  nextBtn.textContent = isLast ? 'Selesai' : 'Lanjut →';
+  nextBtn.onclick = () => {
+    if (isLast) {
+      lpShowComplete(lpCurrentPath.id);
+    } else {
+      lpCurrentLessonIdx++;
+      lpRenderLesson();
+    }
+  };
+
+  // Tanya Nuri button
+  document.getElementById('lessonAskNuri').onclick = () => lpOpenTanyaNuri();
+
+  // Mark lesson as viewed
+  lpMarkLessonViewed(lesson.id);
+
+  // Render verse section immediately (placeholder), then load generated content
+  content.innerHTML = `
+    <div class="lp-verse-section">
+      <span class="lp-verse-ref-badge">${lesson.verse_ref}</span>
+      <div class="lp-skeleton lp-skeleton-line" style="height:60px"></div>
+    </div>
+    <div class="lp-explanation-section">
+      <div class="lp-skeleton lp-skeleton-line"></div>
+      <div class="lp-skeleton lp-skeleton-line"></div>
+      <div class="lp-skeleton lp-skeleton-line"></div>
+    </div>`;
+
+  try {
+    const data = await lpGetLessonContent(lesson.id);
+    lpLessonContext = {
+      path_title: lpCurrentPath.title,
+      lesson_title: lesson.title,
+      lesson_order: lesson.order_num,
+      verse_ref: lesson.verse_ref,
+      explanation: data.explanation,
+    };
+
+    let html = '<div class="lp-verse-section">';
+    html += `<span class="lp-verse-ref-badge">${lesson.verse_ref}</span>`;
+
+    if (data.verse_text_ar) {
+      html += `<div class="lp-arabic-text">${data.verse_text_ar}</div>`;
+    }
+
+    // Audio button (reuse existing audio infrastructure)
+    if (data.surah_number && data.verse_start) {
+      html += `<div class="lp-audio-row">
+        <button class="lp-audio-btn" onclick="lpPlayAudio(this, ${data.surah_number}, ${data.verse_start})">
+          ${typeof PLAY_ICON !== 'undefined' ? PLAY_ICON : '▶'} Dengarkan
+        </button>
+      </div>`;
+    }
+
+    if (data.verse_text_id) {
+      html += `<div class="lp-translation">"${data.verse_text_id}"</div>`;
+    }
+
+    html += '</div>';
+
+    // Supporting verse
+    if (data.supporting_verse_text_ar) {
+      html += `
+        <div class="lp-supporting-section">
+          <div class="lp-supporting-label">Ayat pendukung — ${lesson.supporting_verse_ref || ''}</div>
+          <div class="lp-supporting-arabic">${data.supporting_verse_text_ar}</div>
+          <div class="lp-supporting-translation">"${data.supporting_verse_text_id || ''}"</div>
+        </div>`;
+    }
+
+    // Explanation
+    html += `
+      <div class="lp-explanation-section">
+        <div class="lp-section-heading">${lesson.title}</div>
+        <div class="lp-explanation-text">${data.explanation}</div>
+      </div>`;
+
+    // Why this verse
+    if (data.why_this_verse) {
+      html += `
+        <div class="lp-why-section">
+          <div class="lp-section-heading">📌 Mengapa ayat ini penting?</div>
+          <div class="lp-why-text">${data.why_this_verse}</div>
+        </div>`;
+    }
+
+    // Reflection
+    if (data.reflection) {
+      html += `
+        <div class="lp-reflection-section">
+          <div class="lp-section-heading">💭 Renungan</div>
+          <div class="lp-reflection-text">${data.reflection}</div>
+        </div>`;
+    }
+
+    content.innerHTML = html;
+  } catch (err) {
+    console.error('Failed to load lesson:', err);
+    content.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px">Gagal memuat pelajaran. Coba lagi.</p>';
+  }
+}
+
+// ── Audio helper for lesson view ────────────────────────────────────────────
+function lpPlayAudio(btn, surahNum, verseNum) {
+  const verseObj = { id: `${surahNum}:${verseNum}`, surah_name: '' };
+  playAudio(verseObj, btn);
+}
+
+// ── Path Completion Screen ──────────────────────────────────────────────────
+async function lpShowComplete(pathId) {
+  switchView('path-complete-view');
+  const container = document.getElementById('lpCompleteContent');
+
+  // Ensure paths are loaded
+  if (!lpAllPaths) {
+    try {
+      const res = await fetch('/api/learning-paths');
+      lpAllPaths = await res.json();
+    } catch { /* ignore */ }
+  }
+
+  const pathType = lpCurrentPath?.type || 'situation';
+  const pathTitle = lpCurrentPath?.title || 'perjalanan ini';
+
+  // Find 2 other paths of same type
+  const samePaths = (lpAllPaths?.[pathType] || []).filter(p => p.id !== pathId).slice(0, 2);
+
+  let suggestHtml = '';
+  if (samePaths.length > 0) {
+    suggestHtml = `
+      <div class="lp-complete-suggestions">
+        <div class="lp-complete-suggest-title">Perjalanan lainnya</div>
+        ${samePaths.map(p => `
+          <div class="lp-path-card" onclick="lpShowPathPreview('${p.id}')" style="margin-bottom:10px">
+            <span class="lp-path-emoji">${p.emoji}</span>
+            <div class="lp-path-info">
+              <div class="lp-path-title">${p.title}</div>
+              <div class="lp-path-meta">5 pelajaran</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div class="lp-complete-emoji">✨</div>
+    <div class="lp-complete-title">Kamu telah menyelesaikan perjalanan: ${pathTitle}</div>
+    <div class="lp-complete-subtitle">Semoga renungan ini bermanfaat untuk perjalanan hidupmu.</div>
+    ${suggestHtml}
+    <button class="lp-complete-home-btn" onclick="switchView('landing-view')">Kembali ke Beranda</button>
+  `;
+}
+
+// ── Tanya Nuri from lesson ──────────────────────────────────────────────────
+function lpOpenTanyaNuri() {
+  if (!lpLessonContext) {
+    startNuriSession();
+    return;
+  }
+
+  // Pass context to Nuri — append lesson context to the system prompt
+  // We'll use a global variable that nuri's send function can check
+  window._nuriLessonContext = lpLessonContext;
+
+  startNuriSession();
+
+  // Override back button to return to lesson
+  setTimeout(() => {
+    const backBtn = document.getElementById('nuriBackBtn');
+    if (backBtn) {
+      backBtn.onclick = () => {
+        window._nuriLessonContext = null;
+        switchView('lesson-view');
+      };
+    }
+  }, 100);
+}
+
+// ── Suggestion card helper (for Curhat/Panduan integration) ─────────────────
+async function lpTrySuggestCard(verseRefs, type, containerEl) {
+  if (!verseRefs || verseRefs.length === 0) return;
+
+  try {
+    const versesParam = verseRefs.join(',');
+    const res = await fetch(`/api/learning-paths/suggest?verses=${encodeURIComponent(versesParam)}&type=${type}`);
+    const path = await res.json();
+    if (!path || !path.id) return;
+
+    const label = type === 'situation'
+      ? '🌱 Ingin mendalami perasaan ini?'
+      : '📖 Ingin mempelajari tema ini?';
+    const btnText = type === 'situation' ? 'Mulai Perjalanan' : 'Mulai Belajar';
+
+    const card = document.createElement('div');
+    card.className = 'lp-suggest-card';
+    card.innerHTML = `
+      <div class="lp-suggest-label">${label}</div>
+      <div class="lp-suggest-path">${path.emoji || ''} ${path.title} — 5 pelajaran singkat</div>
+      <button class="lp-suggest-btn" onclick="lpShowPathPreview('${path.id}')">${btnText}</button>
+    `;
+    containerEl.appendChild(card);
+  } catch (err) {
+    // Graceful absence — don't show anything on error
+    console.error('Suggest card error:', err);
+  }
+}
+
+// ── Nuri greeting paths ─────────────────────────────────────────────────────
+async function lpRenderNuriGreetingPaths(containerEl) {
+  try {
+    if (!lpAllPaths) {
+      const res = await fetch('/api/learning-paths');
+      lpAllPaths = await res.json();
+    }
+
+    const featured = lpAllPaths.situation.slice(0, 3);
+    if (featured.length === 0) return;
+
+    const div = document.createElement('div');
+    div.className = 'nuri-paths-section';
+    div.innerHTML = `
+      <div class="nuri-paths-label">Atau mulai perjalanan belajar:</div>
+      ${featured.map(p => `
+        <button class="nuri-path-link" onclick="lpShowPathPreview('${p.id}')">
+          <span>${p.emoji}</span>
+          <span>${p.title}</span>
+        </button>
+      `).join('')}
+      <button class="nuri-paths-all" onclick="lpShowPathsList('nuri-view')">Lihat semua perjalanan →</button>
+    `;
+    containerEl.appendChild(div);
+  } catch (err) {
+    console.error('Nuri greeting paths error:', err);
+  }
 }
