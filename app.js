@@ -5941,6 +5941,17 @@ async function lpGetLessonContent(lessonId) {
   return data;
 }
 
+// Pre-load all lessons in a path (fire & forget, no await)
+function lpPreloadAllLessons() {
+  if (!lpCurrentPath?.lessons) return;
+  for (const lesson of lpCurrentPath.lessons) {
+    if (!lpLessonCache[lesson.id]) {
+      // Fire silently — don't await, don't block, ignore errors
+      lpGetLessonContent(lesson.id).catch(() => {});
+    }
+  }
+}
+
 // ── Path List Screen ────────────────────────────────────────────────────────
 async function lpShowPathsList(fromView) {
   if (fromView) lpPreviousView = fromView;
@@ -6066,6 +6077,8 @@ async function lpShowPathPreview(pathId) {
 function lpStartLesson(pathId, lessonIdx) {
   lpCurrentLessonIdx = lessonIdx;
   lpRenderLesson();
+  // Pre-load remaining lessons in background (fire & forget)
+  lpPreloadAllLessons();
 }
 
 async function lpRenderLesson() {
