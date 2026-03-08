@@ -5915,7 +5915,7 @@ function renderCurriculumProgressCard(activeCurr) {
 async function fetchCurriculaData() {
   try {
     if (nuriCurriculaCache) return nuriCurriculaCache;
-    const res = await fetch('/api/curricula');
+    const res = await fetch('/api/learning-paths?type=curricula');
     if (!res.ok) throw new Error('Failed to fetch curricula');
     nuriCurriculaCache = await res.json();
     return nuriCurriculaCache;
