@@ -6060,7 +6060,7 @@ async function startCurriculum(curriculumId) {
   if (!curr) return;
 
   const pathList = curr.paths.map((p, i) => `${i + 1}. ${p.emoji || ''} ${p.title}`).join('\n');
-  appendNuriMessage(`${curr.emoji} ${escapeHtml(curr.title)}\n\nPerjalanan ini terdiri dari ${curr.paths.length} tema:\n${escapeHtml(pathList)}\n\n${curr.total_lessons} pelajaran total. Kita mulai dari tema pertama: ${curr.paths[0]?.title || ''}.`, false);
+  appendNuriMessage(`${curr.emoji} ${escapeHtml(curr.title)}\n\nPerjalanan ini terdiri dari ${curr.paths.length} tema:\n${escapeHtml(pathList)}\n\n${curr.total_lessons} pelajaran total. Kita mulai dari tema pertama: ${escapeHtml(curr.paths[0]?.title || '')}.`, false);
 
   // Save initial progress
   saveCurriculumProgress(curriculumId, 0, 1, curr.paths[0]?.id, curr.paths.length, []);
@@ -6079,7 +6079,7 @@ async function startCurriculum(curriculumId) {
   };
 
   renderQuickReplies([
-    { label: `Mulai tema 1: ${curr.paths[0]?.title || ''}`, message: `Mulai pelajaran 1`, action: 'beginGuidedLesson' },
+    { label: `Mulai tema 1: ${escapeHtml(curr.paths[0]?.title || '')}`, message: `Mulai pelajaran 1`, action: 'beginGuidedLesson' },
   ]);
   const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
   if (lastQR) {

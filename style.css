@@ -6455,14 +6455,23 @@ body.about-locked { overflow: hidden; }
   background: white;
   text-align: center;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
   line-height: 1.3;
   font-family: inherit;
+}
+
+.nuri-qr-chip:hover {
+  background: var(--teal-light, #EDF7F6);
 }
 
 .nuri-qr-chip:active {
   background: var(--teal-dark);
   color: white;
+}
+
+.nuri-qr-chip:focus-visible {
+  outline: 2px solid var(--teal-dark);
+  outline-offset: 2px;
 }
 
 .nuri-quick-replies.used .nuri-qr-chip {
@@ -6492,6 +6501,7 @@ body.about-locked { overflow: hidden; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 14px;
+  box-shadow: var(--shadow-rest, 0 1px 3px rgba(0,0,0,0.06));
 }
 
 .nuri-cp-emoji {
@@ -6657,10 +6667,18 @@ body.about-locked { overflow: hidden; }
   background: white;
   cursor: pointer;
   font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .journal-entry .je-action-btn:hover {
   background: var(--teal-light);
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+}
+
+.journal-entry .je-action-btn:focus-visible {
+  outline: 2px solid var(--teal-dark);
+  outline-offset: 2px;
 }
 
 .journal-empty {
