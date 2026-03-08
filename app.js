@@ -4563,7 +4563,7 @@ function expandAjarkanCategory(catId) {
     // Subcategory header (tappable, toggles question list)
     const header = document.createElement('div');
     header.className = 'ak-subcategory-header';
-    header.innerHTML = `<span class="ak-sub-name">${sub.name}</span><span class="ak-sub-meta">${sub.questions.length} pertanyaan <span class="ak-sub-chevron">\u25BC</span></span>`;
+    header.innerHTML = `<span class="ak-sub-name">${escapeHtml(sub.name)}</span><span class="ak-sub-meta">${sub.questions.length} pertanyaan <span class="ak-sub-chevron">\u25BC</span></span>`;
     list.appendChild(header);
 
     // Questions wrapper (collapsed by default)
@@ -7092,8 +7092,8 @@ async function lpShowPathPreview(pathId) {
     let html = `
       <div class="lp-preview-hero">
         <div class="lp-preview-emoji">${path.emoji}</div>
-        <div class="lp-preview-title">${path.title}</div>
-        <div class="lp-preview-desc">${path.description}</div>
+        <div class="lp-preview-title">${escapeHtml(path.title)}</div>
+        <div class="lp-preview-desc">${escapeHtml(path.description)}</div>
       </div>
       <div class="lp-lessons-list">`;
 
@@ -7106,8 +7106,8 @@ async function lpShowPathPreview(pathId) {
         <div class="lp-lesson-item ${clickable}" ${action}>
           <div class="lp-lesson-num ${viewed ? 'viewed' : ''}">${lesson.order_num}</div>
           <div class="lp-lesson-item-info">
-            <div class="lp-lesson-item-title">${lesson.title}</div>
-            <div class="lp-lesson-item-ref">${lesson.verse_ref}</div>
+            <div class="lp-lesson-item-title">${escapeHtml(lesson.title)}</div>
+            <div class="lp-lesson-item-ref">${escapeHtml(lesson.verse_ref)}</div>
           </div>
           ${viewed ? '<span class="lp-lesson-item-chevron">›</span>' : ''}
         </div>`;
@@ -7411,7 +7411,7 @@ async function lpTrySuggestCard(verseRefs, type, containerEl) {
     card.className = 'lp-suggest-card';
     card.innerHTML = `
       <div class="lp-suggest-label">${label}</div>
-      <div class="lp-suggest-path">${path.emoji || ''} ${path.title} — ${path.lesson_count || 5} pelajaran singkat</div>
+      <div class="lp-suggest-path">${path.emoji || ''} ${escapeHtml(path.title)} — ${path.lesson_count || 5} pelajaran singkat</div>
       <button class="lp-suggest-btn" data-action="showPathPreview" data-path-id="${path.id}">${btnText}</button>
     `;
     containerEl.appendChild(card);

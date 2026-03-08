@@ -6438,7 +6438,7 @@ body.about-locked { overflow: hidden; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  max-width: 320px;
+  max-width: min(320px, calc(100% - 44px));
   margin: 8px 0 8px 44px;
 }
 
@@ -6490,7 +6490,7 @@ body.about-locked { overflow: hidden; }
 /* ── Nuri Curriculum Progress Card ── */
 .nuri-curriculum-progress {
   margin: 8px 0 8px 44px;
-  max-width: 320px;
+  max-width: min(320px, calc(100% - 44px));
 }
 
 .nuri-cp-card {
@@ -6572,6 +6572,7 @@ body.about-locked { overflow: hidden; }
 /* ── Nuri Journal Link ── */
 .nuri-journal-link {
   margin: 8px 0 4px 44px;
+  max-width: min(320px, calc(100% - 44px));
 }
 
 /* ── Journal View ── */
