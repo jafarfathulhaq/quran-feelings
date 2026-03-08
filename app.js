@@ -5801,6 +5801,26 @@ document.getElementById('nuriSendBtn')?.addEventListener('click', sendNuriMessag
 document.getElementById('nuriStartBtn')?.addEventListener('click', startNuriSession);
 document.getElementById('nuriLandingCard')?.addEventListener('click', startNuriSession);
 document.getElementById('nuriBackBtn')?.addEventListener('click', () => switchView('landing-view'));
+document.getElementById('lpLandingBtn')?.addEventListener('click', () => lpShowPathsList('landing-view'));
+document.getElementById('lpListBackBtn')?.addEventListener('click', () => switchView('landing-view'));
+
+// ── Learning Paths: delegated event listener for dynamic content ────────────
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  if (action === 'showPathPreview') {
+    lpShowPathPreview(el.dataset.pathId);
+  } else if (action === 'startLesson') {
+    lpStartLesson(el.dataset.pathId, parseInt(el.dataset.lessonIdx, 10));
+  } else if (action === 'playAudio') {
+    lpPlayAudio(el, parseInt(el.dataset.surah, 10), parseInt(el.dataset.verse, 10));
+  } else if (action === 'showPathsList') {
+    lpShowPathsList('nuri-view');
+  } else if (action === 'goHome') {
+    switchView('landing-view');
+  }
+});
 
 // ── Push Permission Triggers ──────────────────────────────────────────────────
 
@@ -5927,7 +5947,7 @@ async function lpShowPathsList(fromView) {
       const progress = lpGetPathProgress(p.id);
       const complete = lpIsPathComplete(p.id);
       html += `
-        <div class="lp-path-card" onclick="lpShowPathPreview('${p.id}')">
+        <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">
           <span class="lp-path-emoji">${p.emoji}</span>
           <div class="lp-path-info">
             <div class="lp-path-title">${p.title}</div>
@@ -5943,7 +5963,7 @@ async function lpShowPathsList(fromView) {
       const progress = lpGetPathProgress(p.id);
       const complete = lpIsPathComplete(p.id);
       html += `
-        <div class="lp-path-card" onclick="lpShowPathPreview('${p.id}')">
+        <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">`
           <span class="lp-path-emoji">${p.emoji}</span>
           <div class="lp-path-info">
             <div class="lp-path-title">${p.title}</div>
@@ -6005,7 +6025,7 @@ async function lpShowPathPreview(pathId) {
     if (startIdx === -1) startIdx = 0;
 
     html += `</div>
-      <button class="lp-start-btn" onclick="lpStartLesson('${pathId}', ${startIdx})">
+      <button class="lp-start-btn" data-action="startLesson" data-path-id="${pathId}" data-lesson-idx="${startIdx}">
         ${lpGetPathProgress(pathId) > 0 ? 'Lanjutkan Perjalanan' : 'Mulai Perjalanan'}
       </button>`;
 
@@ -6089,7 +6109,7 @@ async function lpRenderLesson() {
     // Audio button (reuse existing audio infrastructure)
     if (data.surah_number && data.verse_start) {
       html += `<div class="lp-audio-row">
-        <button class="lp-audio-btn" onclick="lpPlayAudio(this, ${data.surah_number}, ${data.verse_start})">
+        <button class="lp-audio-btn" data-action="playAudio" data-surah="${data.surah_number}" data-verse="${data.verse_start}">
           ${typeof PLAY_ICON !== 'undefined' ? PLAY_ICON : '▶'} Dengarkan
         </button>
       </div>`;
@@ -6174,7 +6194,7 @@ async function lpShowComplete(pathId) {
       <div class="lp-complete-suggestions">
         <div class="lp-complete-suggest-title">Perjalanan lainnya</div>
         ${samePaths.map(p => `
-          <div class="lp-path-card" onclick="lpShowPathPreview('${p.id}')" style="margin-bottom:10px">
+          <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}" style="margin-bottom:10px">
             <span class="lp-path-emoji">${p.emoji}</span>
             <div class="lp-path-info">
               <div class="lp-path-title">${p.title}</div>
@@ -6190,7 +6210,7 @@ async function lpShowComplete(pathId) {
     <div class="lp-complete-title">Kamu telah menyelesaikan perjalanan: ${pathTitle}</div>
     <div class="lp-complete-subtitle">Semoga renungan ini bermanfaat untuk perjalanan hidupmu.</div>
     ${suggestHtml}
-    <button class="lp-complete-home-btn" onclick="switchView('landing-view')">Kembali ke Beranda</button>
+    <button class="lp-complete-home-btn" data-action="goHome">Kembali ke Beranda</button>
   `;
 }
 
@@ -6239,7 +6259,7 @@ async function lpTrySuggestCard(verseRefs, type, containerEl) {
     card.innerHTML = `
       <div class="lp-suggest-label">${label}</div>
       <div class="lp-suggest-path">${path.emoji || ''} ${path.title} — 5 pelajaran singkat</div>
-      <button class="lp-suggest-btn" onclick="lpShowPathPreview('${path.id}')">${btnText}</button>
+      <button class="lp-suggest-btn" data-action="showPathPreview" data-path-id="${path.id}">${btnText}</button>
     `;
     containerEl.appendChild(card);
   } catch (err) {
@@ -6264,12 +6284,12 @@ async function lpRenderNuriGreetingPaths(containerEl) {
     div.innerHTML = `
       <div class="nuri-paths-label">Atau mulai perjalanan belajar:</div>
       ${featured.map(p => `
-        <button class="nuri-path-link" onclick="lpShowPathPreview('${p.id}')">
+        <button class="nuri-path-link" data-action="showPathPreview" data-path-id="${p.id}">
           <span>${p.emoji}</span>
           <span>${p.title}</span>
         </button>
       `).join('')}
-      <button class="nuri-paths-all" onclick="lpShowPathsList('nuri-view')">Lihat semua perjalanan →</button>
+      <button class="nuri-paths-all" data-action="showPathsList">Lihat semua perjalanan →</button>
     `;
     containerEl.appendChild(div);
   } catch (err) {

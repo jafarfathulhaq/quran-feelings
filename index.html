@@ -188,7 +188,7 @@
           </div>
         </div>
         <button class="nuri-card-cta" id="nuriStartBtn">Mulai Ngobrol →</button>
-        <button class="nuri-card-cta" style="margin-top:8px;background:var(--teal-light);color:var(--teal-dark)" onclick="lpShowPathsList('landing-view')">Perjalanan Belajar →</button>
+        <button id="lpLandingBtn" class="nuri-card-cta" style="margin-top:8px;background:var(--teal-light);color:var(--teal-dark)">Perjalanan Belajar →</button>
       </div>
 
       <hr class="landing-section-divider" />
@@ -577,7 +577,7 @@
     <!-- ═══ Learning Paths: Path List ═══ -->
     <section id="paths-list-view" class="view">
       <div class="lp-header">
-        <button class="lp-back-btn" onclick="switchView('landing-view')">←</button>
+        <button class="lp-back-btn" id="lpListBackBtn">←</button>
         <div class="lp-header-title">Perjalanan Belajar</div>
       </div>
       <div class="lp-list-content" id="lpListContent">
