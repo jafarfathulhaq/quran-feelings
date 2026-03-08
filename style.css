@@ -5654,6 +5654,8 @@ body.about-locked { overflow: hidden; }
   margin-bottom: 10px;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
 }
 
 .lp-path-card:hover {
@@ -5794,6 +5796,7 @@ body.about-locked { overflow: hidden; }
 /* ── Lesson View ── */
 .lp-lesson-content {
   padding: 0 20px 100px;
+  will-change: transform;
 }
 
 .lp-verse-section {
@@ -5830,25 +5833,65 @@ body.about-locked { overflow: hidden; }
 .lp-audio-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--teal-light);
-  color: var(--teal-dark);
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--teal-dark);
+  color: #fff;
   border: none;
-  border-radius: 20px;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  border-radius: 28px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s;
+  width: 100%;
 }
 
 .lp-audio-btn:hover {
-  background: #cce8e4;
+  background: var(--teal);
+}
+
+.lp-audio-btn:active {
+  transform: scale(0.98);
 }
 
 .lp-audio-btn.playing {
-  background: var(--teal-dark);
-  color: #fff;
+  background: var(--teal);
+  animation: lpAudioPulse 2s ease-in-out infinite;
+}
+
+.lp-audio-bars {
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.lp-audio-bars span {
+  display: block;
+  width: 3px;
+  background: #fff;
+  border-radius: 2px;
+  animation: lpAudioBar 0.8s ease-in-out infinite alternate;
+}
+
+.lp-audio-bars span:nth-child(1) { height: 4px; animation-delay: 0s; }
+.lp-audio-bars span:nth-child(2) { height: 8px; animation-delay: 0.15s; }
+.lp-audio-bars span:nth-child(3) { height: 12px; animation-delay: 0.3s; }
+.lp-audio-bars span:nth-child(4) { height: 6px; animation-delay: 0.45s; }
+
+@keyframes lpAudioBar {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes lpAudioPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 122, 122, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(13, 122, 122, 0); }
+}
+
+.lp-audio-btn.playing .lp-audio-bars {
+  display: flex;
 }
 
 .lp-translation {
@@ -6014,6 +6057,8 @@ body.about-locked { overflow: hidden; }
 .lp-complete-content {
   padding: 48px 20px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .lp-complete-emoji {
@@ -6149,3 +6194,187 @@ body.about-locked { overflow: hidden; }
 .nuri-paths-all:hover {
   text-decoration: underline;
 }
+
+/* ── LP Tab Bar ── */
+.lp-tab-bar {
+  display: flex;
+  gap: 0;
+  margin: 8px 0 20px;
+  background: var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.lp-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.lp-tab.active {
+  background: var(--card-bg);
+  color: var(--teal-dark);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.lp-tab-panel.hidden { display: none; }
+
+/* ── LP Collapsible ── */
+.lp-collapsed-paths.hidden { display: none; }
+.lp-expand-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 4px;
+  background: none;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--teal-dark);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lp-expand-btn:hover { background: var(--teal-light); }
+
+/* ── LP Progress Bar ── */
+.lp-path-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--border);
+}
+.lp-path-progress-fill {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
+
+/* ── LP Skeleton Variants ── */
+.lp-skeleton-arabic { height: 48px; margin-bottom: 12px; border-radius: 8px; }
+.lp-skeleton-audio { height: 44px; width: 100%; border-radius: 28px; margin-bottom: 16px; }
+.lp-skeleton-heading { height: 18px; width: 40%; margin-bottom: 14px; border-radius: 6px; }
+.lp-skeleton-block { margin: 20px 0; padding: 16px; background: #F8FAFB; border-radius: var(--radius-sm); }
+
+/* ── LP Resume Card ── */
+.lp-resume-card { margin: 16px 16px 0; }
+.lp-resume-card.hidden { display: none; }
+.lp-resume-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--teal-light);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius-sm);
+  gap: 12px;
+}
+.lp-resume-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.lp-resume-emoji { font-size: 1.5rem; flex-shrink: 0; }
+.lp-resume-info { flex: 1; min-width: 0; }
+.lp-resume-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--teal-dark);
+  margin-bottom: 2px;
+}
+.lp-resume-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lp-resume-progress { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.lp-resume-btn {
+  padding: 8px 16px;
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.lp-resume-btn:hover { background: var(--teal); }
+
+/* ── LP Breadcrumb ── */
+.lp-breadcrumb {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+/* ── LP Confetti ── */
+.lp-confetti {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 200px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lp-confetti-piece {
+  position: absolute;
+  width: 8px; height: 8px;
+  top: -10px;
+  left: calc(var(--i) * 3.33%);
+  background: var(--teal);
+  border-radius: 2px;
+  animation: lpConfettiFall 2.5s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.06s);
+  opacity: 0;
+}
+.lp-confetti-piece:nth-child(3n) { background: var(--gold); width: 6px; height: 10px; }
+.lp-confetti-piece:nth-child(3n+1) { background: var(--teal-dark); border-radius: 50%; }
+.lp-confetti-piece:nth-child(3n+2) { background: #F59E0B; }
+@keyframes lpConfettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(200px) rotate(720deg); opacity: 0; }
+}
+
+/* ── LP Completion Stats ── */
+.lp-complete-stats {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin: 24px 0;
+}
+.lp-complete-stat { text-align: center; }
+.lp-complete-stat-num { font-size: 1.5rem; font-weight: 700; color: var(--teal-dark); }
+.lp-complete-stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ── LP Completion Actions ── */
+.lp-complete-actions {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+}
+.lp-complete-share-btn, .lp-complete-repeat-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+}
+.lp-complete-share-btn { background: var(--teal-dark); color: #fff; }
+.lp-complete-share-btn:hover { background: var(--teal); }
+.lp-complete-repeat-btn { background: var(--teal-light); color: var(--teal-dark); }
+.lp-complete-repeat-btn:hover { background: #cce8e4; }

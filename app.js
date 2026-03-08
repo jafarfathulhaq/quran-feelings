@@ -5819,6 +5819,24 @@ document.addEventListener('click', (e) => {
     lpShowPathsList('nuri-view');
   } else if (action === 'goHome') {
     switchView('landing-view');
+  } else if (action === 'switchLpTab') {
+    const tab = el.dataset.tab;
+    lpActiveTab = tab;
+    sessionStorage.setItem('lp-active-tab', tab);
+    document.querySelectorAll('.lp-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('lp-situation-group')?.classList.toggle('hidden', tab !== 'situation');
+    document.getElementById('lp-topic-group')?.classList.toggle('hidden', tab !== 'topic');
+  } else if (action === 'expandCategory') {
+    const cat = el.dataset.category;
+    const collapsed = document.getElementById(`lp-collapsed-${cat}`);
+    if (collapsed) { collapsed.classList.remove('hidden'); el.remove(); }
+  } else if (action === 'shareCompletion') {
+    const text = el.dataset.text;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => showToast('Teks berhasil disalin')).catch(() => {});
+    }
   }
 });
 
@@ -5881,6 +5899,7 @@ let lpCurrentPath = null;              // current path detail
 let lpCurrentLessonIdx = 0;            // 0-based index into lessons array
 let lpPreviousView = 'landing-view';   // where to go back from paths list
 let lpLessonContext = null;            // context for Tanya Nuri
+let lpActiveTab = sessionStorage.getItem('lp-active-tab') || 'situation';
 
 // ── Progress (localStorage) ─────────────────────────────────────────────────
 const LP_PROGRESS_KEY = 'nuri-progress';
@@ -5929,6 +5948,7 @@ async function lpShowPathsList(fromView) {
   const container = document.getElementById('lpListContent');
   container.innerHTML = '<div class="lp-skeleton lp-skeleton-line" style="width:80%;height:20px;margin:24px auto"></div>'.repeat(5);
   switchView('paths-list-view');
+  document.querySelector('#paths-list-view .lp-header-title').innerHTML = '<span class="lp-breadcrumb">Beranda ›</span> Perjalanan Belajar';
 
   try {
     if (!lpAllPaths) {
@@ -5939,39 +5959,45 @@ async function lpShowPathsList(fromView) {
       lpAllPaths = data;
     }
 
-    let html = '';
-
-    // Situation paths
-    html += '<div class="lp-section-title">Berdasarkan perasaan</div>';
-    for (const p of lpAllPaths.situation) {
-      const progress = lpGetPathProgress(p.id);
-      const complete = lpIsPathComplete(p.id);
-      html += `
-        <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">
-          <span class="lp-path-emoji">${p.emoji}</span>
-          <div class="lp-path-info">
-            <div class="lp-path-title">${p.title}</div>
-            <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/5 pelajaran' : '5 pelajaran'}</div>
-          </div>
-          ${complete ? '<span class="lp-path-check">✓</span>' : ''}
-        </div>`;
+    // Helper to render path cards with collapsible
+    function renderPathCards(paths, category) {
+      let out = '';
+      const INITIAL_SHOW = 6;
+      for (let i = 0; i < paths.length; i++) {
+        if (i === INITIAL_SHOW) out += `<div class="lp-collapsed-paths hidden" id="lp-collapsed-${category}">`;
+        const p = paths[i];
+        const progress = lpGetPathProgress(p.id);
+        const complete = lpIsPathComplete(p.id);
+        out += `
+          <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">
+            <span class="lp-path-emoji">${p.emoji}</span>
+            <div class="lp-path-info">
+              <div class="lp-path-title">${p.title}</div>
+              <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/5 pelajaran' : '5 pelajaran'}</div>
+            </div>
+            ${complete ? '<span class="lp-path-check">✓</span>' : ''}
+            ${progress > 0 ? `<div class="lp-path-progress-bar"><div class="lp-path-progress-fill" style="width:${(progress / 5) * 100}%"></div></div>` : ''}
+          </div>`;
+      }
+      if (paths.length > INITIAL_SHOW) {
+        out += '</div>';
+        out += `<button class="lp-expand-btn" data-action="expandCategory" data-category="${category}">Lihat semua (${paths.length}) ▾</button>`;
+      }
+      return out;
     }
 
-    // Topic paths
-    html += '<div class="lp-section-title" style="margin-top:32px">Berdasarkan tema Al-Qur\'an</div>';
-    for (const p of lpAllPaths.topic) {
-      const progress = lpGetPathProgress(p.id);
-      const complete = lpIsPathComplete(p.id);
-      html += `
-        <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">
-          <span class="lp-path-emoji">${p.emoji}</span>
-          <div class="lp-path-info">
-            <div class="lp-path-title">${p.title}</div>
-            <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/5 pelajaran' : '5 pelajaran'}</div>
-          </div>
-          ${complete ? '<span class="lp-path-check">✓</span>' : ''}
-        </div>`;
-    }
+    let html = `<div class="lp-tab-bar">
+      <button class="lp-tab ${lpActiveTab === 'situation' ? 'active' : ''}" data-action="switchLpTab" data-tab="situation">Perasaan</button>
+      <button class="lp-tab ${lpActiveTab === 'topic' ? 'active' : ''}" data-action="switchLpTab" data-tab="topic">Tema Al-Qur'an</button>
+    </div>`;
+
+    html += `<div id="lp-situation-group" class="lp-tab-panel ${lpActiveTab !== 'situation' ? 'hidden' : ''}">`;
+    html += renderPathCards(lpAllPaths.situation, 'situation');
+    html += '</div>';
+
+    html += `<div id="lp-topic-group" class="lp-tab-panel ${lpActiveTab !== 'topic' ? 'hidden' : ''}">`;
+    html += renderPathCards(lpAllPaths.topic, 'topic');
+    html += '</div>';
 
     container.innerHTML = html;
   } catch (err) {
@@ -5998,7 +6024,7 @@ async function lpShowPathPreview(pathId) {
     if (!path.lessons) throw new Error('Invalid data');
     lpCurrentPath = path;
 
-    titleEl.textContent = path.title;
+    titleEl.innerHTML = `<span class="lp-breadcrumb">Perjalanan ›</span> ${escapeHtml(path.title)}`;
 
     let html = `
       <div class="lp-preview-hero">
@@ -6052,7 +6078,7 @@ async function lpRenderLesson() {
   const progressEl = document.getElementById('lessonProgress');
   const nextBtn = document.getElementById('lessonNextBtn');
 
-  titleEl.textContent = lpCurrentPath.title;
+  titleEl.innerHTML = `<span class="lp-breadcrumb">${escapeHtml(lpCurrentPath.title)} ›</span> Pelajaran ${lpCurrentLessonIdx + 1}`;
   progressEl.textContent = `${lpCurrentLessonIdx + 1} / ${lpCurrentPath.lessons.length}`;
   switchView('lesson-view');
 
@@ -6081,12 +6107,21 @@ async function lpRenderLesson() {
   content.innerHTML = `
     <div class="lp-verse-section">
       <span class="lp-verse-ref-badge">${lesson.verse_ref}</span>
-      <div class="lp-skeleton lp-skeleton-line" style="height:60px"></div>
+      <div class="lp-skeleton lp-skeleton-arabic"></div>
+      <div class="lp-skeleton lp-skeleton-audio"></div>
+      <div class="lp-skeleton lp-skeleton-line" style="width:90%"></div>
+      <div class="lp-skeleton lp-skeleton-line" style="width:75%"></div>
     </div>
     <div class="lp-explanation-section">
+      <div class="lp-skeleton lp-skeleton-heading"></div>
       <div class="lp-skeleton lp-skeleton-line"></div>
       <div class="lp-skeleton lp-skeleton-line"></div>
+      <div class="lp-skeleton lp-skeleton-line" style="width:60%"></div>
+    </div>
+    <div class="lp-skeleton-block">
+      <div class="lp-skeleton lp-skeleton-heading" style="width:50%"></div>
       <div class="lp-skeleton lp-skeleton-line"></div>
+      <div class="lp-skeleton lp-skeleton-line" style="width:80%"></div>
     </div>`;
 
   try {
@@ -6110,7 +6145,9 @@ async function lpRenderLesson() {
     if (data.surah_number && data.verse_start) {
       html += `<div class="lp-audio-row">
         <button class="lp-audio-btn" data-action="playAudio" data-surah="${data.surah_number}" data-verse="${data.verse_start}">
-          ${typeof PLAY_ICON !== 'undefined' ? PLAY_ICON : '▶'} Dengarkan
+          <span class="lp-audio-icon">${typeof PLAY_ICON !== 'undefined' ? PLAY_ICON : '▶'}</span>
+          <span>Dengarkan Ayat</span>
+          <span class="lp-audio-bars"><span></span><span></span><span></span><span></span></span>
         </button>
       </div>`;
     }
@@ -6205,10 +6242,30 @@ async function lpShowComplete(pathId) {
       </div>`;
   }
 
+  const totalLessons = Object.keys(lpGetProgress()).length;
+  const shareText = `Aku baru selesai perjalanan "${pathTitle}" di TemuQuran! \u{1F4AA}\n\nMulai perjalanan belajar Al-Qur'an kamu juga di temuquran.com`;
+
   container.innerHTML = `
+    <div class="lp-confetti" aria-hidden="true">
+      ${Array.from({length: 30}, (_, i) => `<div class="lp-confetti-piece" style="--i:${i}"></div>`).join('')}
+    </div>
     <div class="lp-complete-emoji">✨</div>
-    <div class="lp-complete-title">Kamu telah menyelesaikan perjalanan: ${pathTitle}</div>
+    <div class="lp-complete-title">Alhamdulillah! Perjalanan "${escapeHtml(pathTitle)}" selesai</div>
     <div class="lp-complete-subtitle">Semoga renungan ini bermanfaat untuk perjalanan hidupmu.</div>
+    <div class="lp-complete-stats">
+      <div class="lp-complete-stat">
+        <div class="lp-complete-stat-num">5</div>
+        <div class="lp-complete-stat-label">pelajaran selesai</div>
+      </div>
+      <div class="lp-complete-stat">
+        <div class="lp-complete-stat-num">${totalLessons}</div>
+        <div class="lp-complete-stat-label">total pelajaran</div>
+      </div>
+    </div>
+    <div class="lp-complete-actions">
+      <button class="lp-complete-share-btn" data-action="shareCompletion" data-text="${escapeHtml(shareText)}">Bagikan</button>
+      <button class="lp-complete-repeat-btn" data-action="showPathPreview" data-path-id="${pathId}">Ulangi</button>
+    </div>
     ${suggestHtml}
     <button class="lp-complete-home-btn" data-action="goHome">Kembali ke Beranda</button>
   `;
@@ -6296,3 +6353,96 @@ async function lpRenderNuriGreetingPaths(containerEl) {
     console.error('Nuri greeting paths error:', err);
   }
 }
+
+// ── Swipe Gestures for Lesson Navigation ────────────────────────────────────
+function lpInitSwipeGestures() {
+  const content = document.getElementById('lpLessonContent');
+  if (!content) return;
+  let startX = 0, startY = 0, isDragging = false;
+  const THRESHOLD = 50;
+
+  content.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = false;
+  }, { passive: true });
+
+  content.addEventListener('touchmove', (e) => {
+    if (!startX) return;
+    const diffX = e.touches[0].clientX - startX;
+    const diffY = e.touches[0].clientY - startY;
+    if (Math.abs(diffY) > Math.abs(diffX)) return;
+    if (Math.abs(diffX) > 10) {
+      isDragging = true;
+      const clamped = Math.max(-80, Math.min(80, diffX));
+      content.style.transform = `translateX(${clamped * 0.3}px)`;
+      content.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  content.addEventListener('touchend', (e) => {
+    const diffX = e.changedTouches[0].clientX - startX;
+    content.style.transition = 'transform 0.2s ease';
+    content.style.transform = '';
+    if (!isDragging || Math.abs(diffX) < THRESHOLD) { startX = 0; return; }
+    if (diffX < -THRESHOLD && lpCurrentPath && lpCurrentLessonIdx < lpCurrentPath.lessons.length - 1) {
+      lpCurrentLessonIdx++;
+      lpRenderLesson();
+    } else if (diffX > THRESHOLD && lpCurrentLessonIdx > 0) {
+      lpCurrentLessonIdx--;
+      lpRenderLesson();
+    }
+    startX = 0;
+  }, { passive: true });
+}
+lpInitSwipeGestures();
+
+// ── Resume Card on Landing Page ─────────────────────────────────────────────
+async function lpTryShowResumeCard() {
+  const progress = lpGetProgress();
+  if (Object.keys(progress).length === 0) return;
+
+  // Build per-path progress counts
+  const pathCounts = {};
+  for (const key of Object.keys(progress)) {
+    const lastDash = key.lastIndexOf('-');
+    const pathId = key.substring(0, lastDash);
+    pathCounts[pathId] = (pathCounts[pathId] || 0) + 1;
+  }
+
+  // Find first in-progress path (> 0 and < 5)
+  const inProgressId = Object.keys(pathCounts).find(id => pathCounts[id] > 0 && pathCounts[id] < 5);
+  if (!inProgressId) return;
+
+  // Fetch paths if not cached
+  if (!lpAllPaths) {
+    try {
+      const res = await fetch('/api/learning-paths');
+      if (!res.ok) return;
+      lpAllPaths = await res.json();
+    } catch { return; }
+  }
+
+  const allPaths = [...(lpAllPaths.situation || []), ...(lpAllPaths.topic || [])];
+  const path = allPaths.find(p => p.id === inProgressId);
+  if (!path) return;
+
+  const count = pathCounts[inProgressId];
+  const container = document.getElementById('lpResumeCard');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="lp-resume-inner">
+      <div class="lp-resume-left">
+        <span class="lp-resume-emoji">${path.emoji}</span>
+        <div class="lp-resume-info">
+          <div class="lp-resume-label">Lanjutkan Perjalanan</div>
+          <div class="lp-resume-title">${escapeHtml(path.title)}</div>
+          <div class="lp-resume-progress">${count}/5 pelajaran</div>
+        </div>
+      </div>
+      <button class="lp-resume-btn" data-action="showPathPreview" data-path-id="${inProgressId}">Lanjutkan →</button>
+    </div>`;
+  container.classList.remove('hidden');
+}
+lpTryShowResumeCard();
