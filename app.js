@@ -146,11 +146,46 @@ const NURI_OPENING_MESSAGES = [
 ];
 
 function getNuriOpeningMessage() {
+  const now = new Date();
+  // Friday greeting
+  if (now.getDay() === 5) {
+    return `Jum'at Mubarak! \u{1F54C}\n\nSenang bertemu lagi. Mau belajar apa hari ini?`;
+  }
+  // Ramadan 1448H ~ Feb 28 - Mar 30, 2027 (hardcoded for v1)
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  if (y === 2027 && ((m === 1 && d >= 28) || (m === 2 && d <= 30))) {
+    return `Ramadan Mubarak! \u{1F319}\n\nBulan penuh berkah — mau belajar Al-Qur'an bareng hari ini?`;
+  }
   const idx = Math.floor(Math.random() * NURI_OPENING_MESSAGES.length);
   return NURI_OPENING_MESSAGES[idx];
 }
 
 let nuriLastFailedMessage = null; // for retry on error
+let nuriGuidedState = null; // { type, curriculum_id, path_index, path_id, lesson, total_lessons, total_paths, ... }
+let nuriCurriculaCache = null; // cached /api/curricula response
+
+// ── Guided Learning Constants ──────────────────────────────────────────────────
+
+const CURRICULUM_RECOMMENDATIONS = {
+  'baru-mulai': ['mengenal-quran-dari-nol'],
+  'lebih-dalam': ['menjadi-muslim-lebih-baik', 'kisah-para-nabi'],
+  'masalah-hidup': ['ketika-hidup-berat'],
+  'masalah-hati': ['menyembuhkan-hati'],
+  'masalah-keluarga': ['hubungan-keluarga'],
+  'masalah-iman': ['percaya-diri-iman'],
+};
+
+const NEXT_CURRICULUM = {
+  'mengenal-quran-dari-nol': ['menjadi-muslim-lebih-baik', 'kisah-para-nabi'],
+  'ketika-hidup-berat': ['menyembuhkan-hati', 'percaya-diri-iman'],
+  'menjadi-muslim-lebih-baik': ['kisah-para-nabi', 'hidup-modern'],
+  'kisah-para-nabi': ['mengenal-quran-dari-nol', 'menjadi-muslim-lebih-baik'],
+  'hubungan-keluarga': ['menjadi-muslim-lebih-baik', 'ketika-hidup-berat'],
+  'menyembuhkan-hati': ['percaya-diri-iman', 'ketika-hidup-berat'],
+  'percaya-diri-iman': ['menjadi-muslim-lebih-baik', 'mengenal-quran-dari-nol'],
+  'hidup-modern': ['menjadi-muslim-lebih-baik', 'percaya-diri-iman'],
+  'perempuan-quran': ['hubungan-keluarga', 'menjadi-muslim-lebih-baik'],
+};
 
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -5446,6 +5481,7 @@ function startNuriSession() {
   nuriOptInShown = false;
   nuriIsTyping = false;
   nuriLastFailedMessage = null;
+  nuriGuidedState = null;
 
   // Clear chat UI
   document.getElementById('nuriMessages').innerHTML = '';
@@ -5459,16 +5495,50 @@ function startNuriSession() {
   // Switch to nuri view
   switchView('nuri-view');
 
-  // Show Nuri's opening message immediately (no API call — randomly picked)
-  appendNuriMessage(getNuriOpeningMessage(), false); // false = don't show feedback
+  // Branch the opening based on user state
+  const onboarded = localStorage.getItem('tq-nuri-onboarded');
+  const activeCurr = getActiveCurriculum();
 
-  // Show opt-in card after opening message
+  if (!onboarded) {
+    // ── FIRST-TIME USER ──
+    appendNuriMessage(`Hai! Aku Nuri \u{1F33F}\n\nAku di sini untuk bantu kamu belajar dan merenungkan Al-Qur'an \u2014 dengan cara ngobrol, bukan ceramah.\n\nMau mulai dari mana?`, false);
+    renderQuickReplies([
+      { label: '\u{1F331} Aku baru mulai, bantu aku', message: 'Aku baru mulai belajar Al-Quran, bantu aku', action: 'startCurriculumRec' },
+      { label: '\u{1F4D6} Sudah tahu ayat yang ingin dipelajari', message: 'Aku sudah tahu ayat yang ingin dipelajari', action: 'startVerseMode' },
+      { label: '\u{1F4AC} Aku mau langsung tanya', message: '' },
+    ]);
+  } else if (activeCurr) {
+    // ── RETURNING WITH ACTIVE CURRICULUM ──
+    appendNuriMessage(`Assalamu'alaikum! \u{1F33F}`, false);
+    renderCurriculumProgressCard(activeCurr);
+    renderQuickReplies([
+      { label: '\u25B6 Lanjut belajar', message: 'Lanjut belajar', action: 'resumeCurriculum' },
+      { label: '\u{1F4D6} Pahami surah lain', message: 'Mau pahami surah atau ayat', action: 'startVerseMode' },
+      { label: '\u{1F331} Ganti perjalanan', message: 'Lihat perjalanan belajar lain', action: 'showCurriculaList' },
+      { label: '\u{1F4AC} Tanya langsung', message: '' },
+    ]);
+  } else {
+    // ── RETURNING, NO ACTIVE CURRICULUM ──
+    appendNuriMessage(getNuriOpeningMessage() + '\n\nMau belajar apa hari ini?', false);
+    renderQuickReplies([
+      { label: '\u{1F4D6} Pahami Surah/Ayat', message: 'Mau pahami surah atau ayat', action: 'startVerseMode' },
+      { label: '\u{1F331} Mulai Perjalanan', message: 'Mulai perjalanan belajar', action: 'startCurriculumRec' },
+      { label: '\u{1F50D} Pilih Tema', message: 'Pilih tema belajar', action: 'showThemePicker' },
+      { label: '\u{1F4AC} Tanya Langsung', message: '' },
+    ]);
+  }
+
+  // Show opt-in card
   appendOptInCard();
 
-  // Show learning path suggestions in greeting
-  const nuriMsgContainer = document.getElementById('nuriMessages');
-  if (nuriMsgContainer) {
-    lpRenderNuriGreetingPaths(nuriMsgContainer);
+  // Add journal entry point if journal has entries
+  const journal = getJournalEntries();
+  if (journal.length > 0) {
+    const journalLink = document.createElement('div');
+    journalLink.className = 'nuri-journal-link';
+    journalLink.innerHTML = `<button class="nuri-qr-chip" data-action="showJournal" role="button">\u{1F4DD} Catatan Renungan (${journal.length})</button>`;
+    journalLink.querySelector('button').addEventListener('click', () => showJournalView());
+    document.getElementById('nuriMessages').appendChild(journalLink);
   }
 
   // Log analytics
@@ -5597,6 +5667,894 @@ function appendOptInCard() {
   nuriScrollToBottom();
 }
 
+// ── Quick Reply System ──────────────────────────────────────────────────────
+
+function renderQuickReplies(replies) {
+  if (!replies || !replies.length) return;
+  const qr = document.createElement('div');
+  qr.className = 'nuri-quick-replies';
+  if (replies.some(r => (r.label || '').length > 25)) qr.classList.add('single-col');
+  replies.forEach(chip => {
+    const btn = document.createElement('button');
+    btn.className = 'nuri-qr-chip';
+    btn.textContent = chip.label;
+    btn.dataset.message = chip.message || '';
+    if (chip.action) btn.dataset.qrAction = chip.action;
+    btn.addEventListener('click', () => handleQuickReplyTap(btn, qr));
+    qr.appendChild(btn);
+  });
+  document.getElementById('nuriMessages').appendChild(qr);
+  nuriScrollToBottom();
+}
+
+function handleQuickReplyTap(btn, container) {
+  btn.classList.add('selected');
+  container.classList.add('used');
+  const action = btn.dataset.qrAction;
+  const message = btn.dataset.message;
+
+  // Handle special action first
+  if (action) handleQuickReplyAction(action, btn);
+
+  // Send message to API if there's a message text (and action didn't already handle it)
+  if (message && !['startCurriculumRec', 'startVerseMode', 'showCurriculaList', 'showThemePicker',
+    'resumeCurriculum', 'showJournal', 'pauseCurriculum', 'finishToday', 'play_audio', 'save_journal',
+    'share', 'nextLesson', 'nextPath', 'startCurriculum'].includes(action)) {
+    sendNuriMessageText(message);
+  }
+}
+
+function sendNuriMessageText(text) {
+  if (!text) return;
+  const input = document.getElementById('nuriInput');
+  if (input) input.value = text;
+  sendNuriMessage();
+}
+
+function handleQuickReplyAction(action, btn) {
+  switch (action) {
+    case 'startCurriculumRec':
+      startCurriculumRecommendation();
+      break;
+    case 'startVerseMode':
+      startVerseMode();
+      break;
+    case 'showCurriculaList':
+      showAllCurricula();
+      break;
+    case 'showThemePicker':
+      showThemePicker();
+      break;
+    case 'resumeCurriculum':
+      resumeActiveCurriculum();
+      break;
+    case 'nextLesson':
+      advanceToNextLesson();
+      break;
+    case 'nextPath':
+      advanceToNextPath();
+      break;
+    case 'pauseCurriculum':
+    case 'finishToday':
+      pauseAndSaveProgress();
+      break;
+    case 'startCurriculum': {
+      const currId = btn.dataset.curriculumId;
+      if (currId) startCurriculum(currId);
+      break;
+    }
+    case 'play_audio':
+      playGuidedAudio();
+      break;
+    case 'save_journal':
+      saveCurrentToJournal();
+      break;
+    case 'share':
+      shareGuidedContent();
+      break;
+    case 'showJournal':
+      showJournalView();
+      break;
+    case 'startGuidedTheme': {
+      const pathId = btn.dataset.pathId;
+      if (pathId) startGuidedTheme(pathId);
+      break;
+    }
+    case 'skipReflection':
+      break;
+    // ── Curriculum recommendation sub-actions ──
+    case 'recBaru':
+      appendUserMessage('Baru mulai belajar Al-Qur\u2019an');
+      recommendCurriculum(['mengenal-quran-dari-nol']);
+      break;
+    case 'recLebihDalam':
+      appendUserMessage('Sudah sholat, ingin lebih dalam');
+      appendNuriMessage('Bagus! Mau fokus ke mana?', false);
+      renderQuickReplies([
+        { label: '\u2728 Jadi Muslim lebih baik', message: '', action: 'recPickCurr_menjadi-muslim-lebih-baik' },
+        { label: '\u{1F4D7} Kisah para nabi', message: '', action: 'recPickCurr_kisah-para-nabi' },
+      ]);
+      break;
+    case 'recMasalah':
+      appendUserMessage('Sedang menghadapi masalah');
+      appendNuriMessage('Semoga Allah mudahkan \u{1F932}\n\nMasalah seperti apa?', false);
+      renderQuickReplies([
+        { label: 'Masalah hidup / cobaan', message: '', action: 'recPickCurr_ketika-hidup-berat' },
+        { label: 'Masalah hati / luka', message: '', action: 'recPickCurr_menyembuhkan-hati' },
+        { label: 'Masalah keluarga', message: '', action: 'recPickCurr_hubungan-keluarga' },
+        { label: 'Ragu tentang iman', message: '', action: 'recPickCurr_percaya-diri-iman' },
+      ]);
+      break;
+    case 'recTema':
+      appendUserMessage('Ingin memahami tema tertentu');
+      showThemePicker();
+      break;
+    default:
+      if (action && action.startsWith('recPickCurr_')) {
+        const currId = action.replace('recPickCurr_', '');
+        appendUserMessage(btn.textContent.trim());
+        recommendCurriculum([currId]);
+      }
+      break;
+  }
+}
+
+// ── localStorage Helpers ────────────────────────────────────────────────────
+
+function getActiveCurriculum() {
+  try {
+    const raw = localStorage.getItem('tq-curriculum-progress');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    for (const [currId, prog] of Object.entries(data)) {
+      const totalPaths = prog.total_paths || 5;
+      const pathsDone = (prog.paths_completed || []).length;
+      if (pathsDone < totalPaths) {
+        return { curriculumId: currId, ...prog };
+      }
+    }
+    return null;
+  } catch { return null; }
+}
+
+function saveCurriculumProgress(currId, pathIndex, lesson, pathId, totalPaths, pathsCompleted) {
+  try {
+    const raw = localStorage.getItem('tq-curriculum-progress');
+    const data = raw ? JSON.parse(raw) : {};
+    data[currId] = {
+      current_path_index: pathIndex,
+      current_lesson: lesson,
+      current_path_id: pathId,
+      total_paths: totalPaths,
+      started_at: data[currId]?.started_at || new Date().toISOString().split('T')[0],
+      paths_completed: pathsCompleted || data[currId]?.paths_completed || [],
+    };
+    localStorage.setItem('tq-curriculum-progress', JSON.stringify(data));
+  } catch (e) { console.error('Save curriculum progress error:', e); }
+}
+
+function saveReflection(pathId, lesson, verse, text) {
+  try {
+    const raw = localStorage.getItem('tq-reflection-log');
+    const data = raw ? JSON.parse(raw) : {};
+    if (!data[pathId]) data[pathId] = [];
+    data[pathId].push({ lesson, verse, reflection: text, date: new Date().toISOString().split('T')[0] });
+    localStorage.setItem('tq-reflection-log', JSON.stringify(data));
+  } catch (e) { console.error('Save reflection error:', e); }
+}
+
+function getReflections(pathId) {
+  try {
+    const raw = localStorage.getItem('tq-reflection-log');
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return data[pathId] || [];
+  } catch { return []; }
+}
+
+function getAllReflections() {
+  try {
+    const raw = localStorage.getItem('tq-reflection-log');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveJournalEntry(entry) {
+  try {
+    const raw = localStorage.getItem('tq-journal');
+    const data = raw ? JSON.parse(raw) : [];
+    data.push({ ...entry, date: new Date().toISOString() });
+    localStorage.setItem('tq-journal', JSON.stringify(data));
+  } catch (e) { console.error('Save journal error:', e); }
+}
+
+function getJournalEntries() {
+  try {
+    const raw = localStorage.getItem('tq-journal');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+// ── Curriculum Progress Card ────────────────────────────────────────────────
+
+function renderCurriculumProgressCard(activeCurr) {
+  const card = document.createElement('div');
+  card.className = 'nuri-curriculum-progress';
+  const pathIdx = activeCurr.current_path_index || 0;
+  const lesson = activeCurr.current_lesson || 1;
+  const totalPaths = activeCurr.total_paths || 5;
+  const pathsDone = (activeCurr.paths_completed || []).length;
+  const totalLessons = totalPaths * 5;
+  const lessonsCompleted = pathsDone * 5 + (lesson - 1);
+  const pct = Math.round((lessonsCompleted / totalLessons) * 100);
+
+  // Try to get curriculum title from cache
+  const currData = nuriCurriculaCache?.find(c => c.id === activeCurr.curriculumId);
+  const emoji = currData?.emoji || '\u{1F331}';
+  const title = currData?.title || activeCurr.curriculumId;
+
+  card.innerHTML = `
+    <div class="nuri-cp-card">
+      <div class="nuri-cp-emoji">${emoji}</div>
+      <div class="nuri-cp-info">
+        <div class="nuri-cp-title">${escapeHtml(title)}</div>
+        <div class="nuri-cp-meta">Tema ${pathIdx + 1} dari ${totalPaths} \u00B7 Pelajaran ${lesson} dari 5</div>
+        <div class="nuri-cp-bar"><div class="nuri-cp-fill" style="width: ${pct}%"></div></div>
+        <div class="nuri-cp-pct">${pct}%</div>
+      </div>
+    </div>`;
+  document.getElementById('nuriMessages').appendChild(card);
+  nuriScrollToBottom();
+
+  // Preload curricula data in background for title resolution
+  if (!nuriCurriculaCache) fetchCurriculaData();
+}
+
+// ── Curricula Data Fetching ─────────────────────────────────────────────────
+
+async function fetchCurriculaData() {
+  try {
+    if (nuriCurriculaCache) return nuriCurriculaCache;
+    const res = await fetch('/api/curricula');
+    if (!res.ok) throw new Error('Failed to fetch curricula');
+    nuriCurriculaCache = await res.json();
+    return nuriCurriculaCache;
+  } catch (err) {
+    console.error('Fetch curricula error:', err);
+    return null;
+  }
+}
+
+// ── Curriculum Recommendation Flow ──────────────────────────────────────────
+
+function startCurriculumRecommendation() {
+  appendNuriMessage(`Baik! Aku tanya sedikit ya \u{1F33F}\n\nKamu lagi di titik mana sekarang?`, false);
+  renderQuickReplies([
+    { label: 'Baru mulai belajar Al-Qur\u2019an', message: '', action: 'recBaru' },
+    { label: 'Sudah sholat, ingin lebih dalam', message: '', action: 'recLebihDalam' },
+    { label: 'Sedang menghadapi masalah', message: '', action: 'recMasalah' },
+    { label: 'Ingin memahami tema tertentu', message: '', action: 'recTema' },
+  ]);
+}
+
+// Extend handleQuickReplyAction for recommendation sub-actions
+const _origHandleQRA = handleQuickReplyAction;
+handleQuickReplyAction = function(action, btn) {
+  switch (action) {
+    case 'recBaru':
+      appendUserMessage('Baru mulai belajar Al-Qur\u2019an');
+      recommendCurriculum(['mengenal-quran-dari-nol']);
+      break;
+    case 'recLebihDalam':
+      appendUserMessage('Sudah sholat, ingin lebih dalam');
+      appendNuriMessage('Bagus! Mau fokus ke mana?', false);
+      renderQuickReplies([
+        { label: '\u2728 Jadi Muslim lebih baik', message: '', action: 'recPickCurr_menjadi-muslim-lebih-baik' },
+        { label: '\u{1F4D7} Kisah para nabi', message: '', action: 'recPickCurr_kisah-para-nabi' },
+      ]);
+      break;
+    case 'recMasalah':
+      appendUserMessage('Sedang menghadapi masalah');
+      appendNuriMessage('Semoga Allah mudahkan \u{1F932}\n\nMasalah seperti apa?', false);
+      renderQuickReplies([
+        { label: 'Masalah hidup / cobaan', message: '', action: 'recPickCurr_ketika-hidup-berat' },
+        { label: 'Masalah hati / luka', message: '', action: 'recPickCurr_menyembuhkan-hati' },
+        { label: 'Masalah keluarga', message: '', action: 'recPickCurr_hubungan-keluarga' },
+        { label: 'Ragu tentang iman', message: '', action: 'recPickCurr_percaya-diri-iman' },
+      ]);
+      break;
+    case 'recTema':
+      appendUserMessage('Ingin memahami tema tertentu');
+      showThemePicker();
+      break;
+    default:
+      if (action && action.startsWith('recPickCurr_')) {
+        const currId = action.replace('recPickCurr_', '');
+        appendUserMessage(btn.textContent.trim());
+        recommendCurriculum([currId]);
+      } else {
+        _origHandleQRA(action, btn);
+      }
+  }
+};
+
+async function recommendCurriculum(currIds) {
+  const curricula = await fetchCurriculaData();
+  if (!curricula) {
+    appendNuriMessage('Maaf, ada kendala. Coba lagi nanti ya \u{1F64F}', false);
+    return;
+  }
+  const curr = curricula.find(c => c.id === currIds[0]);
+  if (!curr) {
+    appendNuriMessage('Perjalanan tidak ditemukan. Coba lihat semua perjalanan.', false);
+    renderQuickReplies([{ label: '\u{1F4CB} Lihat semua', message: '', action: 'showCurriculaList' }]);
+    return;
+  }
+
+  const pathList = curr.paths.map((p, i) => `${i + 1}. ${p.emoji || ''} ${p.title}`).join('\n');
+  appendNuriMessage(`Aku sarankan:\n\n<div class="nuri-curriculum-card"><div class="ncc-title">${curr.emoji} ${escapeHtml(curr.title)}</div><div class="ncc-meta">${curr.paths.length} tema \u00B7 ${curr.total_lessons} pelajaran \u00B7 ~2-3 minggu</div></div>\n\n${escapeHtml(curr.tagline)}\n\nTema yang akan dipelajari:\n${escapeHtml(pathList)}`, false);
+
+  renderQuickReplies([
+    { label: 'Mulai perjalanan ini', message: '', action: 'startCurriculum', curriculumId: curr.id },
+    { label: 'Lihat perjalanan lainnya', message: '', action: 'showCurriculaList' },
+  ]);
+  // Attach curriculum ID to the start button
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    const startBtn = lastQR.querySelector('.nuri-qr-chip');
+    if (startBtn) startBtn.dataset.curriculumId = curr.id;
+  }
+}
+
+async function showAllCurricula() {
+  const curricula = await fetchCurriculaData();
+  if (!curricula) {
+    appendNuriMessage('Maaf, ada kendala. Coba lagi nanti ya \u{1F64F}', false);
+    return;
+  }
+
+  // Group by audience
+  const groups = {
+    pemula: { label: 'Untuk pemula', items: [] },
+    spiritual: { label: 'Untuk pertumbuhan spiritual', items: [] },
+    emotional: { label: 'Untuk yang sedang berjuang', items: [] },
+    practical: { label: 'Untuk kehidupan sehari-hari', items: [] },
+    identity: { label: 'Untuk identitas', items: [] },
+  };
+
+  curricula.forEach(c => {
+    const g = groups[c.audience] || groups.practical;
+    g.items.push(c);
+  });
+
+  let html = 'Ini semua perjalanan yang tersedia:\n\n';
+  for (const g of Object.values(groups)) {
+    if (g.items.length === 0) continue;
+    html += `<strong>${g.label}:</strong>\n`;
+    g.items.forEach(c => { html += `${c.emoji} ${escapeHtml(c.title)}\n`; });
+    html += '\n';
+  }
+  appendNuriMessage(html, false);
+
+  const chips = curricula.map(c => ({
+    label: `${c.emoji} ${c.title}`,
+    message: '',
+    action: 'startCurriculum',
+    curriculumId: c.id,
+  }));
+  renderQuickReplies(chips);
+  // Attach curriculum IDs
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    lastQR.querySelectorAll('.nuri-qr-chip').forEach((btn, i) => {
+      btn.dataset.curriculumId = curricula[i].id;
+    });
+  }
+}
+
+// ── Start Curriculum ────────────────────────────────────────────────────────
+
+async function startCurriculum(curriculumId) {
+  const curricula = await fetchCurriculaData();
+  const curr = curricula?.find(c => c.id === curriculumId);
+  if (!curr) return;
+
+  const pathList = curr.paths.map((p, i) => `${i + 1}. ${p.emoji || ''} ${p.title}`).join('\n');
+  appendNuriMessage(`${curr.emoji} ${escapeHtml(curr.title)}\n\nPerjalanan ini terdiri dari ${curr.paths.length} tema:\n${escapeHtml(pathList)}\n\n${curr.total_lessons} pelajaran total. Kita mulai dari tema pertama: ${curr.paths[0]?.title || ''}.`, false);
+
+  // Save initial progress
+  saveCurriculumProgress(curriculumId, 0, 1, curr.paths[0]?.id, curr.paths.length, []);
+
+  nuriGuidedState = {
+    type: 'guided_curriculum',
+    curriculum_id: curriculumId,
+    curriculum_title: curr.title,
+    path_index: 0,
+    path_id: curr.paths[0]?.id,
+    path_title: curr.paths[0]?.title,
+    lesson: 1,
+    total_lessons: curr.paths[0]?.lesson_count || 5,
+    total_paths: curr.paths.length,
+    paths_completed: [],
+  };
+
+  renderQuickReplies([
+    { label: `Mulai tema 1: ${curr.paths[0]?.title || ''}`, message: `Mulai pelajaran 1`, action: 'beginGuidedLesson' },
+  ]);
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    lastQR.querySelector('.nuri-qr-chip')?.addEventListener('click', () => {
+      enterGuidedLesson();
+    }, { once: true });
+  }
+}
+
+// ── Enter Guided Lesson ─────────────────────────────────────────────────────
+
+async function enterGuidedLesson() {
+  if (!nuriGuidedState) return;
+  const gs = nuriGuidedState;
+  const lessonId = `${gs.path_id}-${gs.lesson}`;
+
+  // Show typing indicator while loading
+  showNuriTypingIndicator();
+
+  try {
+    // Fetch lesson content using existing LP infrastructure
+    const data = await lpGetLessonContent(lessonId);
+    hideNuriTypingIndicator();
+
+    // Update guided state with verse data
+    gs.verse_ref = data.verse_ref || '';
+    gs.verse_text = data.verse_text_id || '';
+    gs.lesson_title = data.title || '';
+
+    // Parse verse ref for surah/ayah numbers
+    const parsedRef = parseVerseRefClient(gs.verse_ref);
+    if (parsedRef) {
+      gs.verse_surah = parsedRef.surah;
+      gs.verse_ayah = parsedRef.ayah;
+    }
+
+    // Get reflections for this path to pass to API
+    const pathReflections = getReflections(gs.path_id);
+    gs.reflections = pathReflections.length > 0
+      ? pathReflections.map(r => `Pelajaran ${r.lesson} (${r.verse}): "${r.reflection}"`).join('\n')
+      : '';
+
+    // Show lesson header
+    const lessonLabel = gs.type === 'guided_curriculum'
+      ? `Tema ${(gs.path_index || 0) + 1} \u00B7 Pelajaran ${gs.lesson} dari ${gs.total_lessons}`
+      : `Pelajaran ${gs.lesson} dari ${gs.total_lessons}`;
+    appendNuriMessage(`<strong>${lessonLabel}</strong>\n${escapeHtml(gs.lesson_title || '')}`, false);
+
+    // Show verse block
+    if (data.verse_text_ar) {
+      const verseHtml = `{ARABIC}${data.verse_text_ar}{/ARABIC}\n{TRANSLATION}${data.verse_text_id || ''}{/TRANSLATION}\n{REF}QS. ${data.verse_ref || ''}{/REF}`;
+      appendNuriMessage(verseHtml, false);
+    }
+
+    // Save curriculum progress
+    if (gs.type === 'guided_curriculum') {
+      saveCurriculumProgress(gs.curriculum_id, gs.path_index, gs.lesson, gs.path_id, gs.total_paths, gs.paths_completed);
+    }
+
+    // Now send to API for conversational explanation
+    sendNuriMessageText(`Jelaskan ayat ${gs.verse_ref} untuk pelajaran ${gs.lesson}`);
+
+  } catch (err) {
+    hideNuriTypingIndicator();
+    console.error('Enter guided lesson error:', err);
+    appendNuriMessage('Maaf, ada kendala memuat pelajaran. Coba lagi ya \u{1F64F}', false);
+    renderQuickReplies([{ label: 'Coba lagi', message: '', action: 'retryGuidedLesson' }]);
+  }
+}
+
+// ── Advance Lesson / Path ───────────────────────────────────────────────────
+
+function advanceToNextLesson() {
+  if (!nuriGuidedState) return;
+  const gs = nuriGuidedState;
+  if (gs.lesson >= (gs.total_lessons || 5)) {
+    // Path complete
+    handlePathComplete();
+    return;
+  }
+  gs.lesson++;
+  if (gs.type === 'guided_curriculum') {
+    saveCurriculumProgress(gs.curriculum_id, gs.path_index, gs.lesson, gs.path_id, gs.total_paths, gs.paths_completed);
+  }
+  enterGuidedLesson();
+}
+
+async function advanceToNextPath() {
+  if (!nuriGuidedState || nuriGuidedState.type !== 'guided_curriculum') return;
+  const gs = nuriGuidedState;
+  const curricula = await fetchCurriculaData();
+  const curr = curricula?.find(c => c.id === gs.curriculum_id);
+  if (!curr) return;
+
+  // Mark current path as completed
+  if (!gs.paths_completed) gs.paths_completed = [];
+  if (!gs.paths_completed.includes(gs.path_id)) {
+    gs.paths_completed.push(gs.path_id);
+  }
+
+  const nextIdx = (gs.path_index || 0) + 1;
+  if (nextIdx >= curr.paths.length) {
+    // Curriculum complete!
+    handleCurriculumComplete(curr);
+    return;
+  }
+
+  // Reset exchange count for new path
+  nuriExchangeCount = 0;
+
+  const nextPath = curr.paths[nextIdx];
+  gs.path_index = nextIdx;
+  gs.path_id = nextPath.id;
+  gs.path_title = nextPath.title;
+  gs.lesson = 1;
+  gs.total_lessons = nextPath.lesson_count || 5;
+
+  saveCurriculumProgress(gs.curriculum_id, gs.path_index, gs.lesson, gs.path_id, gs.total_paths, gs.paths_completed);
+
+  appendNuriMessage(`Tema berikutnya: ${nextPath.emoji || ''} ${escapeHtml(nextPath.title)} \u{1F4D6}\n\nSiap mulai?`, false);
+  renderQuickReplies([
+    { label: `Mulai tema ${nextIdx + 1}`, message: '', action: 'beginGuidedLesson' },
+    { label: 'Istirahat dulu', message: '', action: 'pauseCurriculum' },
+  ]);
+
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    lastQR.querySelector('.nuri-qr-chip')?.addEventListener('click', () => enterGuidedLesson(), { once: true });
+  }
+}
+
+function handlePathComplete() {
+  const gs = nuriGuidedState;
+  if (!gs) return;
+
+  // Mark lesson viewed in LP progress too
+  const lessonId = `${gs.path_id}-${gs.lesson}`;
+  lpMarkLessonViewed(lessonId);
+
+  if (gs.type === 'guided_curriculum') {
+    appendNuriMessage(`Tema "${escapeHtml(gs.path_title || gs.path_id)}" selesai \u2728\n\nKita sudah membahas ${gs.total_lessons || 5} ayat di tema ini.`, false);
+
+    // Check if there's a next path
+    const nextIdx = (gs.path_index || 0) + 1;
+    if (nextIdx < (gs.total_paths || 5)) {
+      renderQuickReplies([
+        { label: `Lanjut ke tema ${nextIdx + 1}`, message: '', action: 'nextPath' },
+        { label: 'Istirahat dulu', message: '', action: 'pauseCurriculum' },
+        { label: 'Selesai hari ini', message: '', action: 'finishToday' },
+      ]);
+    } else {
+      // All paths done — go to curriculum complete
+      if (!gs.paths_completed) gs.paths_completed = [];
+      if (!gs.paths_completed.includes(gs.path_id)) gs.paths_completed.push(gs.path_id);
+      fetchCurriculaData().then(curricula => {
+        const curr = curricula?.find(c => c.id === gs.curriculum_id);
+        if (curr) handleCurriculumComplete(curr);
+      });
+    }
+  } else {
+    // guided_theme complete
+    appendNuriMessage(`Kamu baru saja menyelesaikan perjalanan "${escapeHtml(gs.path_title || gs.path_id)}" \u{1F31F}\n\n${gs.total_lessons || 5} ayat, ${gs.total_lessons || 5} renungan. Semoga ada yang melekat di hati.`, false);
+    renderQuickReplies([
+      { label: 'Sarankan tema lainnya', message: '', action: 'showThemePicker' },
+      { label: 'Belajar surah tertentu', message: '', action: 'startVerseMode' },
+      { label: 'Selesai, terima kasih', message: '' },
+    ]);
+    nuriGuidedState = null;
+  }
+}
+
+async function handleCurriculumComplete(curr) {
+  const gs = nuriGuidedState;
+  saveCurriculumProgress(gs.curriculum_id, gs.total_paths, 5, gs.path_id, gs.total_paths, gs.paths_completed);
+
+  appendNuriMessage(`\u{1F31F} Alhamdulillah!\n\nKamu telah menyelesaikan perjalanan "${escapeHtml(curr.title)}."\n\n${curr.total_lessons} ayat. ${curr.paths.length} tema. Banyak renungan.\n\nSemoga setiap ayat yang kita bahas melekat di hati.`, false);
+
+  // Suggest next curriculum
+  const nextIds = NEXT_CURRICULUM[curr.id] || [];
+  const curricula = await fetchCurriculaData();
+  const nextCurricula = nextIds.map(id => curricula?.find(c => c.id === id)).filter(Boolean);
+
+  if (nextCurricula.length > 0) {
+    appendNuriMessage('Mau lanjut ke perjalanan berikutnya?', false);
+    const chips = nextCurricula.map(c => ({
+      label: `${c.emoji} ${c.title}`,
+      message: '',
+      action: 'startCurriculum',
+      curriculumId: c.id,
+    }));
+    chips.push({ label: 'Selesai untuk sekarang', message: '' });
+    renderQuickReplies(chips);
+    const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+    if (lastQR) {
+      lastQR.querySelectorAll('.nuri-qr-chip').forEach((btn, i) => {
+        if (i < nextCurricula.length) btn.dataset.curriculumId = nextCurricula[i].id;
+      });
+    }
+  }
+  nuriGuidedState = null;
+}
+
+function pauseAndSaveProgress() {
+  const gs = nuriGuidedState;
+  if (!gs) return;
+  if (gs.type === 'guided_curriculum') {
+    saveCurriculumProgress(gs.curriculum_id, gs.path_index, gs.lesson, gs.path_id, gs.total_paths, gs.paths_completed);
+  }
+  const pathsDone = (gs.paths_completed || []).length;
+  appendNuriMessage(`Baik, kita lanjut kapan kamu siap \u{1F33F}\n\nKamu sudah menyelesaikan ${pathsDone} dari ${gs.total_paths || 5} tema.\n\nSampai ketemu lagi!`, false);
+  nuriGuidedState = null;
+}
+
+// ── Resume Active Curriculum ────────────────────────────────────────────────
+
+async function resumeActiveCurriculum() {
+  const activeCurr = getActiveCurriculum();
+  if (!activeCurr) return;
+
+  const curricula = await fetchCurriculaData();
+  const curr = curricula?.find(c => c.id === activeCurr.curriculumId);
+  if (!curr) return;
+
+  const pathId = activeCurr.current_path_id || curr.paths[activeCurr.current_path_index || 0]?.id;
+  const pathData = curr.paths.find(p => p.id === pathId);
+
+  // Build recap from reflections
+  const reflections = getReflections(pathId);
+  let recapText = `Kita lanjut dari ${escapeHtml(pathData?.title || pathId)}, pelajaran ${activeCurr.current_lesson || 1}.`;
+  if (reflections.length > 0) {
+    const lastRef = reflections[reflections.length - 1];
+    recapText += `\n\nTerakhir kamu sempat bilang: "${escapeHtml(lastRef.reflection)}"`;
+  }
+  appendNuriMessage(recapText, false);
+
+  // Set up guided state
+  nuriGuidedState = {
+    type: 'guided_curriculum',
+    curriculum_id: activeCurr.curriculumId,
+    curriculum_title: curr.title,
+    path_index: activeCurr.current_path_index || 0,
+    path_id: pathId,
+    path_title: pathData?.title || pathId,
+    lesson: activeCurr.current_lesson || 1,
+    total_lessons: pathData?.lesson_count || 5,
+    total_paths: curr.paths.length,
+    paths_completed: activeCurr.paths_completed || [],
+  };
+
+  renderQuickReplies([
+    { label: 'Lanjut', message: '', action: 'beginGuidedLesson' },
+    { label: 'Ulang dari awal tema ini', message: '', action: 'restartCurrentPath' },
+  ]);
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    const btns = lastQR.querySelectorAll('.nuri-qr-chip');
+    btns[0]?.addEventListener('click', () => enterGuidedLesson(), { once: true });
+    btns[1]?.addEventListener('click', () => {
+      nuriGuidedState.lesson = 1;
+      enterGuidedLesson();
+    }, { once: true });
+  }
+}
+
+// ── Theme Picker ────────────────────────────────────────────────────────────
+
+async function showThemePicker() {
+  if (!lpAllPaths) {
+    try {
+      const res = await fetch('/api/learning-paths');
+      lpAllPaths = await res.json();
+    } catch { appendNuriMessage('Maaf, ada kendala memuat tema.', false); return; }
+  }
+
+  const situation = (lpAllPaths.situation || []).slice(0, 3);
+  const topic = (lpAllPaths.topic || []).slice(0, 3);
+
+  let html = 'Mau belajar tentang apa? \u{1F33F}\n\nBerdasarkan perasaan:\n';
+  situation.forEach(p => { html += `${p.emoji} ${escapeHtml(p.title)}\n`; });
+  html += '\nBerdasarkan tema Al-Qur\u2019an:\n';
+  topic.forEach(p => { html += `${p.emoji} ${escapeHtml(p.title)}\n`; });
+  html += '\nAtau ceritakan apa yang ingin kamu pahami.';
+  appendNuriMessage(html, false);
+
+  const allShown = [...situation, ...topic];
+  const chips = allShown.map(p => ({
+    label: `${p.emoji} ${p.title}`,
+    message: '',
+    action: 'startGuidedTheme',
+  }));
+  chips.push({ label: 'Lihat semua \u2192', message: '', action: 'openPathsList' });
+  renderQuickReplies(chips);
+
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    lastQR.querySelectorAll('.nuri-qr-chip').forEach((btn, i) => {
+      if (i < allShown.length) {
+        btn.dataset.pathId = allShown[i].id;
+      } else {
+        // "Lihat semua" button
+        btn.addEventListener('click', () => lpShowPathsList('nuri-view'), { once: true });
+      }
+    });
+  }
+}
+
+async function startGuidedTheme(pathId) {
+  if (!lpAllPaths) {
+    try { const r = await fetch('/api/learning-paths'); lpAllPaths = await r.json(); } catch { return; }
+  }
+  const allPaths = [...(lpAllPaths.situation || []), ...(lpAllPaths.topic || [])];
+  const pathData = allPaths.find(p => p.id === pathId);
+  if (!pathData) return;
+
+  // Fetch full path data
+  try {
+    const res = await fetch(`/api/learning-paths/${pathId}`);
+    const fullPath = await res.json();
+    lpCurrentPath = fullPath;
+  } catch { return; }
+
+  nuriGuidedState = {
+    type: 'guided_theme',
+    path_id: pathId,
+    path_title: pathData.title,
+    path_type: pathData.type || 'topic',
+    lesson: 1,
+    total_lessons: pathData.lesson_count || 5,
+  };
+
+  appendNuriMessage(`${pathData.emoji || ''} ${escapeHtml(pathData.title)}\n\nKita akan menjelajahi ${pathData.lesson_count || 5} ayat tentang tema ini.\n\nSiap mulai?`, false);
+  renderQuickReplies([
+    { label: 'Mulai', message: '', action: 'beginGuidedLesson' },
+    { label: 'Ceritakan dulu temanya', message: `Ceritakan tentang tema ${pathData.title}` },
+  ]);
+  const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
+  if (lastQR) {
+    lastQR.querySelector('.nuri-qr-chip')?.addEventListener('click', () => enterGuidedLesson(), { once: true });
+  }
+
+  // Preload all lessons
+  lpPreloadAllLessons(pathId);
+}
+
+// ── Verse-First Mode ────────────────────────────────────────────────────────
+
+function startVerseMode() {
+  appendNuriMessage('Mau memahami surah atau ayat yang mana? \u{1F33F}\n\nContoh:\n\u2022 "Al-Baqarah 255"\n\u2022 "Surah Al-Mulk"\n\u2022 "ayat tentang sabar"\n\nKetik di bawah:', false);
+  nuriConversationMode = 'guided_verse';
+  nuriGuidedState = { type: 'guided_verse' };
+}
+
+// ── Play Guided Audio ───────────────────────────────────────────────────────
+
+function playGuidedAudio() {
+  if (!nuriGuidedState?.verse_ref) return;
+  const parsed = parseVerseRefClient(nuriGuidedState.verse_ref);
+  if (!parsed) return;
+  const globalAyah = toGlobalAyah(parsed.surah, parsed.ayah);
+  if (globalAyah > 0) {
+    const btn = document.querySelector('.nuri-qr-chip.selected[data-qr-action="play_audio"]');
+    playAudio({ id: `${parsed.surah}:${parsed.ayah}` }, btn);
+  }
+  appendNuriMessage('Coba dengarkan bacaan ayatnya \u{1F3A7}', false);
+}
+
+// ── Parse verse ref string to surah number + ayah ───────────────────────────
+
+function parseVerseRefClient(verseRef) {
+  if (!verseRef) return null;
+  // Pattern: "Surah_Name: ayah" or "Surah_Name: ayah1-ayah2"
+  const match = verseRef.match(/^(.+?):\s*(\d+)/);
+  if (!match) return null;
+  const surahName = match[1].trim();
+  const ayah = parseInt(match[2], 10);
+  // Look up surah number from SURAH_META (defined elsewhere in app.js)
+  if (typeof SURAH_META !== 'undefined') {
+    const idx = SURAH_META.findIndex(s =>
+      s.name_latin?.toLowerCase() === surahName.toLowerCase() ||
+      s.name?.toLowerCase() === surahName.toLowerCase()
+    );
+    if (idx >= 0) return { surah: idx + 1, ayah };
+  }
+  return null;
+}
+
+// ── Save to Journal ─────────────────────────────────────────────────────────
+
+function saveCurrentToJournal() {
+  const gs = nuriGuidedState;
+  if (!gs) return;
+
+  // Get the last few messages for context
+  const msgs = document.querySelectorAll('#nuriMessages .nuri-bubble-wrap');
+  let nuriExplanation = '';
+  let userReflection = '';
+  let nuriResponse = '';
+
+  // Walk backwards to find relevant bubbles
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const wrap = msgs[i];
+    const text = wrap.querySelector('.nuri-bubble')?.textContent?.trim() || '';
+    if (wrap.classList.contains('user') && !userReflection) {
+      userReflection = text;
+    } else if (wrap.classList.contains('nuri') && !nuriResponse && userReflection) {
+      nuriResponse = text;
+    } else if (wrap.classList.contains('nuri') && !nuriExplanation && nuriResponse) {
+      nuriExplanation = text;
+      break;
+    }
+  }
+
+  saveJournalEntry({
+    verse_ref: gs.verse_ref || '',
+    nuri_explanation: nuriExplanation.substring(0, 500),
+    user_reflection: userReflection.substring(0, 500),
+    nuri_response: nuriResponse.substring(0, 500),
+    path: gs.path_id || '',
+    lesson: gs.lesson || 0,
+  });
+
+  appendNuriMessage('Tersimpan di catatan renunganmu \u{1F4DD}', false);
+}
+
+// ── Share Guided Content ────────────────────────────────────────────────────
+
+function shareGuidedContent() {
+  const gs = nuriGuidedState;
+  if (!gs) return;
+  const text = `\u{1F33F} ${gs.verse_ref || ''}\n\nDari perjalanan belajar "${gs.path_title || ''}"\n\n\u2014 TemuQuran`;
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('Teks berhasil disalin')).catch(() => {});
+  }
+}
+
+// ── Journal View ────────────────────────────────────────────────────────────
+
+function showJournalView() {
+  switchView('journal-view');
+  const container = document.getElementById('journalContent');
+  if (!container) return;
+
+  const entries = getJournalEntries();
+  if (entries.length === 0) {
+    container.innerHTML = `
+      <div class="journal-empty">
+        <div class="journal-empty-icon">\u{1F4DD}</div>
+        <div class="journal-empty-text">Belum ada renungan tersimpan.</div>
+        <div class="journal-empty-sub">Mulai belajar bersama Nuri untuk menyimpan renunganmu.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="journal-count">${entries.length} renungan tersimpan</div>`;
+  entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  entries.forEach(entry => {
+    const dateStr = new Date(entry.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const card = document.createElement('div');
+    card.className = 'journal-entry';
+    card.innerHTML = `
+      <div class="je-date">${dateStr} \u00B7 ${escapeHtml(entry.path || '')}</div>
+      <div class="je-verse-ref">QS. ${escapeHtml(entry.verse_ref || '')}</div>
+      ${entry.nuri_explanation ? `<div class="je-nuri-label">NURI</div><div class="je-nuri-text">${escapeHtml(entry.nuri_explanation)}</div>` : ''}
+      ${entry.user_reflection ? `<div class="je-my-label">RENUNGANKU</div><div class="je-my-text">${escapeHtml(entry.user_reflection)}</div>` : ''}
+      <div class="je-actions">
+        <button class="je-action-btn" data-action="journalPlay" data-verse="${escapeHtml(entry.verse_ref || '')}">\u{1F3A7} Dengarkan</button>
+        <button class="je-action-btn" data-action="journalShare" data-verse="${escapeHtml(entry.verse_ref || '')}" data-path="${escapeHtml(entry.path || '')}">\u{1F4E4} Bagikan</button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
 function appendNuriSessionEndMessage() {
   const el = document.createElement('div');
   el.className = 'nuri-session-end';
@@ -5663,8 +6621,9 @@ async function sendNuriMessage() {
 async function _sendNuriMessageInternal(text, isRetry) {
   if (nuriIsTyping) return;
 
-  // Session limit check
-  if (nuriExchangeCount >= NURI_CONFIG.maxExchanges) {
+  // Session limit check — guided modes get 40, free chat gets 20
+  const maxExchanges = nuriGuidedState ? 40 : NURI_CONFIG.maxExchanges;
+  if (nuriExchangeCount >= maxExchanges) {
     appendNuriSessionEndMessage();
     return;
   }
@@ -5711,6 +6670,7 @@ async function _sendNuriMessageInternal(text, isRetry) {
       opted_in: nuriOptedIn,
       session_id: nuriSessionId,
       exchange_count: nuriExchangeCount,
+      guided_state: nuriGuidedState || undefined,
     });
 
     // Auto-retry once on failure (handles Vercel cold-start 500s)
@@ -5758,17 +6718,65 @@ async function _sendNuriMessageInternal(text, isRetry) {
     // Render formatted response (with verse blocks)
     appendNuriMessage(data.nuri_response_formatted);
 
+    // Render quick replies from API response
+    if (data.quick_replies && data.quick_replies.length > 0) {
+      renderQuickReplies(data.quick_replies);
+    }
+
+    // In guided modes, add standard quick replies if API didn't provide them
+    if (nuriGuidedState && (!data.quick_replies || data.quick_replies.length === 0)) {
+      const gs = nuriGuidedState;
+      const standardReplies = [];
+
+      // Determine if this is a lesson explanation (not a reflection response)
+      const isLessonExchange = nuriExchangeCount < 2 || (gs.lesson && nuriExchangeCount % 3 === 0);
+
+      if (gs.verse_ref) {
+        standardReplies.push({ label: '\u{1F4DC} Konteks turunnya ayat', message: `Apa konteks turunnya ayat ${gs.verse_ref}?`, action: 'asbabun_nuzul' });
+        standardReplies.push({ label: '\u{1F3A7} Dengarkan ayat', message: 'Dengarkan ayat', action: 'play_audio' });
+      }
+
+      if (gs.lesson < (gs.total_lessons || 5)) {
+        standardReplies.push({ label: `Lanjut pelajaran ${gs.lesson + 1}`, message: `Lanjut pelajaran ${gs.lesson + 1}`, action: 'nextLesson' });
+      } else {
+        standardReplies.push({ label: gs.type === 'guided_curriculum' ? 'Selesai tema ini' : 'Selesai', message: 'Selesai', action: 'nextLesson' });
+      }
+
+      if (standardReplies.length > 0) renderQuickReplies(standardReplies);
+    }
+
     nuriExchangeCount++;
+
+    // Set onboarded flag after first successful exchange
+    if (nuriExchangeCount === 1) {
+      localStorage.setItem('tq-nuri-onboarded', 'true');
+    }
+
+    // Auto-save reflections in guided mode on reflection lessons (1, 3, 5)
+    if (nuriGuidedState && [1, 3, 5].includes(nuriGuidedState.lesson)) {
+      // Check if the user just answered a reflection (their message is the previous one)
+      const lastUserMsg = nuriMessages.filter(m => m.role === 'user').pop();
+      if (lastUserMsg && lastUserMsg.content.length > 10 && !lastUserMsg.content.startsWith('Jelaskan') && !lastUserMsg.content.startsWith('Lanjut') && !lastUserMsg.content.startsWith('Konteks')) {
+        saveReflection(
+          nuriGuidedState.path_id || '',
+          nuriGuidedState.lesson,
+          nuriGuidedState.verse_ref || '',
+          lastUserMsg.content.substring(0, 300)
+        );
+      }
+    }
 
     // Log analytics
     logEvent('nuri_exchange_completed', {
       session_id: nuriSessionId,
       exchange_index: nuriExchangeCount,
       conversation_mode: nuriConversationMode,
+      guided_type: nuriGuidedState?.type || null,
     });
 
     // Check session limit
-    if (nuriExchangeCount === NURI_CONFIG.maxExchanges) {
+    const maxExch = nuriGuidedState ? 40 : NURI_CONFIG.maxExchanges;
+    if (nuriExchangeCount === maxExch) {
       appendNuriSessionEndMessage();
     }
 
@@ -5803,6 +6811,7 @@ document.getElementById('nuriSendBtn')?.addEventListener('click', sendNuriMessag
 document.getElementById('nuriStartBtn')?.addEventListener('click', startNuriSession);
 document.getElementById('nuriLandingCard')?.addEventListener('click', startNuriSession);
 document.getElementById('nuriBackBtn')?.addEventListener('click', () => switchView('landing-view'));
+document.getElementById('journalBackBtn')?.addEventListener('click', () => switchView('nuri-view'));
 document.getElementById('lpLandingBtn')?.addEventListener('click', () => lpShowPathsList('landing-view'));
 document.getElementById('lpListBackBtn')?.addEventListener('click', () => switchView('landing-view'));
 
@@ -5857,6 +6866,14 @@ document.addEventListener('click', (e) => {
     } else {
       navigator.clipboard.writeText(text).then(() => showToast('Teks berhasil disalin')).catch(() => {});
     }
+  } else if (action === 'journalPlay') {
+    const verseRef = el.dataset.verse;
+    const parsed = parseVerseRefClient(verseRef);
+    if (parsed) playAudio({ id: `${parsed.surah}:${parsed.ayah}` }, el);
+  } else if (action === 'journalShare') {
+    const text = `\u{1F33F} QS. ${el.dataset.verse}\n\nDari perjalanan "${el.dataset.path}"\n\n\u2014 TemuQuran`;
+    if (navigator.share) { navigator.share({ text }).catch(() => {}); }
+    else { navigator.clipboard.writeText(text).then(() => showToast('Teks berhasil disalin')).catch(() => {}); }
   }
 });
 

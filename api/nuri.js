@@ -16,7 +16,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ── Rate limit (same in-memory pattern as get-ayat.js) ───────────────────────
 const rateLimitMap = new Map();
-const RATE_LIMIT = 20;
+const RATE_LIMIT = 60; // increased for guided learning (40 exchanges per path)
 const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
 
 function checkRateLimit(ip) {
@@ -68,19 +68,36 @@ PENTING:
 - JANGAN diskusikan topik di luar Al-Qur'an dan nilai Islam
 - Jika ada perbedaan pendapat ulama, sampaikan dengan jujur tanpa memihak
 
+QUICK REPLIES (opsional):
+- Boleh tambahkan "quick_replies" array di JSON response (max 4 items).
+- Setiap item: { "label": "teks tombol", "message": "pesan yang dikirim jika ditap" }
+- Gunakan untuk mengarahkan percakapan: mendalami, contoh lain, refleksi, lanjut, dll.
+- Label max 30 karakter.
+- Jangan gunakan jika pertanyaan user sudah sangat spesifik dan membutuhkan jawaban terbuka.
+
 RESPONSE FORMAT — selalu JSON:
 {
   "nuri_response": "teks dengan {VERSE_1} dan opsional {VERSE_2} di posisi yang tepat",
   "verse_refs": [
     { "surah": <number>, "ayah": <number> }
   ],
-  "conversation_mode": "deep_dive" | "exploration" | null
+  "conversation_mode": "deep_dive" | "exploration" | null,
+  "quick_replies": [
+    { "label": "Jelaskan lebih dalam", "message": "Bisa jelaskan lebih dalam?" }
+  ]
 }
 
 CATATAN:
 - verse_refs WAJIB berisi minimal 1 elemen (kecuali user klarifikasi ayat sebelumnya).
 - Placeholder di teks harus cocok: {VERSE_1} untuk verse_refs[0], {VERSE_2} untuk verse_refs[1].
-- conversation_mode hanya diisi pada exchange pertama. Selanjutnya null.`;
+- conversation_mode hanya diisi pada exchange pertama. Selanjutnya null.
+- quick_replies opsional — array kosong [] jika tidak ada.
+
+UPSELL PERJALANAN BELAJAR (hanya untuk free chat, BUKAN guided mode):
+- Jika topik user cocok dengan salah satu tema: sabar, doa, tawakkal, syukur, keluarga, patah hati, berduka, taubat, shalat, akhlak, ikhlas, taqwa, cobaan, ketenangan, iri, kecanduan, keadilan — sebutkan di akhir respons:
+  "Btw, aku punya perjalanan belajar tentang [tema] kalau kamu mau lebih dalam."
+- Tambahkan quick_reply: { "label": "Mulai perjalanan [tema]", "message": "Mulai perjalanan belajar tentang [tema]" }
+- Jangan upsell setiap exchange — hanya jika SANGAT relevan dan belum pernah upsell di sesi ini.`;
 
 // ── Verse lookup helpers ────────────────────────────────────────────────────
 
@@ -165,6 +182,112 @@ function buildTafsirContext(verses) {
   return parts.join('\n\n');
 }
 
+// ── Guided mode system prompt builder ────────────────────────────────────────
+
+function buildGuidedPromptAddendum(gs) {
+  if (!gs || !gs.type) return '';
+
+  const reflectionPacing = {
+    1: 'Akhiri dengan satu pertanyaan refleksi personal — set nada personal.',
+    2: 'JANGAN ajukan pertanyaan refleksi. Cukup akhiri dengan "Siap lanjut ke pelajaran berikutnya?"',
+    3: 'Ajukan satu pertanyaan pemahaman terbuka: "Dari ayat-ayat yang sudah kita bahas, menurut kamu apa pesan yang paling melekat?" Respons hangat, jangan nilai benar/salah.',
+    4: 'JANGAN ajukan pertanyaan refleksi. Cukup akhiri dengan "Siap lanjut ke pelajaran terakhir?"',
+    5: 'Ajukan refleksi penutup yang lebih dalam. Jika ada refleksi user dari pelajaran 1, referensikan: "Di awal kamu bilang [kutip]. Setelah 5 ayat ini, apakah ada yang berubah?"',
+  };
+
+  const pacingInstruction = reflectionPacing[gs.lesson] || reflectionPacing[1];
+
+  if (gs.type === 'guided_verse') {
+    return `
+
+MODE BELAJAR TERBIMBING — PAHAMI SURAH/AYAT:
+Kamu sedang membimbing user memahami surah atau ayat tertentu.
+
+Status:
+- Surah: ${gs.surah_name || '(belum ditentukan)'}
+- Ayat saat ini: ${gs.verse_ref || '(belum ditentukan)'}
+
+Perilaku:
+- Kamu PEMANDU. Pimpin percakapan, jangan menunggu.
+- Jelaskan satu ayat pada satu waktu. Pilih SATU insight menarik per ayat.
+- Dasar penjelasan: tafsir klasik (Ibn Kathir, Quraish Shihab). Sintesis dengan gaya sendiri.
+- JANGAN sajikan interpretasi sebagai opini original.
+- Hindari pendapat minoritas — mainstream saja.
+- Gunakan metafora untuk ilustrasi, JANGAN pernah bandingkan Allah dengan makhluk.
+- Setelah menjelaskan, ajukan pertanyaan refleksi personal.
+- Saat user menjawab refleksi, akui dengan hangat, hubungkan ke ayat, tawarkan lanjut.
+- Setelah 3-5 ayat, tawarkan handoff ke Jelajahi untuk surah lengkap.
+- SELALU sertakan quick_replies dengan aksi berikutnya yang jelas.
+- Penjelasan MAKSIMAL 100 kata. Casual, hangat, bukan akademis.
+${gs.verse_text ? `\nTeks ayat: "${gs.verse_text}"` : ''}
+${gs.tafsir ? `\nTafsir referensi: ${gs.tafsir}` : ''}`;
+  }
+
+  const baseGuided = `
+- Kamu PEMANDU. Sajikan setiap pelajaran, jangan menunggu.
+- Untuk setiap pelajaran: tunjukkan ayat, jelaskan (80-100 kata), lalu pacing sesuai instruksi.
+- Dasar penjelasan: tafsir klasik (Ibn Kathir, Al-Tabari, Quraish Shihab).
+- Sintesis tafsir dengan gaya sendiri — jangan kutip langsung.
+- JANGAN sajikan interpretasi sebagai opini original.
+- Hindari pendapat minoritas — mainstream saja.
+- Gunakan metafora untuk struktur/emosi saja — JANGAN bandingkan Allah dengan makhluk.
+- DENGARKAN jawaban refleksi user. Respons secara personal (2-3 kalimat) sebelum transisi.
+- Penjelasan MAKSIMAL 100 kata per ayat.
+- SELALU sertakan quick_replies: [Konteks turunnya ayat], [Dengarkan ayat], dan tombol lanjut.`;
+
+  if (gs.type === 'guided_theme') {
+    return `
+
+MODE BELAJAR TERBIMBING — PILIH TEMA:
+Kamu sedang membimbing user melalui satu perjalanan belajar bertema.
+
+Status:
+- Tema: ${gs.path_title || gs.path_id}
+- Pelajaran: ${gs.lesson} dari ${gs.total_lessons || 5}
+- Judul pelajaran: ${gs.lesson_title || ''}
+- Ayat: ${gs.verse_ref || ''}
+
+Perilaku:${baseGuided}
+${gs.path_type === 'situation' ? '- Tipe "situasi": tekankan kenyamanan dan relevansi emosional.' : '- Tipe "topik": tekankan pemahaman dan pembelajaran.'}
+- Setelah pelajaran terakhir, rayakan dan sarankan perjalanan terkait.
+
+Pacing pelajaran ${gs.lesson}:
+${pacingInstruction}
+${gs.verse_text ? `\nTeks ayat: "${gs.verse_text}"` : ''}
+${gs.tafsir ? `\nTafsir referensi: ${gs.tafsir}` : ''}
+${gs.reflections ? `\nRefleksi user sebelumnya:\n${gs.reflections}` : ''}`;
+  }
+
+  if (gs.type === 'guided_curriculum') {
+    return `
+
+MODE BELAJAR TERBIMBING — PERJALANAN KURIKULUM:
+Kamu sedang membimbing user melalui kurikulum multi-tema.
+
+Status:
+- Kurikulum: ${gs.curriculum_title || gs.curriculum_id}
+- Tema saat ini: ${(gs.path_index || 0) + 1} dari ${gs.total_paths || 5} — "${gs.path_title || gs.path_id}"
+- Pelajaran: ${gs.lesson} dari ${gs.total_lessons || 5}
+- Judul pelajaran: ${gs.lesson_title || ''}
+- Ayat: ${gs.verse_ref || ''}
+- Tema yang sudah selesai: ${gs.paths_completed ? gs.paths_completed.join(', ') : '(belum ada)'}
+
+Perilaku:${baseGuided}
+- Saat transisi antar TEMA: rangkum apa yang dipelajari dan preview tema berikutnya (1-2 kalimat masing-masing).
+- Hubungkan tema: "Di tema sebelumnya, kita belajar X. Sekarang kita lihat hubungannya dengan Y."
+- Setelah menyelesaikan seluruh kurikulum, sarankan kurikulum berikutnya.
+- Referensikan refleksi user dari TEMA SEBELUMNYA — bangun benang narasi.
+
+Pacing pelajaran ${gs.lesson}:
+${pacingInstruction}
+${gs.verse_text ? `\nTeks ayat: "${gs.verse_text}"` : ''}
+${gs.tafsir ? `\nTafsir referensi: ${gs.tafsir}` : ''}
+${gs.reflections ? `\nRefleksi user sebelumnya:\n${gs.reflections}` : ''}`;
+  }
+
+  return '';
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -179,20 +302,40 @@ export default async function handler(req, res) {
     });
   }
 
-  const { mode, messages, conversation_mode, opted_in, session_id, exchange_count } = req.body;
+  const { mode, messages, conversation_mode, opted_in, session_id, exchange_count, guided_state } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'invalid_request' });
   }
 
   try {
-    // ── 1. GPT call with JSON mode ──
+    // ── 1. Build system prompt (base + guided addendum if applicable) ──
+    const guidedAddendum = buildGuidedPromptAddendum(guided_state);
+    const systemPrompt = NURI_SYSTEM_PROMPT + guidedAddendum;
+
+    // For guided modes with verse data, pre-fetch tafsir context
+    if (guided_state && guided_state.verse_surah && guided_state.verse_ayah) {
+      const guidedVerse = await lookupVerse(guided_state.verse_surah, guided_state.verse_ayah);
+      if (guidedVerse) {
+        // Inject verse data into guided_state for the prompt
+        if (!guided_state.verse_text) {
+          guided_state.verse_text = guidedVerse.translation;
+        }
+        if (!guided_state.tafsir && guidedVerse.tafsir_quraish_shihab) {
+          guided_state.tafsir = guidedVerse.tafsir_quraish_shihab.substring(0, 500);
+        }
+      }
+    }
+
+    // Rebuild prompt with enriched data
+    const finalPrompt = NURI_SYSTEM_PROMPT + buildGuidedPromptAddendum(guided_state);
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 300,
+      max_tokens: 400, // slightly higher for guided modes with quick_replies
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: NURI_SYSTEM_PROMPT },
+        { role: 'system', content: finalPrompt },
         ...messages,
       ],
     });
@@ -309,6 +452,8 @@ export default async function handler(req, res) {
       })),
       // Include tafsir context so frontend could display it in future
       tafsir_context: buildTafsirContext(verses),
+      // Quick-reply buttons for guided conversation
+      quick_replies: Array.isArray(parsed.quick_replies) ? parsed.quick_replies.slice(0, 4) : [],
     });
 
   } catch (err) {
