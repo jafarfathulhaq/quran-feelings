@@ -5664,6 +5664,11 @@ body.about-locked { overflow: hidden; }
   box-shadow: var(--shadow-hover);
 }
 
+.lp-path-card:focus-visible {
+  outline: 2px solid var(--teal-dark);
+  outline-offset: 2px;
+}
+
 .lp-path-card:active {
   transform: scale(0.98);
 }
@@ -5773,6 +5778,28 @@ body.about-locked { overflow: hidden; }
 
 .lp-lesson-item:last-child {
   margin-bottom: 0;
+}
+
+.lp-lesson-clickable {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.lp-lesson-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+.lp-lesson-clickable:active {
+  transform: translateY(0);
+}
+
+.lp-lesson-item-chevron {
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  font-weight: 300;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .lp-lesson-num {
@@ -6133,11 +6160,31 @@ body.about-locked { overflow: hidden; }
   display: flex;
   gap: 12px;
   padding: 16px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   background: var(--card-bg);
   border-top: 1px solid var(--border);
   max-width: 600px;
   margin: 0 auto;
   z-index: 10;
+}
+
+.lp-btn-tertiary {
+  padding: 12px 14px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.lp-btn-tertiary:hover {
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border-color: var(--teal-dark);
 }
 
 .lp-btn-secondary {
@@ -6172,6 +6219,34 @@ body.about-locked { overflow: hidden; }
 
 .lp-btn-primary:hover {
   background: var(--teal);
+}
+
+/* ── Error State ── */
+.lp-error-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.lp-error-state p {
+  margin: 0 0 16px;
+  font-size: 0.9375rem;
+}
+
+.lp-retry-btn {
+  padding: 10px 24px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lp-retry-btn:hover {
+  background: #cce8e4;
 }
 
 /* ── Path Completion ── */

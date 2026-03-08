@@ -2273,6 +2273,7 @@ function stopCurrentAudio() {
   if (activePlayBtn) {
     activePlayBtn.innerHTML = PLAY_ICON + ' Dengarkan';
     activePlayBtn.classList.remove('playing');
+    activePlayBtn.setAttribute('aria-label', 'Dengarkan ayat');
     activePlayBtn = null;
   }
 }
@@ -2292,6 +2293,7 @@ function playAudio(verse, btn) {
   activePlayBtn = btn;
   btn.innerHTML = PAUSE_ICON + ' Jeda';
   btn.classList.add('playing');
+  btn.setAttribute('aria-label', 'Jeda audio');
 
 
   audio.play().catch(() => {
@@ -5804,6 +5806,15 @@ document.getElementById('nuriBackBtn')?.addEventListener('click', () => switchVi
 document.getElementById('lpLandingBtn')?.addEventListener('click', () => lpShowPathsList('landing-view'));
 document.getElementById('lpListBackBtn')?.addEventListener('click', () => switchView('landing-view'));
 
+// ── Learning Paths: keyboard support for interactive data-action elements ────
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest('[data-action][role="button"]');
+  if (!el) return;
+  e.preventDefault();
+  el.click();
+});
+
 // ── Learning Paths: delegated event listener for dynamic content ────────────
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
@@ -5830,6 +5841,15 @@ document.addEventListener('click', (e) => {
     const cat = el.dataset.category;
     const collapsed = document.getElementById(`lp-collapsed-${cat}`);
     if (collapsed) { collapsed.classList.remove('hidden'); el.remove(); }
+  } else if (action === 'jumpToLesson') {
+    lpStartLesson(el.dataset.pathId, parseInt(el.dataset.lessonIdx, 10));
+  } else if (action === 'retryLesson') {
+    lpRenderLesson();
+  } else if (action === 'retryPathsList') {
+    lpAllPaths = null; // clear stale cache
+    lpShowPathsList();
+  } else if (action === 'retryPathPreview') {
+    lpShowPathPreview(el.dataset.pathId);
   } else if (action === 'shareCompletion') {
     const text = el.dataset.text;
     if (navigator.share) {
@@ -5919,14 +5939,23 @@ function lpIsLessonViewed(lessonId) {
   return !!lpGetProgress()[lessonId];
 }
 
+function lpGetLessonCount(pathId) {
+  if (lpCurrentPath?.id === pathId) return lpCurrentPath.lessons.length;
+  const allPaths = [...(lpAllPaths?.situation || []), ...(lpAllPaths?.topic || [])];
+  const found = allPaths.find(p => p.id === pathId);
+  return found?.lesson_count || 5;
+}
+
 function lpIsPathComplete(pathId) {
   const p = lpGetProgress();
-  return [1,2,3,4,5].every(n => p[`${pathId}-${n}`]);
+  const count = lpGetLessonCount(pathId);
+  return Array.from({length: count}, (_, i) => i + 1).every(n => p[`${pathId}-${n}`]);
 }
 
 function lpGetPathProgress(pathId) {
   const p = lpGetProgress();
-  return [1,2,3,4,5].filter(n => p[`${pathId}-${n}`]).length;
+  const count = lpGetLessonCount(pathId);
+  return Array.from({length: count}, (_, i) => i + 1).filter(n => p[`${pathId}-${n}`]).length;
 }
 
 // ── Lesson Cache (in-memory) ────────────────────────────────────────────────
@@ -5935,6 +5964,12 @@ const lpLessonCache = {};
 async function lpGetLessonContent(lessonId) {
   if (lpLessonCache[lessonId]) return lpLessonCache[lessonId];
   const res = await fetch(`/api/learning-paths/lesson/${lessonId}/generate`, { method: 'POST' });
+  if (res.status === 429) {
+    const body = await res.json().catch(() => ({}));
+    const err = new Error('rate_limited');
+    err.resetAt = body.resetAt;
+    throw err;
+  }
   if (!res.ok) throw new Error('Failed to generate lesson');
   const data = await res.json();
   lpLessonCache[lessonId] = data;
@@ -5980,14 +6015,14 @@ async function lpShowPathsList(fromView) {
         const progress = lpGetPathProgress(p.id);
         const complete = lpIsPathComplete(p.id);
         out += `
-          <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}">
+          <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}" role="button" tabindex="0">
             <span class="lp-path-emoji">${p.emoji}</span>
             <div class="lp-path-info">
               <div class="lp-path-title">${p.title}</div>
-              <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/5 pelajaran' : '5 pelajaran'}</div>
+              <div class="lp-path-meta">${complete ? 'Selesai' : progress > 0 ? progress + '/' + (p.lesson_count || 5) + ' pelajaran' : (p.lesson_count || 5) + ' pelajaran'}</div>
             </div>
             ${complete ? '<span class="lp-path-check">✓</span>' : ''}
-            ${progress > 0 ? `<div class="lp-path-progress-bar"><div class="lp-path-progress-fill" style="width:${(progress / 5) * 100}%"></div></div>` : ''}
+            ${progress > 0 ? `<div class="lp-path-progress-bar"><div class="lp-path-progress-fill" style="width:${(progress / (p.lesson_count || 5)) * 100}%"></div></div>` : ''}
           </div>`;
       }
       if (paths.length > INITIAL_SHOW) {
@@ -6013,7 +6048,7 @@ async function lpShowPathsList(fromView) {
     container.innerHTML = html;
   } catch (err) {
     console.error('Failed to load paths:', err);
-    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px">Gagal memuat. Coba lagi.</p>';
+    container.innerHTML = '<div class="lp-error-state"><p>Gagal memuat daftar perjalanan.</p><button class="lp-retry-btn" data-action="retryPathsList">Coba Lagi</button></div>';
   }
 }
 
@@ -6045,15 +6080,19 @@ async function lpShowPathPreview(pathId) {
       </div>
       <div class="lp-lessons-list">`;
 
-    for (const lesson of path.lessons) {
+    for (let i = 0; i < path.lessons.length; i++) {
+      const lesson = path.lessons[i];
       const viewed = lpIsLessonViewed(lesson.id);
+      const clickable = viewed ? 'lp-lesson-clickable' : '';
+      const action = viewed ? `data-action="jumpToLesson" data-path-id="${pathId}" data-lesson-idx="${i}" role="button" tabindex="0"` : '';
       html += `
-        <div class="lp-lesson-item">
+        <div class="lp-lesson-item ${clickable}" ${action}>
           <div class="lp-lesson-num ${viewed ? 'viewed' : ''}">${lesson.order_num}</div>
           <div class="lp-lesson-item-info">
             <div class="lp-lesson-item-title">${lesson.title}</div>
             <div class="lp-lesson-item-ref">${lesson.verse_ref}</div>
           </div>
+          ${viewed ? '<span class="lp-lesson-item-chevron">›</span>' : ''}
         </div>`;
     }
 
@@ -6069,7 +6108,7 @@ async function lpShowPathPreview(pathId) {
     container.innerHTML = html;
   } catch (err) {
     console.error('Failed to load path:', err);
-    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px">Gagal memuat. Coba lagi.</p>';
+    container.innerHTML = `<div class="lp-error-state"><p>Gagal memuat perjalanan.</p><button class="lp-retry-btn" data-action="retryPathPreview" data-path-id="${pathId}">Coba Lagi</button></div>`;
   }
 }
 
@@ -6090,6 +6129,7 @@ async function lpRenderLesson() {
   const titleEl = document.getElementById('lessonPathTitle');
   const progressEl = document.getElementById('lessonProgress');
   const nextBtn = document.getElementById('lessonNextBtn');
+  const prevBtn = document.getElementById('lessonPrevBtn');
 
   titleEl.innerHTML = `<span class="lp-breadcrumb">${escapeHtml(lpCurrentPath.title)} ›</span> Pelajaran ${lpCurrentLessonIdx + 1}`;
   progressEl.textContent = `${lpCurrentLessonIdx + 1} / ${lpCurrentPath.lessons.length}`;
@@ -6097,6 +6137,14 @@ async function lpRenderLesson() {
 
   // Back button
   document.getElementById('lessonBackBtn').onclick = () => lpShowPathPreview(lpCurrentPath.id);
+
+  // Previous button (show only for lesson 2+)
+  if (lpCurrentLessonIdx > 0) {
+    prevBtn.classList.remove('hidden');
+    prevBtn.onclick = () => { lpCurrentLessonIdx--; lpRenderLesson(); };
+  } else {
+    prevBtn.classList.add('hidden');
+  }
 
   // Next/Finish button
   const isLast = lpCurrentLessonIdx === lpCurrentPath.lessons.length - 1;
@@ -6112,9 +6160,6 @@ async function lpRenderLesson() {
 
   // Tanya Nuri button
   document.getElementById('lessonAskNuri').onclick = () => lpOpenTanyaNuri();
-
-  // Mark lesson as viewed
-  lpMarkLessonViewed(lesson.id);
 
   // Render verse section immediately (placeholder), then load generated content
   content.innerHTML = `
@@ -6158,13 +6203,13 @@ async function lpRenderLesson() {
     html += `<span class="lp-verse-ref-badge">${lesson.verse_ref}</span>`;
 
     if (data.verse_text_ar) {
-      html += `<div class="lp-arabic-text">${data.verse_text_ar}</div>`;
+      html += `<div class="lp-arabic-text">${escapeHtml(data.verse_text_ar)}</div>`;
     }
 
     // Audio button (reuse existing audio infrastructure)
     if (data.surah_number && data.verse_start) {
       html += `<div class="lp-audio-row">
-        <button class="lp-audio-btn" data-action="playAudio" data-surah="${data.surah_number}" data-verse="${data.verse_start}">
+        <button class="lp-audio-btn" data-action="playAudio" data-surah="${data.surah_number}" data-verse="${data.verse_start}" aria-label="Dengarkan ayat">
           <span class="lp-audio-icon">${typeof PLAY_ICON !== 'undefined' ? PLAY_ICON : '▶'}</span>
           <span>Dengarkan Ayat</span>
           <span class="lp-audio-bars"><span></span><span></span><span></span><span></span></span>
@@ -6175,7 +6220,7 @@ async function lpRenderLesson() {
 
     // Light section: translation
     if (data.verse_text_id) {
-      html += `<div class="lp-verse-content"><div class="lp-translation">"${data.verse_text_id}"</div></div>`;
+      html += `<div class="lp-verse-content"><div class="lp-translation">"${escapeHtml(data.verse_text_id)}"</div></div>`;
     }
 
     html += '</div>'; // end .lp-verse-section
@@ -6185,8 +6230,8 @@ async function lpRenderLesson() {
       html += `
         <div class="lp-supporting-section">
           <div class="lp-supporting-label">Ayat pendukung — ${lesson.supporting_verse_ref || ''}</div>
-          <div class="lp-supporting-arabic">${data.supporting_verse_text_ar}</div>
-          <div class="lp-supporting-translation">"${data.supporting_verse_text_id || ''}"</div>
+          <div class="lp-supporting-arabic">${escapeHtml(data.supporting_verse_text_ar)}</div>
+          <div class="lp-supporting-translation">"${escapeHtml(data.supporting_verse_text_id || '')}"</div>
         </div>`;
     }
 
@@ -6194,7 +6239,7 @@ async function lpRenderLesson() {
     html += `
       <div class="lp-explanation-section">
         <div class="lp-section-heading">${lesson.title}</div>
-        <div class="lp-explanation-text">${data.explanation}</div>
+        <div class="lp-explanation-text">${escapeHtml(data.explanation)}</div>
       </div>`;
 
     // Why this verse
@@ -6202,7 +6247,7 @@ async function lpRenderLesson() {
       html += `
         <div class="lp-why-section">
           <div class="lp-section-heading">📌 Mengapa ayat ini penting?</div>
-          <div class="lp-why-text">${data.why_this_verse}</div>
+          <div class="lp-why-text">${escapeHtml(data.why_this_verse)}</div>
         </div>`;
     }
 
@@ -6211,14 +6256,20 @@ async function lpRenderLesson() {
       html += `
         <div class="lp-reflection-section">
           <div class="lp-section-heading">💭 Renungan</div>
-          <div class="lp-reflection-text">${data.reflection}</div>
+          <div class="lp-reflection-text">${escapeHtml(data.reflection)}</div>
         </div>`;
     }
 
     content.innerHTML = html;
+
+    // Mark lesson as viewed only after content loads successfully
+    lpMarkLessonViewed(lesson.id);
   } catch (err) {
     console.error('Failed to load lesson:', err);
-    content.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px">Gagal memuat pelajaran. Coba lagi.</p>';
+    const msg = err.message === 'rate_limited'
+      ? 'Terlalu banyak permintaan. Coba lagi dalam beberapa menit.'
+      : 'Gagal memuat pelajaran.';
+    content.innerHTML = `<div class="lp-error-state"><p>${msg}</p><button class="lp-retry-btn" data-action="retryLesson">Coba Lagi</button></div>`;
   }
 }
 
@@ -6244,8 +6295,10 @@ async function lpShowComplete(pathId) {
   const pathType = lpCurrentPath?.type || 'situation';
   const pathTitle = lpCurrentPath?.title || 'perjalanan ini';
 
-  // Find 2 other paths of same type
-  const samePaths = (lpAllPaths?.[pathType] || []).filter(p => p.id !== pathId).slice(0, 2);
+  // Find 2 other paths of same type, excluding completed ones
+  const samePaths = (lpAllPaths?.[pathType] || [])
+    .filter(p => p.id !== pathId && !lpIsPathComplete(p.id))
+    .slice(0, 2);
 
   let suggestHtml = '';
   if (samePaths.length > 0) {
@@ -6253,11 +6306,11 @@ async function lpShowComplete(pathId) {
       <div class="lp-complete-suggestions">
         <div class="lp-complete-suggest-title">Perjalanan lainnya</div>
         ${samePaths.map(p => `
-          <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}" style="margin-bottom:10px">
+          <div class="lp-path-card" data-action="showPathPreview" data-path-id="${p.id}" role="button" tabindex="0" style="margin-bottom:10px">
             <span class="lp-path-emoji">${p.emoji}</span>
             <div class="lp-path-info">
               <div class="lp-path-title">${p.title}</div>
-              <div class="lp-path-meta">5 pelajaran</div>
+              <div class="lp-path-meta">${p.lesson_count || 5} pelajaran</div>
             </div>
           </div>
         `).join('')}
@@ -6279,7 +6332,7 @@ async function lpShowComplete(pathId) {
     <div class="lp-complete-body">
       <div class="lp-complete-stats">
         <div class="lp-complete-stat">
-          <div class="lp-complete-stat-num">5</div>
+          <div class="lp-complete-stat-num">${lpCurrentPath?.lessons?.length || 5}</div>
           <div class="lp-complete-stat-label">pelajaran selesai</div>
         </div>
         <div class="lp-complete-stat">
@@ -6341,7 +6394,7 @@ async function lpTrySuggestCard(verseRefs, type, containerEl) {
     card.className = 'lp-suggest-card';
     card.innerHTML = `
       <div class="lp-suggest-label">${label}</div>
-      <div class="lp-suggest-path">${path.emoji || ''} ${path.title} — 5 pelajaran singkat</div>
+      <div class="lp-suggest-path">${path.emoji || ''} ${path.title} — ${path.lesson_count || 5} pelajaran singkat</div>
       <button class="lp-suggest-btn" data-action="showPathPreview" data-path-id="${path.id}">${btnText}</button>
     `;
     containerEl.appendChild(card);
@@ -6388,7 +6441,13 @@ function lpInitSwipeGestures() {
   const THRESHOLD = 50;
 
   content.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
+    const touchX = e.touches[0].clientX;
+    // Ignore touches near screen edges to avoid conflict with iOS Safari back/forward gestures
+    if (touchX < 30 || touchX > window.innerWidth - 30) {
+      startX = 0;
+      return;
+    }
+    startX = touchX;
     startY = e.touches[0].clientY;
     isDragging = false;
   }, { passive: true });
@@ -6436,8 +6495,8 @@ async function lpTryShowResumeCard() {
     pathCounts[pathId] = (pathCounts[pathId] || 0) + 1;
   }
 
-  // Find first in-progress path (> 0 and < 5)
-  const inProgressId = Object.keys(pathCounts).find(id => pathCounts[id] > 0 && pathCounts[id] < 5);
+  // Find first in-progress path (> 0 and < total)
+  const inProgressId = Object.keys(pathCounts).find(id => pathCounts[id] > 0 && !lpIsPathComplete(id));
   if (!inProgressId) return;
 
   // Fetch paths if not cached
@@ -6464,7 +6523,7 @@ async function lpTryShowResumeCard() {
         <div class="lp-resume-info">
           <div class="lp-resume-label">Lanjutkan Perjalanan</div>
           <div class="lp-resume-title">${escapeHtml(path.title)}</div>
-          <div class="lp-resume-progress">${count}/5 pelajaran</div>
+          <div class="lp-resume-progress">${count}/${path.lesson_count || 5} pelajaran</div>
         </div>
       </div>
       <button class="lp-resume-btn" data-action="showPathPreview" data-path-id="${inProgressId}">Lanjutkan →</button>

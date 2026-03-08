@@ -45,6 +45,7 @@ export default async function handler(req, res) {
 
     if (lessonError) throw lessonError;
 
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     return res.status(200).json({
       id: path.id,
       type: path.type,
