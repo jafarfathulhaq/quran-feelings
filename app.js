@@ -5528,8 +5528,7 @@ function startNuriSession() {
     ]);
   }
 
-  // Show opt-in card
-  appendOptInCard();
+  // Opt-in card removed — all sessions are private by default
 
   // Add journal entry point if journal has entries
   const journal = getJournalEntries();
@@ -5713,6 +5712,9 @@ function sendNuriMessageText(text) {
 
 function handleQuickReplyAction(action, btn) {
   switch (action) {
+    case 'resetToOpening':
+      resetToOpening();
+      break;
     case 'startCurriculumRec':
       startCurriculumRecommendation();
       break;
@@ -5925,6 +5927,42 @@ async function fetchCurriculaData() {
   }
 }
 
+// ── Reset to Opening ────────────────────────────────────────────────────────
+
+function resetToOpening() {
+  // Clear guided state
+  nuriGuidedState = null;
+  nuriConversationMode = null;
+
+  // Re-render opening choices
+  appendNuriMessage('Mau mulai dari mana?', false);
+
+  const onboarded = localStorage.getItem('tq-nuri-onboarded');
+  const activeCurr = getActiveCurriculum();
+
+  if (!onboarded) {
+    renderQuickReplies([
+      { label: '\u{1F331} Aku baru mulai, bantu aku', message: 'Aku baru mulai belajar Al-Quran, bantu aku', action: 'startCurriculumRec' },
+      { label: '\u{1F4D6} Sudah tahu ayat yang ingin dipelajari', message: 'Aku sudah tahu ayat yang ingin dipelajari', action: 'startVerseMode' },
+      { label: '\u{1F4AC} Aku mau langsung tanya', message: '' },
+    ]);
+  } else if (activeCurr) {
+    renderQuickReplies([
+      { label: '\u25B6 Lanjut belajar', message: 'Lanjut belajar', action: 'resumeCurriculum' },
+      { label: '\u{1F4D6} Pahami surah lain', message: 'Mau pahami surah atau ayat', action: 'startVerseMode' },
+      { label: '\u{1F331} Ganti perjalanan', message: 'Lihat perjalanan belajar lain', action: 'showCurriculaList' },
+      { label: '\u{1F4AC} Tanya langsung', message: '' },
+    ]);
+  } else {
+    renderQuickReplies([
+      { label: '\u{1F4D6} Pahami Surah/Ayat', message: 'Mau pahami surah atau ayat', action: 'startVerseMode' },
+      { label: '\u{1F331} Mulai Perjalanan', message: 'Mulai perjalanan belajar', action: 'startCurriculumRec' },
+      { label: '\u{1F50D} Pilih Tema', message: 'Pilih tema belajar', action: 'showThemePicker' },
+      { label: '\u{1F4AC} Tanya Langsung', message: '' },
+    ]);
+  }
+}
+
 // ── Curriculum Recommendation Flow ──────────────────────────────────────────
 
 function startCurriculumRecommendation() {
@@ -5934,6 +5972,7 @@ function startCurriculumRecommendation() {
     { label: 'Sudah sholat, ingin lebih dalam', message: '', action: 'recLebihDalam' },
     { label: 'Sedang menghadapi masalah', message: '', action: 'recMasalah' },
     { label: 'Ingin memahami tema tertentu', message: '', action: 'recTema' },
+    { label: '\u2190 Kembali ke pilihan', message: '', action: 'resetToOpening' },
   ]);
 }
 
@@ -6371,15 +6410,16 @@ async function showThemePicker() {
     action: 'startGuidedTheme',
   }));
   chips.push({ label: 'Lihat semua \u2192', message: '', action: 'openPathsList' });
+  chips.push({ label: '\u2190 Kembali ke pilihan', message: '', action: 'resetToOpening' });
   renderQuickReplies(chips);
 
   const lastQR = document.querySelector('.nuri-quick-replies:last-of-type');
   if (lastQR) {
-    lastQR.querySelectorAll('.nuri-qr-chip').forEach((btn, i) => {
+    const btns = lastQR.querySelectorAll('.nuri-qr-chip');
+    btns.forEach((btn, i) => {
       if (i < allShown.length) {
         btn.dataset.pathId = allShown[i].id;
-      } else {
-        // "Lihat semua" button
+      } else if (btn.dataset.qrAction === 'openPathsList') {
         btn.addEventListener('click', () => lpShowPathsList('nuri-view'), { once: true });
       }
     });
@@ -6428,6 +6468,9 @@ async function startGuidedTheme(pathId) {
 
 function startVerseMode() {
   appendNuriMessage('Mau memahami surah atau ayat yang mana? \u{1F33F}\n\nContoh:\n\u2022 "Al-Baqarah 255"\n\u2022 "Surah Al-Mulk"\n\u2022 "ayat tentang sabar"\n\nKetik di bawah:', false);
+  renderQuickReplies([
+    { label: '\u2190 Kembali ke pilihan', message: '', action: 'resetToOpening' },
+  ]);
   nuriConversationMode = 'guided_verse';
   nuriGuidedState = { type: 'guided_verse' };
 }
