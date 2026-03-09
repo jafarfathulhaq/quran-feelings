@@ -5203,34 +5203,25 @@ body.about-locked { overflow: hidden; }
 }
 
 .belajar-landing-card {
+  position: relative;
   background: #FFFFFF;
-  border: none;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-rest);
-  padding: 28px 24px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  text-align: left;
-  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px 22px 28px;
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
+.belajar-landing-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.belajar-landing-card:active { transform: scale(0.98); }
 
-.belajar-landing-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-1px);
+.belajar-landing-accent {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, var(--teal-dark), var(--gold));
 }
-
-.belajar-landing-card:active {
-  box-shadow: var(--shadow-pressed);
-  transform: scale(0.98);
-}
-
-.landing-card-icon.belajar {
-  background: rgba(42, 124, 111, 0.08);
-}
+.belajar-landing-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+.belajar-landing-desc { font-size: 13px; color: var(--text-mid); line-height: 1.45; margin-bottom: 10px; }
+.belajar-landing-cta { font-size: 13px; font-weight: 600; color: var(--teal-dark); }
 
 /* ── Belajar view ────────────────────────────────────────────────────────── */
 
