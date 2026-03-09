@@ -270,14 +270,7 @@ let shareActiveVerse     = null;      // verse object being shared
 let shareLastPlatform    = 'wa_chat'; // last selected platform (for preview aspect ratio)
 
 // ── Share Text (WA) state ────────────────────────────────────────────────────
-const DEFAULT_SHARE_PREFS = {
-  feeling:     true,
-  arabic:      true,
-  translation: true,
-  reference:   true,
-  reflection:  false,
-  tafsir:      false,   // false | 'ringkasan' | 'lengkap'
-};
+// DEFAULT_SHARE_PREFS defined in data.js
 
 function loadSharePrefs() {
   try {
