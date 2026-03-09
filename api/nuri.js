@@ -196,19 +196,31 @@ export default async function handler(req, res) {
     });
   }
 
-  const { mode, messages, conversation_mode, opted_in, session_id, exchange_count } = req.body;
+  const { mode, messages, conversation_mode, opted_in, session_id, exchange_count, lesson_context } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'invalid_request' });
   }
 
   try {
+    // Build system prompt — append lesson context if coming from Renungan bridge
+    let systemPrompt = NURI_SYSTEM_PROMPT;
+    if (lesson_context && lesson_context.renungan_questions && lesson_context.renungan_questions.length > 0) {
+      systemPrompt += `\n\nKONTEKS PELAJARAN:
+The user just completed a lesson about "${lesson_context.lesson_title || ''}" from the path "${lesson_context.path_title || ''}".
+The verse was ${lesson_context.verse_ref || ''}. The key insight was: "${lesson_context.insight_pull_quote || ''}".
+The reflection question was: "${lesson_context.renungan_questions[0] || ''}".
+
+Re-ask this reflection question naturally in your first response.
+Then discuss their answer warmly and connect it back to the verse.`;
+    }
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 400,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: NURI_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         ...messages,
       ],
     });

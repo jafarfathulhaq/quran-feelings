@@ -226,6 +226,11 @@ function showBelajarMain() {
   const main = document.getElementById('belajar-main');
   ob.style.display = 'none';
   main.style.display = 'flex';
+  // Show loading placeholder while content fetches
+  const content = document.querySelector('.belajar-content');
+  if (content) {
+    content.innerHTML = '<div class="belajar-loading"><div class="belajar-loading-icon">\uD83D\uDCD6</div><div class="belajar-loading-text">Nuri sedang menyiapkan...</div></div>';
+  }
   renderBelajarContent();
 }
 
@@ -255,10 +260,21 @@ async function fetchBelajarPaths() {
   }
 }
 
-function renderBelajarContent() {
+async function renderBelajarContent() {
   renderBelajarProgress();
-  renderBelajarKurrikulumTab();
-  renderBelajarTemaTab();
+  // Restore tab panel HTML structure (replaces loading placeholder)
+  const content = document.querySelector('.belajar-content');
+  if (content) {
+    content.innerHTML = '<div id="belajar-tab-kurikulum" class="belajar-tab-panel"></div><div id="belajar-tab-tema" class="belajar-tab-panel" style="display:none"></div>';
+  }
+  // Re-apply active tab visibility
+  if (belajarActiveTab === 'tema') {
+    const kurPanel = document.getElementById('belajar-tab-kurikulum');
+    const temaPanel = document.getElementById('belajar-tab-tema');
+    if (kurPanel) kurPanel.style.display = 'none';
+    if (temaPanel) temaPanel.style.display = '';
+  }
+  await Promise.all([renderBelajarKurrikulumTab(), renderBelajarTemaTab()]);
 }
 
 function renderBelajarProgress() {
@@ -694,8 +710,7 @@ async function openPathPreview(pathId) {
       <div class="pp-hero">
         <button class="pp-back" data-action="ppBack">\u2190 Kembali</button>
         <div class="pp-hero-content">
-          <div class="pp-emoji">${escapeHtml(data.emoji || '\uD83D\uDCD6')}</div>
-          <h2 class="pp-title">${escapeHtml(data.title)}</h2>
+          <h2 class="pp-title">${escapeHtml(data.emoji || '\uD83D\uDCD6')}\u00A0\u00A0${escapeHtml(data.title)}</h2>
           <p class="pp-desc">${escapeHtml(data.description || '')}</p>
           ${data.path_intro ? `<p class="pp-intro">${escapeHtml(data.path_intro)}</p>` : ''}
           <div class="pp-progress-info">${completedCount} / ${lcTotalLessons} pelajaran selesai</div>
@@ -808,8 +823,7 @@ function renderLessonShell() {
   headerEl.innerHTML = `
     <button class="lc-back" data-action="lcBack">\u2190</button>
     <div class="lc-header-info">
-      <div class="lc-header-title" id="lc-h-title">${escapeHtml(lcPathTitle)}</div>
-      <div class="lc-header-sub" id="lc-h-sub">Pelajaran ${lesson.order_num} dari ${lcTotalLessons} \u00B7 ${escapeHtml(lesson.title)}</div>
+      <div class="lc-header-title" id="lc-h-title">${escapeHtml(lcPathTitle)} \u00B7 ${lesson.order_num}/${lcTotalLessons} \u00B7 ${escapeHtml(lesson.title)}</div>
     </div>
     <div class="lc-lesson-dots" id="lc-lesson-dots">
       ${Array.from({length: lcTotalLessons}, (_, i) => {
@@ -926,9 +940,21 @@ function renderCardContent() {
 
 function buildCardVerse(verse, anim) {
   if (!verse || !verse.text_arabic) return '<div class="lc-card-verse" style="animation: ' + anim + ' 0.3s ease"><p style="color:white">Data ayat tidak tersedia</p></div>';
+
+  // Bismillah separation (Fix 5b)
+  const surahNum = verse.surah_number;
+  const rawArabic = verse.text_arabic;
+  const strippedArabic = stripBismillah(rawArabic, surahNum);
+  const showBismillah = surahNum !== 1 && surahNum !== 9 && strippedArabic !== rawArabic;
+
+  // Adaptive font size (Fix 5d)
+  const arabicLen = strippedArabic.length;
+  const fontSize = arabicLen <= 50 ? 28 : arabicLen <= 120 ? 24 : arabicLen <= 200 ? 20 : 18;
+
   return `<div class="lc-card-verse" style="animation: ${anim} 0.3s ease">
+    ${showBismillah ? '<div class="lc-verse-bismillah">\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064E\u0647\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0650\u064A\u0645\u0650</div>' : ''}
     <div class="lc-verse-ref">QS. ${escapeHtml(verse.surah_name)}: ${verse.ayah_number}</div>
-    <div class="lc-verse-arabic">${escapeHtml(verse.text_arabic)}</div>
+    <div class="lc-verse-arabic" style="font-size: ${fontSize}px">${escapeHtml(strippedArabic)}</div>
     <div class="lc-verse-divider"></div>
     <div class="lc-verse-translation">${escapeHtml(verse.text_indonesian)}</div>
     <button class="lc-audio-btn" data-action="lcPlayAudio" data-src="verse">\u25B6 Dengarkan Ayat</button>
@@ -945,7 +971,7 @@ function buildCardInsight(insight) {
     : `<div class="lc-insight-quote-dark">${escapeHtml(pq)}</div>`;
 
   return `<div class="lc-insight-body">
-    <div class="lc-card-label lc-label-teal">\u2726 Insight</div>
+    <div class="lc-card-label lc-label-teal">\u2726 MAKNA UTAMA</div>
     <div class="lc-insight-quote">${quoteHtml}</div>
     <div class="lc-insight-divider"></div>
     <div class="lc-insight-text">${escapeHtml(insight.explanation || '')}</div>
@@ -1077,7 +1103,7 @@ function renderBottomNav() {
   html += lcCardIdx > 0
     ? `<button class="lc-nav-prev" data-action="lcPrev">\u2190 Sebelumnya</button>`
     : '<span class="lc-nav-prev" style="visibility:hidden">\u2190 Sebelumnya</span>';
-  html += `<span class="lc-nav-counter">${lcCardIdx + 1} / ${total}</span>`;
+  html += `<span class="lc-nav-counter"${isVerse ? ' style="visibility:hidden"' : ''}>${lcCardIdx + 1} / ${total}</span>`;
 
   if (!isVerse && lcCardIdx < total - 1) {
     const next = lcCards[lcCardIdx + 1];
@@ -1243,11 +1269,11 @@ function lcNuriBridge(from) {
   const content = lcData.content;
 
   window._nuriLessonContext = {
-    verse_ref: verse ? `${verse.surah_name}: ${verse.ayah_number}` : '',
-    lesson_title: lcData.lesson.title,
     path_title: lcPathTitle,
-    insight: content?.insight?.pull_quote || '',
-    reflection_question: content?.renungan?.questions?.[0] || '',
+    lesson_title: lcData.lesson.title,
+    verse_ref: verse ? `${verse.surah_name}: ${verse.ayah_number}` : '',
+    insight_pull_quote: content?.insight?.pull_quote || '',
+    renungan_questions: content?.renungan?.questions || [],
   };
 
   window._lcReturnTo = { cardIdx: lcCardIdx };

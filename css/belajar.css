@@ -144,46 +144,48 @@
 
 /* Header */
 .belajar-header {
-  padding: 14px 16px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.belajar-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.belajar-header-back {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--text-mid);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
 }
 
-.belajar-header-info {
-  text-align: right;
+.belajar-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .belajar-header-title {
-  font-size: 1rem;
+  font-size: 0.94rem;
   font-weight: 600;
   color: var(--text-dark);
 }
 
-.belajar-header-subtitle {
-  font-size: 0.69rem;
-  color: var(--text-muted);
-}
-
 .belajar-header-avatar {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--teal-dark);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 0.81rem;
+  font-size: 0.69rem;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* Active curriculum progress card */
@@ -514,58 +516,25 @@
 
 /* Nuri entry (sticky bottom) */
 .belajar-nuri-entry {
-  padding: 10px 14px 14px;
+  padding: 6px 14px 10px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .belajar-nuri-entry-inner {
-  background: #F9F9F9;
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  padding: 8px 4px;
   cursor: pointer;
-  transition: background 0.15s;
+  text-align: center;
 }
 
 .belajar-nuri-entry-inner:active {
-  background: #F0F0F0;
-}
-
-.belajar-nuri-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--teal-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .belajar-nuri-entry-text {
-  flex: 1;
-}
-
-.belajar-nuri-entry-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-.belajar-nuri-entry-sub {
-  font-size: 0.69rem;
-  color: var(--text-muted);
-}
-
-.belajar-nuri-chevron {
-  color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.81rem;
+  color: var(--teal-dark);
+  font-weight: 500;
 }
 
 /* ── Belajar onboarding ──────────────────────────────────────────────────── */
@@ -986,8 +955,7 @@
   padding: 16px 20px 24px; flex-shrink: 0;
 }
 .pp-back { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 14px; cursor: pointer; padding: 4px 0; margin-bottom: 12px; font-family: inherit; }
-.pp-hero-content { text-align: center; padding: 8px 0 0; }
-.pp-emoji { font-size: 40px; margin-bottom: 10px; }
+.pp-hero-content { text-align: center; padding: 0; }
 .pp-title { color: white; font-size: 22px; font-weight: 700; margin: 0 0 8px; }
 .pp-desc { color: rgba(255,255,255,0.65); font-size: 14px; line-height: 1.5; margin: 0 0 10px; }
 .pp-intro { color: rgba(255,255,255,0.5); font-size: 13px; font-style: italic; line-height: 1.5; margin: 0 0 10px; }
@@ -1078,7 +1046,7 @@
 .lc-bottom.lc-bottom-dark { background: #0A0F1E; padding-top: 10px; }
 .lc-gold-btn {
   width: 100%; background: #C4973B; color: white; border: none; border-radius: 14px;
-  padding: 14px 0; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 8px; font-family: inherit;
+  padding: 12px 0; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 8px; font-family: inherit;
 }
 .lc-nav-row { display: flex; justify-content: space-between; align-items: center; }
 .lc-nav-prev { font-size: 13px; background: none; border: none; font-weight: 500; cursor: pointer; color: var(--text-muted); padding: 6px 0; font-family: inherit; }
@@ -1089,7 +1057,7 @@
 
 /* Audio button (shared) */
 .lc-audio-btn {
-  background: transparent; border: 1px solid rgba(255,255,255,0.3); border-radius: 24px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.4); border-radius: 24px;
   padding: 10px 24px; color: rgba(255,255,255,0.7); font-size: 13px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 8px; font-family: inherit;
 }
@@ -1124,7 +1092,7 @@
 .lc-card-footer-link span { font-size: 14px; color: var(--teal-dark); font-weight: 600; }
 
 /* ── Card: Insight ── */
-.lc-insight-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 28px 24px; }
+.lc-insight-body { flex: 1; display: flex; flex-direction: column; padding: 28px 24px; }
 .lc-insight-quote { border-left: 3px solid var(--teal-dark); padding-left: 18px; margin-bottom: 24px; }
 .lc-insight-quote-dark { font-size: 21px; font-weight: 700; color: var(--text-dark); line-height: 1.4; }
 .lc-insight-quote-teal { font-size: 21px; font-weight: 700; color: var(--teal-dark); line-height: 1.4; margin-top: 6px; }
@@ -1173,7 +1141,7 @@
 
 /* ── Card: Renungan ── */
 .lc-card-renungan-bg { background: linear-gradient(180deg, white 0%, rgba(42,124,111,0.024) 100%) !important; }
-.lc-renungan-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 28px 24px; }
+.lc-renungan-body { flex: 1; display: flex; flex-direction: column; padding: 28px 24px; }
 .lc-renungan-scenario { background: #FAFAF5; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; border: 1px solid rgba(196,151,59,0.13); border-left: 3px solid rgba(196,151,59,0.4); }
 .lc-renungan-scenario-text { font-size: 14px; color: var(--text-mid); line-height: 1.65; font-style: italic; }
 .lc-renungan-divider { height: 1px; background: var(--border); margin-bottom: 18px; }
@@ -1216,6 +1184,29 @@
   width: 32px; height: 32px; border: 3px solid var(--border);
   border-top: 3px solid var(--teal-dark); border-radius: 50%;
   animation: lcSpin 0.8s linear infinite;
+}
+
+/* Bismillah on verse card */
+.lc-verse-bismillah {
+  font-family: 'Amiri', serif; font-size: 18px; color: #C4973B;
+  direction: rtl; text-align: center; margin-bottom: 20px; opacity: 0.85;
+}
+
+/* Belajar view loading state */
+.belajar-loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 60px 20px; gap: 12px;
+}
+.belajar-loading-icon {
+  font-size: 2rem;
+  animation: belajarLoadBounce 1.2s ease-in-out infinite;
+}
+.belajar-loading-text {
+  font-size: 0.875rem; color: var(--text-muted);
+}
+@keyframes belajarLoadBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 /* Swipe animations */

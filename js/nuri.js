@@ -27,7 +27,21 @@ function startNuriSession() {
 
   switchView('nuri-view');
 
-  appendNuriMessage(getNuriOpeningMessage() + '\n\nAda yang ingin kamu tanyakan atau pelajari dari Al-Qur\'an?', false);
+  const lessonCtx = window._nuriLessonContext;
+
+  if (lessonCtx && lessonCtx.renungan_questions && lessonCtx.renungan_questions.length > 0) {
+    // Came from lesson renungan — contextual opening + auto-send
+    appendNuriMessage('Halo! Kamu baru selesai belajar tentang *' + (lessonCtx.path_title || '') + '*. Yuk, kita bahas renungannya bareng! \uD83C\uDF3F', false);
+
+    const autoMsg = 'Saya baru belajar tentang ' + (lessonCtx.path_title || '') + ' dan mau bahas renungan ini';
+    appendUserMessage(autoMsg);
+    nuriMessages.push({ role: 'user', content: autoMsg });
+
+    // Send to API with lesson context (isRetry=true to skip re-appending user bubble)
+    _sendNuriMessageInternal(autoMsg, true);
+  } else {
+    appendNuriMessage(getNuriOpeningMessage() + '\n\nAda yang ingin kamu tanyakan atau pelajari dari Al-Qur\'an?', false);
+  }
 
   logEvent('nuri_session_started', { session_id: nuriSessionId });
 }
@@ -252,6 +266,7 @@ async function _sendNuriMessageInternal(text, isRetry) {
       opted_in: nuriOptedIn,
       session_id: nuriSessionId,
       exchange_count: nuriExchangeCount,
+      lesson_context: window._nuriLessonContext || null,
     });
 
     // Auto-retry once on failure (handles Vercel cold-start 500s)
@@ -345,7 +360,12 @@ document.getElementById('nuriBackBtn')?.addEventListener('click', () => {
     const returnTo = window._lcReturnTo;
     window._lcReturnTo = null;
     window._nuriLessonContext = null;
-    switchView(returnTo);
+    // Return to lesson-view at the correct card
+    switchView('lesson-view');
+    if (typeof lcCardIdx !== 'undefined' && returnTo.cardIdx !== undefined) {
+      lcCardIdx = returnTo.cardIdx;
+      renderLcCard();
+    }
   } else {
     switchView('landing-view');
   }
