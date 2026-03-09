@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
       const { data: verseData } = await supabase
         .from('quran_verses')
-        .select('surah_number, verse_number, surah_name, text_arabic, text_indonesian, tafsir_summary, tafsir_kemenag, tafsir_ibnu_kathir_id, tafsir_quraish_shihab, asbabun_nuzul_id')
+        .select('surah_number, verse_number, surah_name, arabic, translation, tafsir_summary, tafsir_kemenag, tafsir_ibnu_kathir_id, tafsir_quraish_shihab, asbabun_nuzul_id')
         .eq('surah_name', surahName)
         .eq('verse_number', ayah)
         .single();
@@ -50,8 +50,8 @@ export default async function handler(req, res) {
           surah_number: verseData.surah_number,
           ayah_number: verseData.verse_number,
           surah_name: verseData.surah_name,
-          text_arabic: verseData.text_arabic,
-          text_indonesian: verseData.text_indonesian,
+          text_arabic: verseData.arabic,
+          text_indonesian: verseData.translation,
           tafsir_summary: verseData.tafsir_summary,
           tafsir_kemenag: verseData.tafsir_kemenag,
           tafsir_ibnu_kathir_id: verseData.tafsir_ibnu_kathir_id,
@@ -66,15 +66,15 @@ export default async function handler(req, res) {
     if (content.doa && content.doa.surah && content.doa.ayah) {
       const { data: doaData } = await supabase
         .from('quran_verses')
-        .select('text_arabic, text_indonesian, surah_name')
+        .select('arabic, translation, surah_name')
         .eq('surah_number', content.doa.surah)
         .eq('verse_number', content.doa.ayah)
         .single();
 
       if (doaData) {
         doa_verse = {
-          text_arabic: doaData.text_arabic,
-          text_indonesian: doaData.text_indonesian,
+          text_arabic: doaData.arabic,
+          text_indonesian: doaData.translation,
           surah_name: doaData.surah_name,
         };
       }
