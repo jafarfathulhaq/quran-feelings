@@ -712,7 +712,6 @@ async function openPathPreview(pathId) {
         <div class="pp-hero-content">
           <h2 class="pp-title">${escapeHtml(data.emoji || '\uD83D\uDCD6')}\u00A0\u00A0${escapeHtml(data.title)}</h2>
           <p class="pp-desc">${escapeHtml(data.description || '')}</p>
-          ${data.path_intro ? `<p class="pp-intro">${escapeHtml(data.path_intro)}</p>` : ''}
           <div class="pp-progress-info">${completedCount} / ${lcTotalLessons} pelajaran selesai</div>
         </div>
       </div>

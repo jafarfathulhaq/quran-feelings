@@ -958,7 +958,6 @@
 .pp-hero-content { text-align: center; padding: 0; }
 .pp-title { color: white; font-size: 22px; font-weight: 700; margin: 0 0 8px; }
 .pp-desc { color: rgba(255,255,255,0.65); font-size: 14px; line-height: 1.5; margin: 0 0 10px; }
-.pp-intro { color: rgba(255,255,255,0.5); font-size: 13px; font-style: italic; line-height: 1.5; margin: 0 0 10px; }
 .pp-progress-info { color: var(--gold); font-size: 12px; font-weight: 600; }
 
 .pp-lessons { flex: 1; overflow-y: auto; padding: 10px 16px 16px; background: var(--bg-landing); }
