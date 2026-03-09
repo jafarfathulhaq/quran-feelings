@@ -1,12 +1,12 @@
 # CLAUDE.md — TemuQuran
 
 ## Project overview
-**TemuQuran** — a privacy-first web app with five modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations, (3) **Jelajahi Al-Qur'an** — users browse and read Quran verses by surah, juz, or natural language query (no AI needed for presets), (4) **Ajarkan Anakku** — helps Muslim parents explain Qur'anic concepts to children using pre-generated, age-appropriate content (no live AI for presets), (5) **Belajar Bareng Nuri** — multi-turn conversational Quran learning companion (chat mode). No user text is ever stored.
+**TemuQuran** — a privacy-first web app with five modes: (1) **Curhat** — users describe feelings and receive emotionally resonant Qur'anic verses, (2) **Panduan Hidup** — users ask life-guidance questions and receive topically relevant Qur'anic verses with scholarly explanations, (3) **Jelajahi Al-Qur'an** — users browse and read Quran verses by surah, juz, or natural language query (no AI needed for presets), (4) **Ajarkan Anakku** — helps Muslim parents explain Qur'anic concepts to children using pre-generated, age-appropriate content (no live AI for presets), (5) **Belajar Bareng Nuri** — multi-turn conversational Quran learning companion with guided curriculum mode, learning paths, and free chat. No user text is ever stored.
 
 - **Live URL**: https://temuquran.com (custom domain on Vercel, DNS via Namecheap)
 - **Legacy URL**: https://quran-feelings.vercel.app (redirects to temuquran.com)
 - **Deploy**: `git push origin main` → auto-deploys on Vercel (no build step)
-- **Preview**: Use the live Vercel URL in Chrome. `preview_start` won't work — macOS sandbox blocks serving from `~/Documents`.
+- **Preview**: `preview_start` with `quran-feelings` config in `.claude/launch.json` (port 8766). API calls to Supabase/OpenAI only work on deployed Vercel, not locally.
 
 ---
 
@@ -24,13 +24,16 @@
 
 ## Key files
 ```
-index.html          — single-page shell (7 views: landing-view, selection-view, panduan-view, jelajahi-view, ajarkan-view, verses-view, nuri-view)
+index.html          — single-page shell (9 views: landing-view, selection-view, panduan-view, jelajahi-view, ajarkan-view, verses-view, nuri-view, journal-view, paths-list-view + path-preview-view + lesson-view + path-complete-view)
 package.json        — dependencies: web-push, @supabase/supabase-js, openai
 style.css           — all styles, no framework
 app.js              — all frontend JS, no framework, no build
 api/
   get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select), mode-aware (curhat/panduan/jelajahi/ajarkan)
-  nuri.js           — Nuri chat API (rate-limit → GPT-4o-mini JSON → verse lookup/semantic fallback → tafsir grounding → placeholder replacement)
+  nuri.js           — Nuri chat API (rate-limit → GPT-4o-mini JSON → verse lookup/semantic fallback → tafsir grounding → placeholder replacement). Also handles guided learning state.
+  curricula.js      — GET /api/curricula — returns 9 curricula with path details, lesson counts
+  learning-paths.js — GET /api/learning-paths, GET /api/learning-paths/[pathId], GET /api/learning-paths/suggest
+  learning-paths/lesson/[lessonId].js — POST, GPT lesson generation (handles 429 rate limit)
   log-event.js      — privacy-safe analytics proxy (event allowlist, no user text)
   verse-of-day.js   — serves a daily verse from data/verses.json, cached by day
 data/verses.json    — curated verses for Verse of the Day feature
@@ -43,6 +46,8 @@ scripts/
   seed_asbabun_nuzul.py      — fetches English asbabun nuzul from spa5k/tafsir_api (Al-Wahidi)
   translate_asbabun_nuzul.py  — translates to Indonesian via OpenAI Batch API
   seed_ajarkan.py            — seeds ajarkan_queries table (325 questions × 2 age groups)
+  seed-curricula.mjs         — seeds curricula table (9 curricula with path mappings)
+nuri-decision-tree.html — interactive visualization of all Nuri conversation branching logic (29 flow nodes, dev reference only, uncommitted)
 qris.png            — QRIS payment QR code image for the Dukung (support) section
 vercel.json         — maxDuration 30s, security headers (CSP, X-Frame-Options, etc.), redirect vercel.app → temuquran.com
 ```
@@ -113,7 +118,8 @@ Valid event types:
 `ajarkan_category_tapped`, `ajarkan_question_selected`, `ajarkan_question_filtered`,
 `ajarkan_conversation_copied`, `ajarkan_penjelasan_copied`, `ajarkan_aktivitas_viewed`,
 `ajarkan_verse_expanded`, `ajarkan_card_swiped`, `ajarkan_panduan_fallback`, `ajarkan_query_miss`,
-`nuri_session_started`, `nuri_exchange_completed`, `nuri_error`, `nuri_session_ended`
+`nuri_session_started`, `nuri_exchange_completed`, `nuri_error`, `nuri_session_ended`,
+`lp_path_started`, `lp_lesson_viewed`, `lp_path_completed`, `lp_audio_played`
 
 To query analytics:
 ```sql
@@ -355,10 +361,13 @@ Priority order agreed with owner:
 ### API (`api/nuri.js`)
 - **Method**: POST
 - **Model**: `gpt-4o-mini` with `response_format: { type: 'json_object' }`
-- **Returns**: `{ nuri_response_formatted, nuri_response_raw, conversation_mode, verses[], tafsir_context }`
-- **Rate limit**: 20 requests / IP / hour (in-memory)
+- **Returns**: `{ nuri_response_formatted, nuri_response_raw, conversation_mode, verses[], tafsir_context, quick_replies[] }`
+- **Rate limit**: 60 requests / IP / hour (in-memory)
 - **maxDuration**: 30s (in `vercel.json`)
+- **max_tokens**: 400
 - **Dependencies**: `openai` npm package (in `package.json`)
+- **Guided learning**: Accepts `guided_state` in request body. `buildGuidedPromptAddendum(gs)` appends mode-specific system prompt. Verse pre-fetching: when guided, looks up verse tafsir and injects into prompt context.
+- **Quick replies**: GPT returns `quick_replies` field in JSON, sliced to max 4 items
 
 ### Multi-verse placeholder system
 GPT is instructed NEVER to write Arabic, translations, or verse references directly in text.
@@ -404,8 +413,11 @@ GPT places `{VERSE_1}` (and optionally `{VERSE_2}`) in its response text, with a
 - Clicking retry removes the error bubble and retry button before re-sending
 - `nuriLastFailedMessage` state variable tracks the last failed message text
 
-### Varied opening messages
-`NURI_OPENING_MESSAGES` array (3 variants) + `getNuriOpeningMessage()` random picker. Each opening has a different personality angle but same warmth. Displayed when `startNuriSession()` is called.
+### Opening experience
+- 3 variants in `startNuriSession()`: first-time (warm intro + 3 buttons), returning with active curriculum (progress card + 4 buttons), returning without (greeting + 4 buttons)
+- `getNuriOpeningMessage()` — seasonal: Friday greeting (`getDay()===5`), Ramadan date range check
+- Opening is **client-side only** — no API call
+- 4 modes: Pahami Surah/Ayat, Mulai Perjalanan Belajar (9 curricula), Pilih Tema (50 paths), Tanya Langsung (free chat)
 
 ### System prompt design
 - **Character**: Warm, wise friend — not ustaz, not chatbot. Casual Indonesian, occasionally playful.
@@ -414,9 +426,10 @@ GPT places `{VERSE_1}` (and optionally `{VERSE_2}`) in its response text, with a
 - **Format**: JSON with `nuri_response`, `verse_refs[]`, `conversation_mode`
 - **Closing**: Flexible — can be question, warm statement, or reflection prompt (not forced question every time)
 - **Mode detection**: First exchange only — `deep_dive` (specific surah/ayat) vs `exploration` (theme/topic/feeling)
-- **Word limit**: 150 words max per response, `max_tokens: 300`
+- **Word limit**: 150 words max per response, `max_tokens: 400`
+- **Quick replies**: GPT returns `quick_replies` JSON field; free chat includes upsell to guided modes
 
-### State (all session-scoped, no localStorage)
+### State (session-scoped)
 ```
 nuriMessages[]         — full conversation history (plain text verse refs in assistant messages)
 nuriOptedIn            — boolean, default false
@@ -425,19 +438,24 @@ nuriExchangeCount      — increments per successful exchange
 nuriConversationMode   — 'deep_dive' | 'exploration' | null
 nuriIsTyping           — prevents double-sends
 nuriLastFailedMessage  — text of last failed message (for retry)
+nuriGuidedState        — { type, curriculum_id, path_index, path_id, lesson, total_lessons, total_paths, verse_ref, lesson_title, path_title }
+nuriCurriculaCache     — cached /api/curricula response
 ```
 
 ### Cost controls
 ```
-maxExchanges: 20       — hard session limit
+maxExchanges: 20       — hard session limit for free chat (40 for guided modes)
 contextWindow: 8       — last 8 exchanges sent to API (×2 for user+assistant pairs)
-max_tokens: 300        — set in GPT API call
+max_tokens: 400        — set in GPT API call
 ```
 
 ### UI components
 - **Chat bubbles**: User messages (teal, right-aligned), Nuri messages (light bg, left-aligned with avatar)
 - **Typing indicator**: "Nuri sedang mengetik..." with animated dots
-- **Verse blocks**: Arabic (right-aligned, large font) + italic translation + teal reference
+- **Verse blocks (free chat)**: Arabic (right-aligned, large font) + italic translation + teal reference. Uses `{ARABIC}...{/ARABIC}` markers via `formatNuriMessage()`
+- **Verse card (guided lessons)**: Collapsible dark gradient card (`.nuri-vc`). Collapsed: gold "QS. {ref}" + "Ketuk untuk baca ayat" hint + chevron. Expanded: Arabic text (white, Amiri, RTL) + italic translation + "Dengarkan" audio button. Toggle via `data-action="toggleNuriVc"`. Audio via `data-action="nuriVcPlayAudio"` with `e.stopPropagation()`. Animation: `max-height: 0 → 600px` (0.35s ease). Needs `flex-shrink: 0` because `.nuri-messages` is a flex column.
+- **Quick replies**: Teal outline chips (`.nuri-qr-chip`) in CSS Grid container (`.nuri-quick-replies`). 2-col default, `.single-col` variant. **Never use flexbox** — `flex-basis` applies to height in column direction, breaking layout.
+- **Curriculum progress card**: Inline card with emoji, title, progress bar. Rendered by `renderCurriculumProgressCard()`
 - **Retry button**: `.nuri-retry-btn` — outline style, border-radius 20px, teal accent, hover lifts
 - **Session end**: `.nuri-session-end` message when `maxExchanges` reached
 - **Opt-in card**: "Bantu Nuri berkembang" with checkbox, shown after opening message
@@ -450,3 +468,91 @@ nuri_feedback          — thumbs up/down per exchange, only when opted_in = tru
 
 ### MVP scope
 Dewasa mode ONLY. Do not build kids mode.
+
+---
+
+## Learning Paths (Perjalanan Belajar)
+
+### Database
+- **`learning_paths`** (50 rows) — path metadata: id, title, description, type (situation/topic), verse refs
+- **`lessons`** (250 rows) — 5 lessons per path, each with verse_ref, verse texts, title
+- **`curricula`** (9 rows) — curated sequences of paths, RLS enabled with public read
+- 16 surah name corrections applied to seed SQL before inserting
+
+### API endpoints
+- `GET /api/learning-paths` — list all paths grouped by type (Cache-Control: 1hr CDN)
+- `GET /api/learning-paths/[pathId]` — path detail + lessons (Cache-Control: 1hr CDN)
+- `GET /api/learning-paths/suggest` — verse overlap matching
+- `POST /api/learning-paths/lesson/[lessonId]/generate` — GPT lesson generation (handles 429 rate limit)
+- `GET /api/curricula` — returns 9 curricula with path details, lesson counts (Cache-Control: 1hr CDN)
+
+### Frontend screens
+- `paths-list-view` — tabbed list (Situasi / Tema), path cards with shadow-based styling
+- `path-preview-view` — dark hero gradient header + lesson list with progress indicators
+- `lesson-view` — dark Arabic section (`.lp-verse-dark`) + white explanation/reflection sections
+- `path-complete-view` — completion screen with next path suggestions
+
+### Key patterns
+- **Lesson ID**: `${pathId}-${orderNum}` (e.g., `mencari-makna-hidup-1`)
+- **Lesson cache**: in-memory `lpLessonCache` + `lpPreloadAllLessons()` fire-and-forget on path start
+- **Progress**: localStorage key `nuri-progress`
+- **Dark gradient**: `linear-gradient(135deg, #0A0F1E 0%, #0F2044 70%, #0D3B6E 100%)` — used in verse sections and Nuri verse card
+- **Cards**: Shadow-based (`var(--shadow-rest)`) not border-based. Radius `var(--radius)` (20px).
+- **Audio on dark bg**: Outlined style (transparent bg, white border), gold when playing
+- **Scoped `.hidden`**: NOT a global rule. Each component needs its own: `.lp-tab-panel.hidden`, etc.
+- **Event delegation**: Single `document.addEventListener('click')` via `data-action` attributes
+- **XSS**: All GPT output wrapped in `escapeHtml()` before innerHTML
+
+---
+
+## Nuri Guided Learning
+
+### Quick-Reply System
+- `renderQuickReplies(replies, containerEl)` — renders teal outline chips in CSS Grid (2-col default, `.single-col` variant)
+- `handleQuickReplyTap(btn, container)` — marks selected, disables siblings, routes to action handler
+- `handleQuickReplyAction(action, btn)` — central switch (~20 actions)
+- Quick replies: API-generated (from GPT `quick_replies` field) + client-generated (standard lesson navigation)
+- **CSS Grid only** — never flexbox. `.nuri-quick-replies` uses `grid-template-columns: 1fr 1fr` / `1fr`
+
+### Guided State
+- **Single source of truth**: `nuriGuidedState` object — `{ type, curriculum_id, path_index, path_id, lesson, total_lessons, total_paths, verse_ref, lesson_title, path_title }`
+- **3 guided types**: `guided_verse`, `guided_theme`, `guided_curriculum`
+- **Exchange limit**: 40 for guided modes (vs 20 free chat)
+- **API integration**: `guided_state` sent in request body, `buildGuidedPromptAddendum(gs)` appends mode-specific system prompt
+
+### Curriculum Flow (Deterministic, No GPT)
+- `CURRICULUM_RECOMMENDATIONS` map — deterministic branching based on user's self-assessment
+- `NEXT_CURRICULUM` map — suggests next curriculum after completion
+- `startCurriculumRecommendation()` → branching → `recommendCurriculum()` → `startCurriculum(curriculumId)`
+- `showAllCurricula()` — fetches `/api/curricula`, groups by audience, renders as quick-reply buttons
+- `fetchCurriculaData()` — fetches + caches in `nuriCurriculaCache`
+
+### Guided Lessons
+- `enterGuidedLesson()` — fetches lesson via `lpGetLessonContent()`, sets `nuriGuidedState`, renders collapsible verse card (`appendNuriVerseCard()`), sends to Nuri API for explanation
+- `advanceToNextLesson()` / `advanceToNextPath()` — manages lesson/path transitions within curriculum
+- `handlePathComplete()` / `handleCurriculumComplete()` — completion flows with next curriculum suggestions
+- **Reflection pacing**: L1=personal, L2=none, L3=understanding check, L4=none, L5=closing (references L1)
+
+### Nuri Verse Card (`.nuri-vc`)
+- `appendNuriVerseCard({ arabicText, translation, verseRef, surah, ayah })` — dark gradient card in chat
+- **Collapsed**: Gold "QS. {ref}" + "Ketuk untuk baca ayat" + chevron
+- **Expanded**: White Arabic (Amiri, RTL) + italic translation + "Dengarkan" audio button
+- **Toggle**: `data-action="toggleNuriVc"` — `.open` class + `aria-expanded`
+- **Audio**: `data-action="nuriVcPlayAudio"` — `e.stopPropagation()` + `playAudio()`
+- **Animation**: `max-height: 0 → 600px` with `transition: 0.35s ease`
+- **Flex fix**: Needs `flex-shrink: 0` because `.nuri-messages` is `display: flex; flex-direction: column`
+- **Scope**: Guided modes only. Free chat still uses `{ARABIC}...{/ARABIC}` markers via `formatNuriMessage()`
+
+### Journal View
+- HTML: `#journal-view` section with `journal-header` + `journal-content`
+- `showJournalView()` — reads `tq-journal` localStorage, renders entries
+- Each entry has `data-action="journalPlay"` / `"journalShare"` buttons
+- Back button returns to `nuri-view`
+
+### localStorage Keys (Guided Learning)
+```
+tq-nuri-onboarded           — 'true' | absent (controls first-time vs returning)
+tq-curriculum-progress      — { currId: { current_path_index, current_lesson, started_at, paths_completed[] } }
+tq-reflection-log           — { pathId: [{ lesson, verse, reflection, date }] }
+tq-journal                  — [{ verse_ref, nuri_explanation, user_reflection, nuri_response, date, path, lesson }]
+```

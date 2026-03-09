@@ -5914,8 +5914,9 @@ document.addEventListener('click', function(e) {
   if (action === 'obSkip') { finishOnboarding(); return; }
   if (action === 'obStartCurriculum') {
     localStorage.setItem('tq-belajar-onboarded', 'true');
-    // TODO: Phase 4 will handle starting a curriculum lesson
-    showBelajarMain();
+    const cid = target.dataset.id;
+    if (cid) openCurriculumFirstPath(cid);
+    else showBelajarMain();
     return;
   }
 
@@ -5925,20 +5926,33 @@ document.addEventListener('click', function(e) {
     return;
   }
   if (action === 'belajarPath') {
-    // TODO: Phase 4 will navigate to path-preview-view
-    console.log('[belajar] open path:', target.dataset.id);
+    openPathPreview(target.dataset.id);
     return;
   }
   if (action === 'belajarCurriculum') {
-    // TODO: Phase 4 will navigate to curriculum first path
-    console.log('[belajar] open curriculum:', target.dataset.id);
+    openCurriculumFirstPath(target.dataset.id);
     return;
   }
   if (action === 'belajarResume') {
-    // TODO: Phase 4 will resume curriculum
-    console.log('[belajar] resume curriculum:', target.dataset.curr);
+    resumeCurriculum(target.dataset.curr);
     return;
   }
+  // Path preview actions
+  if (action === 'ppBack') { switchView('belajar-view'); return; }
+  if (action === 'ppStartLesson') { startLesson(parseInt(target.dataset.idx, 10)); return; }
+  // Lesson view actions
+  if (action === 'lcBack') { switchView('path-preview-view'); return; }
+  if (action === 'lcNext') { lcNext(); return; }
+  if (action === 'lcPrev') { lcPrev(); return; }
+  if (action === 'lcToggleVerseBar') { lcToggleVerseBar(); return; }
+  if (action === 'lcPlayAudio') { lcPlayAudio(target.dataset.src, target); return; }
+  if (action === 'lcOpenTafsir') { if (lcData?.verse) openTafsirOverlay(lcData.verse); return; }
+  if (action === 'lcOpenAsbabun') { if (lcData?.verse) openTafsirOverlay(lcData.verse); return; }
+  if (action === 'lcNuriBridge') { lcNuriBridge(target.dataset.from); return; }
+  if (action === 'lcNextLesson') { lcNextLesson(); return; }
+  if (action === 'lcFinishPath') { switchView('path-preview-view'); return; }
+  if (action === 'lcSave') { showToast('Fitur simpan segera hadir'); return; }
+  if (action === 'lcShare') { showToast('Fitur bagikan segera hadir'); return; }
 });
 
 // Tab switching
@@ -5956,6 +5970,630 @@ document.getElementById('belajarLandingCard')?.addEventListener('click', openBel
 document.getElementById('belajarNuriEntry')?.addEventListener('click', () => {
   startNuriSession();
 });
+
+// ── Path Preview & Lesson View (Swipe Cards) ─────────────────────────────────
+
+let lcData = null;
+let lcCards = [];
+let lcCardIdx = 0;
+let lcAnimDir = 'right';
+let lcVerseBarOpen = false;
+let lcPathId = null;
+let lcPathTitle = '';
+let lcTotalLessons = 5;
+let lcPathLessons = [];
+let lcFromCurriculum = null;
+let lcLessonCache = {};
+
+// Swipe state
+let lcTouchStartX = 0;
+let lcTouchStartY = 0;
+let lcTouchLocked = null;
+let lcIsSwiping = false;
+let lcSwipeX = 0;
+
+function buildLcCards(content, verse) {
+  const cards = [{ id: 'verse', label: 'Ayat' }];
+  cards.push({ id: 'insight', label: 'Insight' });
+  if (verse && (verse.tafsir_summary || verse.asbabun_nuzul_id)) {
+    cards.push({ id: 'konteks', label: 'Konteks' });
+  }
+  if (content.kata_kunci && content.kata_kunci.length > 0) {
+    cards.push({ id: 'katakunci', label: 'Kata Kunci' });
+  }
+  if (content.doa) {
+    cards.push({ id: 'doa', label: 'Doa' });
+  }
+  cards.push({ id: 'renungan', label: 'Renungan' });
+  cards.push({ id: 'actions', label: 'Lanjut' });
+  return cards;
+}
+
+// ── Path Preview ──
+
+async function openPathPreview(pathId) {
+  switchView('path-preview-view');
+  const view = document.getElementById('path-preview-view');
+  view.innerHTML = '<div class="lc-loading"><div class="lc-loading-spinner"></div></div>';
+
+  try {
+    const res = await fetch(`/api/learning-paths/${pathId}`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    lcPathId = data.id;
+    lcPathTitle = data.title;
+    lcPathLessons = data.lessons || [];
+    lcTotalLessons = lcPathLessons.length || 5;
+
+    const progress = JSON.parse(localStorage.getItem('nuri-progress') || '{}');
+    const completedCount = lcPathLessons.filter(l => progress[l.id]).length;
+    const nextIdx = lcPathLessons.findIndex(l => !progress[l.id]);
+    const allDone = completedCount === lcTotalLessons;
+
+    view.innerHTML = `
+      <div class="pp-hero">
+        <button class="pp-back" data-action="ppBack">\u2190 Kembali</button>
+        <div class="pp-hero-content">
+          <div class="pp-emoji">${escapeHtml(data.emoji || '\uD83D\uDCD6')}</div>
+          <h2 class="pp-title">${escapeHtml(data.title)}</h2>
+          <p class="pp-desc">${escapeHtml(data.description || '')}</p>
+          ${data.path_intro ? `<p class="pp-intro">${escapeHtml(data.path_intro)}</p>` : ''}
+          <div class="pp-progress-info">${completedCount} / ${lcTotalLessons} pelajaran selesai</div>
+        </div>
+      </div>
+      <div class="pp-lessons">
+        ${lcPathLessons.map((l, i) => {
+          const done = progress[l.id];
+          const isCurrent = i === (nextIdx >= 0 ? nextIdx : 0);
+          return `
+            <button class="pp-lesson-row ${done ? 'done' : ''} ${isCurrent && !allDone ? 'current' : ''}"
+                    data-action="ppStartLesson" data-idx="${i}">
+              <span class="pp-lesson-num">${done ? '\u2713' : i + 1}</span>
+              <div class="pp-lesson-info">
+                <div class="pp-lesson-title">${escapeHtml(l.title)}</div>
+                <div class="pp-lesson-ref">${escapeHtml(l.verse_ref)}</div>
+              </div>
+              <span class="pp-lesson-chevron">\u203A</span>
+            </button>`;
+        }).join('')}
+      </div>
+      ${!allDone ? `
+        <div class="pp-start-wrap">
+          <button class="pp-start-btn" data-action="ppStartLesson" data-idx="${nextIdx >= 0 ? nextIdx : 0}">
+            ${completedCount > 0 ? 'Lanjut Pelajaran \u2192' : 'Mulai Pelajaran \u2192'}
+          </button>
+        </div>` : `
+        <div class="pp-start-wrap">
+          <div class="pp-complete-msg">\u2728 Semua pelajaran selesai!</div>
+          ${data.path_closing ? `<p class="pp-closing">${escapeHtml(data.path_closing)}</p>` : ''}
+        </div>`}`;
+  } catch (e) {
+    console.error('[path-preview]', e);
+    view.innerHTML = '<div class="lc-loading"><p>Gagal memuat data.</p><button data-action="ppBack">Kembali</button></div>';
+  }
+}
+
+async function openCurriculumFirstPath(curriculumId) {
+  const curricula = await fetchBelajarCurricula();
+  const curr = curricula.find(c => c.id === curriculumId);
+  if (!curr || !curr.paths || curr.paths.length === 0) {
+    showToast('Kurikulum tidak ditemukan');
+    return;
+  }
+  lcFromCurriculum = { id: curriculumId, pathIndex: 0 };
+  openPathPreview(curr.paths[0].id);
+}
+
+async function resumeCurriculum(curriculumId) {
+  const cp = JSON.parse(localStorage.getItem('tq-curriculum-progress') || '{}');
+  const state = cp[curriculumId];
+  const curricula = await fetchBelajarCurricula();
+  const curr = curricula.find(c => c.id === curriculumId);
+  if (!curr || !curr.paths) return;
+
+  const pathIdx = state?.current_path_index || 0;
+  const path = curr.paths[pathIdx] || curr.paths[0];
+  lcFromCurriculum = { id: curriculumId, pathIndex: pathIdx };
+  openPathPreview(path.id);
+}
+
+// ── Start Lesson ──
+
+async function startLesson(lessonIdx) {
+  const lesson = lcPathLessons[lessonIdx];
+  if (!lesson) return;
+
+  switchView('lesson-view');
+  const wrap = document.getElementById('lc-card-wrap');
+  wrap.innerHTML = '<div class="lc-loading"><div class="lc-loading-spinner"></div><div>Memuat pelajaran...</div></div>';
+
+  try {
+    let data = lcLessonCache[lesson.id];
+    if (!data) {
+      const res = await fetch(`/api/learning-paths/lesson/${lesson.id}`);
+      if (!res.ok) throw new Error('Failed');
+      data = await res.json();
+      lcLessonCache[lesson.id] = data;
+    }
+
+    lcData = data;
+
+    // Normalize verse for compatibility with existing playAudio / openTafsirOverlay
+    if (lcData.verse) {
+      lcData.verse.arabic = lcData.verse.text_arabic;
+      lcData.verse.translation = lcData.verse.text_indonesian;
+      lcData.verse.verse_number = lcData.verse.ayah_number;
+      lcData.verse.id = lcData.verse.surah_number + ':' + lcData.verse.ayah_number;
+    }
+
+    lcCards = buildLcCards(lcData.content || {}, lcData.verse || {});
+    lcCardIdx = 0;
+    lcAnimDir = 'right';
+    lcVerseBarOpen = false;
+
+    renderLessonShell();
+    renderLcCard();
+  } catch (e) {
+    console.error('[lesson]', e);
+    wrap.innerHTML = '<div class="lc-loading"><p>Gagal memuat pelajaran.</p><button data-action="lcBack">Kembali</button></div>';
+  }
+}
+
+function renderLessonShell() {
+  const view = document.getElementById('lesson-view');
+  const lesson = lcData.lesson;
+  const verse = lcData.verse;
+
+  const headerEl = document.getElementById('lc-header');
+  headerEl.innerHTML = `
+    <button class="lc-back" data-action="lcBack">\u2190</button>
+    <div class="lc-header-info">
+      <div class="lc-header-title" id="lc-h-title">${escapeHtml(lcPathTitle)}</div>
+      <div class="lc-header-sub" id="lc-h-sub">Pelajaran ${lesson.order_num} dari ${lcTotalLessons} \u00B7 ${escapeHtml(lesson.title)}</div>
+    </div>
+    <div class="lc-lesson-dots" id="lc-lesson-dots">
+      ${Array.from({length: lcTotalLessons}, (_, i) => {
+        const isActive = i + 1 === lesson.order_num;
+        return `<div class="lc-lesson-dot${isActive ? ' active' : ''}"></div>`;
+      }).join('')}
+    </div>`;
+
+  // Verse bar content (hidden initially, shown for non-verse cards)
+  const vbar = document.getElementById('lc-verse-bar');
+  if (verse) {
+    vbar.innerHTML = `
+      <div class="lc-vb-header" data-action="lcToggleVerseBar">
+        <div class="lc-vb-left">
+          <span class="lc-vb-ref">QS. ${escapeHtml(verse.surah_name)}: ${verse.ayah_number}</span>
+          <span class="lc-vb-hint" id="lc-vb-hint">Ketuk untuk baca ayat</span>
+        </div>
+        <span class="lc-vb-chevron" id="lc-vb-chevron">\u25BE</span>
+      </div>
+      <div class="lc-vb-content" id="lc-vb-content" style="display:none">
+        <p class="lc-vb-arabic">${escapeHtml(verse.text_arabic)}</p>
+        <div class="lc-vb-divider"></div>
+        <p class="lc-vb-translation">${escapeHtml(verse.text_indonesian)}</p>
+        <button class="lc-audio-btn lc-audio-dark" data-action="lcPlayAudio" data-src="verse">\u25B6 Dengarkan Ayat</button>
+      </div>`;
+    lcVerseBarOpen = false;
+    vbar.classList.remove('open');
+  }
+
+  // Wire touch events on card area
+  const cardArea = document.getElementById('lc-card-area');
+  cardArea.addEventListener('touchstart', lcHandleTouchStart, { passive: true });
+  cardArea.addEventListener('touchmove', lcHandleTouchMove, { passive: false });
+  cardArea.addEventListener('touchend', lcHandleTouchEnd, { passive: true });
+}
+
+function renderLcCard() {
+  const card = lcCards[lcCardIdx];
+  const isVerse = card.id === 'verse';
+
+  // Header dark/light
+  document.getElementById('lc-header').classList.toggle('lc-header-dark', isVerse);
+
+  // Verse bar and dots visibility
+  document.getElementById('lc-verse-bar').style.display = isVerse ? 'none' : '';
+  document.getElementById('lc-dots-wrap').style.display = isVerse ? 'none' : '';
+  updateLcDots();
+
+  // Card area background
+  const area = document.getElementById('lc-card-area');
+  area.className = `lc-card-area ${isVerse ? 'lc-area-dark' : 'lc-area-light'}`;
+
+  // Card content
+  const wrap = document.getElementById('lc-card-wrap');
+  wrap.style.transform = 'none';
+  wrap.innerHTML = renderCardContent();
+
+  // Bottom nav
+  const bottom = document.getElementById('lc-bottom');
+  bottom.className = `lc-bottom ${isVerse ? 'lc-bottom-dark' : ''}`;
+  bottom.innerHTML = renderBottomNav();
+
+  // Lesson dots colors
+  updateLessonDotColors(isVerse);
+
+  // Mark complete on actions card
+  if (card.id === 'actions') markLessonComplete();
+}
+
+function updateLcDots() {
+  const el = document.getElementById('lc-dots');
+  if (!el) return;
+  el.innerHTML = lcCards.map((c, i) =>
+    `<div class="lc-dot${i < lcCardIdx ? ' done' : ''}${i === lcCardIdx ? ' active' : ''}"></div>`
+  ).join('');
+}
+
+function updateLessonDotColors(isVerse) {
+  const dots = document.querySelectorAll('#lc-lesson-dots .lc-lesson-dot');
+  const orderNum = lcData.lesson.order_num;
+  dots.forEach((dot, i) => {
+    const isActive = i + 1 === orderNum;
+    dot.style.background = isActive
+      ? (isVerse ? '#C4973B' : '#2A7C6F')
+      : (isVerse ? 'rgba(255,255,255,0.15)' : '#ddd');
+  });
+}
+
+// ── Card Content Rendering ──
+
+function renderCardContent() {
+  const card = lcCards[lcCardIdx];
+  const verse = lcData.verse || {};
+  const content = lcData.content || {};
+  const anim = lcAnimDir === 'right' ? 'lcCardInRight' : 'lcCardInLeft';
+
+  if (card.id === 'verse') return buildCardVerse(verse, anim);
+
+  let inner = '';
+  switch (card.id) {
+    case 'insight': inner = buildCardInsight(content.insight); break;
+    case 'konteks': inner = buildCardKonteks(verse); break;
+    case 'katakunci': inner = buildCardKataKunci(content.kata_kunci); break;
+    case 'doa': inner = buildCardDoa(content.doa, lcData.doa_verse); break;
+    case 'renungan': inner = buildCardRenungan(content.renungan); break;
+    case 'actions': inner = buildCardActions(lcData.lesson); break;
+  }
+
+  const extra = card.id === 'katakunci' ? ' lc-card-kk-wrap' : (card.id === 'renungan' ? ' lc-card-renungan-bg' : '');
+  return `<div class="lc-card-outer" style="animation: ${anim} 0.3s ease">
+    <div class="lc-card-white${extra}">${inner}</div>
+  </div>`;
+}
+
+function buildCardVerse(verse, anim) {
+  if (!verse || !verse.text_arabic) return '<div class="lc-card-verse" style="animation: ' + anim + ' 0.3s ease"><p style="color:white">Data ayat tidak tersedia</p></div>';
+  return `<div class="lc-card-verse" style="animation: ${anim} 0.3s ease">
+    <div class="lc-verse-ref">QS. ${escapeHtml(verse.surah_name)}: ${verse.ayah_number}</div>
+    <div class="lc-verse-arabic">${escapeHtml(verse.text_arabic)}</div>
+    <div class="lc-verse-divider"></div>
+    <div class="lc-verse-translation">${escapeHtml(verse.text_indonesian)}</div>
+    <button class="lc-audio-btn" data-action="lcPlayAudio" data-src="verse">\u25B6 Dengarkan Ayat</button>
+  </div>`;
+}
+
+function buildCardInsight(insight) {
+  if (!insight) return '';
+  const pq = insight.pull_quote || '';
+  const lines = pq.split('\n').filter(Boolean);
+  const quoteHtml = lines.length > 1
+    ? `<div class="lc-insight-quote-dark">${escapeHtml(lines[0])}</div>
+       <div class="lc-insight-quote-teal">${escapeHtml(lines.slice(1).join(' '))}</div>`
+    : `<div class="lc-insight-quote-dark">${escapeHtml(pq)}</div>`;
+
+  return `<div class="lc-insight-body">
+    <div class="lc-card-label lc-label-teal">\u2726 Insight</div>
+    <div class="lc-insight-quote">${quoteHtml}</div>
+    <div class="lc-insight-divider"></div>
+    <div class="lc-insight-text">${escapeHtml(insight.explanation || '')}</div>
+    <div class="lc-card-footer-link" data-action="lcOpenTafsir">
+      <span>Baca tafsir lengkap \u25BE</span>
+    </div>
+  </div>`;
+}
+
+function buildCardKonteks(verse) {
+  if (!verse) return '';
+  const summary = verse.tafsir_summary;
+  let summaryText = '';
+  if (summary) {
+    summaryText = typeof summary === 'object' ? (summary.makna_utama?.text || '') : String(summary);
+  }
+  const ringkas = (verse.tafsir_kemenag || '').substring(0, 300);
+
+  return `<div class="lc-konteks-body">
+    <div class="lc-card-label lc-label-gold">\uD83D\uDCDC Konteks Ayat</div>
+    ${summaryText ? `<div class="lc-konteks-text">${escapeHtml(summaryText)}</div>` : ''}
+    ${ringkas ? `
+      <div class="lc-tafsir-ringkas">
+        <div class="lc-tafsir-ringkas-label">Tafsir Ringkas</div>
+        <div class="lc-tafsir-ringkas-text">${escapeHtml(ringkas)}${ringkas.length >= 300 ? '\u2026' : ''}</div>
+      </div>` : ''}
+    ${verse.asbabun_nuzul_id ? `
+      <div class="lc-card-footer-link" data-action="lcOpenAsbabun">
+        <span>Baca sebab turunnya ayat lengkap \u25BE</span>
+      </div>` : ''}
+  </div>`;
+}
+
+function buildCardKataKunci(kataKunci) {
+  if (!kataKunci || kataKunci.length === 0) return '';
+  const words = kataKunci.slice(0, 2);
+  return `<div class="lc-kk-body">
+    <div class="lc-kk-header">
+      <div class="lc-card-label lc-label-gold">\uD83D\uDD24 Kata Kunci</div>
+    </div>
+    ${words.map((w, i) => `
+      ${i > 0 ? '<div class="lc-kk-divider"></div>' : ''}
+      <div class="lc-kk-word">
+        <div class="lc-kk-word-top">
+          <div class="lc-kk-arabic">${escapeHtml(w.arabic || w.word || '')}</div>
+          <div>
+            <div class="lc-kk-trans">${escapeHtml(w.transliteration || '')}</div>
+            <div class="lc-kk-meaning">${escapeHtml(w.meaning || '')}</div>
+          </div>
+        </div>
+        <div class="lc-kk-explain">${escapeHtml(w.explanation || '')}</div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+function buildCardDoa(doa, doaVerse) {
+  if (!doa) return '';
+  const ref = doaVerse ? `QS. ${escapeHtml(doaVerse.surah_name)}: ${doa.ayah}` : `QS. ${doa.surah}: ${doa.ayah}`;
+
+  return `<div class="lc-doa-body">
+    <div class="lc-card-label lc-label-gold">\uD83E\uDD32 Doa Terkait</div>
+    <div class="lc-doa-intro">${escapeHtml(doa.intro || '')}</div>
+    <div class="lc-doa-verse-card">
+      ${doaVerse ? `
+        <div class="lc-doa-arabic">${escapeHtml(doaVerse.text_arabic || '')}</div>
+        <div class="lc-doa-divider"></div>
+        <div class="lc-doa-translation">${escapeHtml(doaVerse.text_indonesian || '')}</div>
+      ` : ''}
+      <div class="lc-doa-ref">${ref}</div>
+      ${doaVerse ? `<div class="lc-doa-audio-wrap"><button class="lc-audio-btn lc-audio-dark" data-action="lcPlayAudio" data-src="doa">\u25B6 Dengarkan Doa</button></div>` : ''}
+    </div>
+    ${doa.practical_tip ? `
+      <div class="lc-tip-box">
+        <div class="lc-tip-text">\uD83D\uDCA1 <strong>${escapeHtml(doa.practical_tip)}</strong></div>
+      </div>` : ''}
+  </div>`;
+}
+
+function buildCardRenungan(renungan) {
+  if (!renungan) return '';
+  const qs = renungan.questions || [];
+  return `<div class="lc-renungan-body">
+    <div class="lc-card-label lc-label-teal">\uD83D\uDCAD Renungan</div>
+    <div class="lc-renungan-scenario">
+      <div class="lc-renungan-scenario-text">${escapeHtml(renungan.scenario || '')}</div>
+    </div>
+    <div class="lc-renungan-divider"></div>
+    ${qs[0] ? `<div class="lc-renungan-q1">${escapeHtml(qs[0])}</div>` : ''}
+    ${qs[1] ? `<div class="lc-renungan-q2">${escapeHtml(qs[1])}</div>` : ''}
+    <div class="lc-renungan-note">Tidak ada jawaban benar atau salah.</div>
+    <button class="lc-nuri-btn" data-action="lcNuriBridge" data-from="renungan">\uD83D\uDCAC Bahas renungan ini dengan Nuri</button>
+  </div>`;
+}
+
+function buildCardActions(lesson) {
+  const orderNum = lesson.order_num;
+  const hasNext = orderNum < lcTotalLessons;
+  return `<div class="lc-actions-body">
+    <div class="lc-actions-done">
+      <div class="lc-actions-emoji">\u2728</div>
+      <div class="lc-actions-title">Pelajaran ${orderNum} selesai</div>
+      <div class="lc-actions-sub">${escapeHtml(lesson.title)}</div>
+    </div>
+    <div class="lc-actions-btns">
+      ${hasNext ? `<button class="lc-btn-primary" data-action="lcNextLesson">Lanjut Pelajaran ${orderNum + 1} \u2192</button>` : `<button class="lc-btn-primary" data-action="lcFinishPath">Selesai \u2192</button>`}
+      <button class="lc-btn-outline" data-action="lcNuriBridge" data-from="actions">\uD83D\uDCAC Tanya Nuri soal ayat ini</button>
+      <div class="lc-btn-row">
+        <button class="lc-btn-gray" data-action="lcSave">\uD83D\uDCDD Simpan</button>
+        <button class="lc-btn-gray" data-action="lcShare">\uD83D\uDCE4 Bagikan</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Bottom Nav ──
+
+function renderBottomNav() {
+  const card = lcCards[lcCardIdx];
+  const isVerse = card.id === 'verse';
+  const total = lcCards.length;
+
+  let html = '';
+  if (isVerse) {
+    html += `<button class="lc-gold-btn" data-action="lcNext">Pahami Ayat Ini \u2192</button>`;
+  }
+
+  html += '<div class="lc-nav-row">';
+  html += lcCardIdx > 0
+    ? `<button class="lc-nav-prev" data-action="lcPrev">\u2190 Sebelumnya</button>`
+    : '<span class="lc-nav-prev" style="visibility:hidden">\u2190 Sebelumnya</span>';
+  html += `<span class="lc-nav-counter">${lcCardIdx + 1} / ${total}</span>`;
+
+  if (!isVerse && lcCardIdx < total - 1) {
+    const next = lcCards[lcCardIdx + 1];
+    const label = next.id === 'konteks' ? 'Lihat Konteks' : next.id === 'katakunci' ? 'Kata Kunci' :
+      next.id === 'doa' ? 'Doa Terkait' : next.id === 'renungan' ? 'Renungkan' :
+      next.id === 'actions' ? 'Selesai' : 'Lanjut';
+    html += `<button class="lc-nav-next" data-action="lcNext">${label} \u2192</button>`;
+  } else {
+    html += '<span style="width:80px"></span>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// ── Navigation ──
+
+function lcNext() {
+  if (lcCardIdx < lcCards.length - 1) {
+    lcCardIdx++;
+    lcAnimDir = 'right';
+    renderLcCard();
+  }
+}
+
+function lcPrev() {
+  if (lcCardIdx > 0) {
+    lcCardIdx--;
+    lcAnimDir = 'left';
+    renderLcCard();
+  }
+}
+
+function lcNextLesson() {
+  const nextIdx = lcData.lesson.order_num; // order_num is 1-based, so this is the 0-based index of next
+  if (nextIdx < lcPathLessons.length) {
+    startLesson(nextIdx);
+  } else {
+    switchView('path-preview-view');
+  }
+}
+
+// ── Swipe Gesture ──
+
+function lcHandleTouchStart(e) {
+  lcTouchStartX = e.touches[0].clientX;
+  lcTouchStartY = e.touches[0].clientY;
+  lcTouchLocked = null;
+  lcIsSwiping = true;
+  lcSwipeX = 0;
+}
+
+function lcHandleTouchMove(e) {
+  if (!lcIsSwiping) return;
+  const dx = e.touches[0].clientX - lcTouchStartX;
+  const dy = e.touches[0].clientY - lcTouchStartY;
+
+  if (lcTouchLocked === null) {
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      lcTouchLocked = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    }
+    return;
+  }
+
+  if (lcTouchLocked === 'v') return;
+  e.preventDefault();
+
+  if ((dx > 0 && lcCardIdx === 0) || (dx < 0 && lcCardIdx === lcCards.length - 1)) {
+    lcSwipeX = dx * 0.2;
+  } else {
+    lcSwipeX = dx;
+  }
+
+  const wrap = document.getElementById('lc-card-wrap');
+  if (wrap) {
+    wrap.style.transition = 'none';
+    wrap.style.transform = `translateX(${lcSwipeX}px)`;
+  }
+}
+
+function lcHandleTouchEnd() {
+  if (lcTouchLocked === 'h') {
+    if (lcSwipeX < -60) lcNext();
+    else if (lcSwipeX > 60) lcPrev();
+  }
+
+  const wrap = document.getElementById('lc-card-wrap');
+  if (wrap) {
+    wrap.style.transition = 'transform 0.25s ease-out';
+    wrap.style.transform = 'none';
+  }
+
+  lcSwipeX = 0;
+  lcIsSwiping = false;
+  lcTouchLocked = null;
+}
+
+// ── Verse Bar Toggle ──
+
+function lcToggleVerseBar() {
+  lcVerseBarOpen = !lcVerseBarOpen;
+  const bar = document.getElementById('lc-verse-bar');
+  const content = document.getElementById('lc-vb-content');
+  const hint = document.getElementById('lc-vb-hint');
+  const chevron = document.getElementById('lc-vb-chevron');
+
+  bar.classList.toggle('open', lcVerseBarOpen);
+  if (content) content.style.display = lcVerseBarOpen ? '' : 'none';
+  if (hint) hint.style.display = lcVerseBarOpen ? 'none' : '';
+  if (chevron) chevron.classList.toggle('open', lcVerseBarOpen);
+}
+
+// ── Play Audio ──
+
+function lcPlayAudio(src, btn) {
+  const verse = lcData?.verse;
+  if (!verse) return;
+
+  let surah, ayah;
+  if (src === 'doa' && lcData.content?.doa) {
+    surah = lcData.content.doa.surah;
+    ayah = lcData.content.doa.ayah;
+  } else {
+    surah = verse.surah_number;
+    ayah = verse.ayah_number;
+  }
+
+  const fakeVerse = { id: `${surah}:${ayah}`, surah_name: verse.surah_name };
+  playAudio(fakeVerse, btn);
+}
+
+// ── Progress Tracking ──
+
+function markLessonComplete() {
+  if (!lcData || !lcData.lesson) return;
+  const progress = JSON.parse(localStorage.getItem('nuri-progress') || '{}');
+  if (progress[lcData.lesson.id]) return;
+  progress[lcData.lesson.id] = true;
+  localStorage.setItem('nuri-progress', JSON.stringify(progress));
+  logEvent('lp_lesson_viewed', { lesson_id: lcData.lesson.id, path_id: lcPathId });
+
+  if (lcFromCurriculum) {
+    const cp = JSON.parse(localStorage.getItem('tq-curriculum-progress') || '{}');
+    const curr = cp[lcFromCurriculum.id] || { current_path_index: lcFromCurriculum.pathIndex || 0, current_lesson: 1, started_at: new Date().toISOString(), paths_completed: [] };
+    const orderNum = lcData.lesson.order_num;
+    if (orderNum >= lcTotalLessons) {
+      if (!curr.paths_completed.includes(lcPathId)) curr.paths_completed.push(lcPathId);
+      curr.current_lesson = 1;
+      curr.current_path_index = (lcFromCurriculum.pathIndex || 0) + 1;
+    } else {
+      curr.current_lesson = orderNum + 1;
+    }
+    cp[lcFromCurriculum.id] = curr;
+    localStorage.setItem('tq-curriculum-progress', JSON.stringify(cp));
+  }
+}
+
+// ── Nuri Bridge ──
+
+function lcNuriBridge(from) {
+  if (!lcData) return;
+  const verse = lcData.verse;
+  const content = lcData.content;
+
+  window._nuriLessonContext = {
+    verse_ref: verse ? `${verse.surah_name}: ${verse.ayah_number}` : '',
+    lesson_title: lcData.lesson.title,
+    path_title: lcPathTitle,
+    insight: content?.insight?.pull_quote || '',
+    reflection_question: content?.renungan?.questions?.[0] || '',
+  };
+
+  window._lcReturnTo = { cardIdx: lcCardIdx };
+  switchView('nuri-view');
+  if (typeof startNuriSession === 'function') startNuriSession();
+}
 
 // ── Nuri — Chat Functions ─────────────────────────────────────────────────────
 
@@ -6293,7 +6931,16 @@ document.getElementById('nuriInput')?.addEventListener('keydown', function(e) {
 // Nuri event listeners
 document.getElementById('nuriSendBtn')?.addEventListener('click', sendNuriMessage);
 // nuriStartBtn and nuriLandingCard removed — Nuri entry now via belajar-view
-document.getElementById('nuriBackBtn')?.addEventListener('click', () => switchView('landing-view'));
+document.getElementById('nuriBackBtn')?.addEventListener('click', () => {
+  if (window._lcReturnTo) {
+    const returnTo = window._lcReturnTo;
+    window._lcReturnTo = null;
+    window._nuriLessonContext = null;
+    switchView(returnTo);
+  } else {
+    switchView('landing-view');
+  }
+});
 
 // ── Push Permission Triggers ──────────────────────────────────────────────────
 
