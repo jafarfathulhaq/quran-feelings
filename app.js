@@ -5435,6 +5435,528 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
 // ── Silent re-subscribe if permission granted but subscription lost ──────────
 resubscribeIfNeeded();
 
+// ── Belajar Al-Qur'an ────────────────────────────────────────────────────────
+
+let belajarCurriculaData = null;  // cached /api/learning-paths?type=curricula
+let belajarPathsData = null;      // cached /api/learning-paths (situation/topic)
+let belajarExpandedGroup = null;  // which topic group is open (index or null)
+let belajarActiveTab = 'kurikulum';
+
+// Onboarding recommendation mapping (deterministic, no GPT)
+const BELAJAR_ONBOARDING_RECS = {
+  baru:     ['mengenal-quran-dari-nol', 'kisah-para-nabi'],
+  dalam:    ['menjadi-muslim-lebih-baik', 'mengenal-quran-dari-nol'],
+  hidup:    ['ketika-hidup-berat', 'menjadi-muslim-lebih-baik'],
+  hati:     ['menyembuhkan-hati', 'ketika-hidup-berat'],
+  keluarga: ['hubungan-keluarga', 'menjadi-muslim-lebih-baik'],
+  iman:     ['percaya-diri-iman', 'mengenal-quran-dari-nol'],
+};
+
+// Topic grouping for "Pilih Sendiri" tab
+const BELAJAR_TEMA_GROUPS = [
+  { title: 'Kesulitan Hidup', emoji: '\uD83D\uDCAA', pathIds: ['menghadapi-cobaan', 'tekanan-sosial', 'kecanduan', 'diuji-kenikmatan', 'tekanan-orang-tua'] },
+  { title: 'Emosi & Perasaan', emoji: '\uD83D\uDCAD', pathIds: ['patah-hati', 'berduka', 'merasa-bersalah', 'kesepian', 'merasa-iri', 'merasa-tidak-cukup-baik'] },
+  { title: 'Hubungan', emoji: '\uD83E\uDD1D', pathIds: ['keluarga', 'masalah-rumah-tangga', 'ingin-berubah'] },
+  { title: 'Iman & Identitas', emoji: '\uD83D\uDD06', pathIds: ['ragu-tentang-iman', 'merasa-jauh-dari-allah', 'mencari-makna-hidup'] },
+  { title: 'Mengenal Islam', emoji: '\uD83D\uDCD6', pathIds: ['mengenal-allah', 'tentang-al-quran', 'akhirat', 'ilmu'] },
+  { title: 'Ibadah & Spiritual', emoji: '\uD83E\uDD32', pathIds: ['shalat', 'doa', 'taubat', 'tawakkal', 'puasa', 'taqwa'] },
+  { title: 'Akhlak & Karakter', emoji: '\uD83D\uDC8E', pathIds: ['sabar', 'syukur', 'ikhlas', 'akhlak', 'keadilan', 'rahmat-allah'] },
+  { title: 'Kisah & Tokoh', emoji: '\uD83D\uDCD7', pathIds: ['kisah-ibrahim', 'kisah-musa', 'kisah-yusuf', 'perempuan'] },
+];
+
+function openBelajarView() {
+  switchView('belajar-view');
+  const onboarded = localStorage.getItem('tq-belajar-onboarded');
+  if (!onboarded) {
+    showBelajarOnboarding();
+  } else {
+    showBelajarMain();
+  }
+}
+
+// ── Onboarding ──
+
+function showBelajarOnboarding() {
+  const ob = document.getElementById('belajar-onboarding');
+  const main = document.getElementById('belajar-main');
+  ob.style.display = 'flex';
+  main.style.display = 'none';
+  renderObWelcome();
+}
+
+function renderObWelcome() {
+  const ob = document.getElementById('belajar-onboarding');
+  ob.innerHTML = `
+    <div class="belajar-ob-welcome" id="ob-welcome">
+      <div class="belajar-ob-avatar">N</div>
+      <div class="belajar-ob-pretitle">Belajar Al-Qur'an bersama</div>
+      <div class="belajar-ob-name">Nuri</div>
+      <div class="belajar-ob-greeting">Hai! Aku akan bantu kamu belajar dan merenungkan Al-Qur'an \u2014 dengan cara yang mudah dipahami.</div>
+      <div class="belajar-ob-verse-ar">\u0627\u0642\u0652\u0631\u064E\u0623\u0652 \u0628\u0650\u0627\u0633\u0652\u0645\u0650 \u0631\u064E\u0628\u0651\u0650\u0643\u064E \u0627\u0644\u0651\u064E\u0630\u0650\u064A \u062E\u064E\u0644\u064E\u0642\u064E</div>
+      <div class="belajar-ob-verse-tr">\u201CBacalah dengan nama Tuhanmu yang menciptakan\u201D</div>
+      <button class="belajar-ob-start-btn" data-action="obQ1">Mulai \u2192</button>
+      <div class="belajar-ob-hint">Cuma 2 pertanyaan, kurang dari 30 detik</div>
+    </div>`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => ob.querySelector('#ob-welcome')?.classList.add('visible'));
+  });
+}
+
+function renderObQuestion1() {
+  const ob = document.getElementById('belajar-onboarding');
+  ob.innerHTML = `
+    <div class="belajar-ob-question" id="ob-q1">
+      <div class="belajar-ob-accent"></div>
+      <div class="belajar-ob-body">
+        <div class="belajar-ob-steps">
+          <div class="belajar-ob-step filled"></div>
+          <div class="belajar-ob-step"></div>
+        </div>
+        <div class="belajar-ob-nuri-row">
+          <div class="belajar-ob-nuri-mini">N</div>
+          <div class="belajar-ob-nuri-says">Nuri ingin tahu...</div>
+        </div>
+        <div class="belajar-ob-q-text">Kamu lagi di titik mana dalam perjalanan belajar Al-Qur'an?</div>
+        <div class="belajar-ob-options">
+          <div class="belajar-ob-option" data-action="obQ1Answer" data-answer="baru">
+            <span class="belajar-ob-option-emoji">\uD83C\uDF31</span>
+            <div><div class="belajar-ob-option-label">Baru mulai</div><div class="belajar-ob-option-desc">Aku ingin mengenal Al-Qur'an dari awal</div></div>
+          </div>
+          <div class="belajar-ob-option" data-action="obQ1Answer" data-answer="dalam">
+            <span class="belajar-ob-option-emoji">\uD83D\uDCD6</span>
+            <div><div class="belajar-ob-option-label">Ingin lebih dalam</div><div class="belajar-ob-option-desc">Sudah sholat, ingin memahami lebih</div></div>
+          </div>
+          <div class="belajar-ob-option" data-action="obQ1Answer" data-answer="masalah">
+            <span class="belajar-ob-option-emoji">\uD83E\uDD32</span>
+            <div><div class="belajar-ob-option-label">Sedang butuh pegangan</div><div class="belajar-ob-option-desc">Ada hal yang sedang kuhadapi</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="belajar-ob-footer">
+        <button class="belajar-ob-skip" data-action="obSkip">Mau lihat semua topik \u2192</button>
+      </div>
+    </div>`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => ob.querySelector('#ob-q1')?.classList.add('visible'));
+  });
+}
+
+function renderObQuestion2() {
+  const ob = document.getElementById('belajar-onboarding');
+  ob.innerHTML = `
+    <div class="belajar-ob-question" id="ob-q2">
+      <div class="belajar-ob-accent"></div>
+      <div class="belajar-ob-body">
+        <div class="belajar-ob-steps">
+          <div class="belajar-ob-step filled"></div>
+          <div class="belajar-ob-step filled"></div>
+        </div>
+        <div class="belajar-ob-nuri-row">
+          <div class="belajar-ob-nuri-mini">N</div>
+          <div class="belajar-ob-nuri-says">Nuri paham...</div>
+        </div>
+        <div class="belajar-ob-q-text">Boleh cerita sedikit, kamu sedang menghadapi apa?</div>
+        <div class="belajar-ob-options">
+          <div class="belajar-ob-option" data-action="obQ2Answer" data-answer="hidup">
+            <span class="belajar-ob-option-emoji">\uD83D\uDCAA</span>
+            <div><div class="belajar-ob-option-label">Ujian hidup</div><div class="belajar-ob-option-desc">Masalah pekerjaan, keuangan, atau tekanan</div></div>
+          </div>
+          <div class="belajar-ob-option" data-action="obQ2Answer" data-answer="hati">
+            <span class="belajar-ob-option-emoji">\uD83D\uDC94</span>
+            <div><div class="belajar-ob-option-label">Luka hati</div><div class="belajar-ob-option-desc">Patah hati, kehilangan, atau rasa bersalah</div></div>
+          </div>
+          <div class="belajar-ob-option" data-action="obQ2Answer" data-answer="keluarga">
+            <span class="belajar-ob-option-emoji">\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67</span>
+            <div><div class="belajar-ob-option-label">Keluarga</div><div class="belajar-ob-option-desc">Masalah rumah tangga atau orang tua</div></div>
+          </div>
+          <div class="belajar-ob-option" data-action="obQ2Answer" data-answer="iman">
+            <span class="belajar-ob-option-emoji">\uD83D\uDD06</span>
+            <div><div class="belajar-ob-option-label">Keraguan iman</div><div class="belajar-ob-option-desc">Merasa jauh dari Allah atau tidak yakin</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="belajar-ob-footer">
+        <button class="belajar-ob-back" data-action="obBackToQ1">\u2190 Kembali</button>
+      </div>
+    </div>`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => ob.querySelector('#ob-q2')?.classList.add('visible'));
+  });
+}
+
+let _obQ1Answer = null;
+
+function renderObResult(answerKey) {
+  const recs = BELAJAR_ONBOARDING_RECS[answerKey] || BELAJAR_ONBOARDING_RECS.baru;
+  const ob = document.getElementById('belajar-onboarding');
+
+  ob.innerHTML = `
+    <div class="belajar-ob-result" id="ob-result">
+      <div class="belajar-ob-loading-avatar" id="ob-loading">N</div>
+      <div class="belajar-ob-loading-text" id="ob-loading-text">Nuri sedang menyiapkan perjalanan untukmu...</div>
+      <div id="ob-recs" style="display:none;width:100%;text-align:center;"></div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => ob.querySelector('#ob-result')?.classList.add('visible'));
+  });
+
+  // Fetch curricula to get actual data for the recommended IDs
+  fetchBelajarCurricula().then(curricula => {
+    const recData = recs.map(id => curricula.find(c => c.id === id)).filter(Boolean);
+    if (recData.length < 2) {
+      // Fallback: just show belajar-view
+      finishOnboarding();
+      return;
+    }
+
+    setTimeout(() => {
+      const loading = document.getElementById('ob-loading');
+      const loadingText = document.getElementById('ob-loading-text');
+      const recsEl = document.getElementById('ob-recs');
+      if (loading) loading.style.display = 'none';
+      if (loadingText) loadingText.style.display = 'none';
+      if (!recsEl) return;
+
+      const p = recData[0];
+      const s = recData[1];
+      recsEl.style.display = 'block';
+      recsEl.innerHTML = `
+        <div class="belajar-ob-avatar" style="width:44px;height:44px;font-size:1.06rem;margin-bottom:14px;animation:belajarFadeInScale 0.5s ease">N</div>
+        <div class="belajar-ob-rec-intro">Nuri sarankan untukmu</div>
+        <div class="belajar-ob-rec-primary">
+          <div class="belajar-ob-rec-emoji">${escapeHtml(p.emoji || '\uD83D\uDCDA')}</div>
+          <div class="belajar-ob-rec-title">${escapeHtml(p.title)}</div>
+          <div class="belajar-ob-rec-tagline">${escapeHtml(p.tagline || '')}</div>
+          <div class="belajar-ob-rec-meta">${p.paths ? p.paths.length + ' tema \u00B7 ' + p.total_lessons + ' pelajaran' : ''}</div>
+          <button class="belajar-ob-rec-btn" data-action="obStartCurriculum" data-id="${escapeHtml(p.id)}">Mulai Perjalanan Ini \u2192</button>
+        </div>
+        <div class="belajar-ob-rec-secondary" data-action="obStartCurriculum" data-id="${escapeHtml(s.id)}">
+          <span class="belajar-ob-sec-emoji">${escapeHtml(s.emoji || '\uD83D\uDCDA')}</span>
+          <div class="belajar-ob-sec-info">
+            <div class="belajar-ob-sec-title">${escapeHtml(s.title)}</div>
+            <div class="belajar-ob-sec-meta">${s.paths ? s.paths.length + ' tema \u00B7 ' + s.total_lessons + ' pelajaran' : ''}</div>
+          </div>
+          <span class="belajar-ob-sec-chevron">\u203A</span>
+        </div>
+        <button class="belajar-ob-browse" data-action="obSkip">atau pilih sendiri \u2192</button>`;
+    }, 1200);
+  });
+}
+
+function finishOnboarding() {
+  localStorage.setItem('tq-belajar-onboarded', 'true');
+  showBelajarMain();
+}
+
+// ── Belajar Main View ──
+
+function showBelajarMain() {
+  const ob = document.getElementById('belajar-onboarding');
+  const main = document.getElementById('belajar-main');
+  ob.style.display = 'none';
+  main.style.display = 'flex';
+  renderBelajarContent();
+}
+
+async function fetchBelajarCurricula() {
+  if (belajarCurriculaData) return belajarCurriculaData;
+  try {
+    const res = await fetch('/api/learning-paths?type=curricula');
+    if (!res.ok) throw new Error('Failed to fetch curricula');
+    belajarCurriculaData = await res.json();
+    return belajarCurriculaData;
+  } catch (e) {
+    console.error('[belajar] curricula fetch error:', e);
+    return [];
+  }
+}
+
+async function fetchBelajarPaths() {
+  if (belajarPathsData) return belajarPathsData;
+  try {
+    const res = await fetch('/api/learning-paths');
+    if (!res.ok) throw new Error('Failed to fetch paths');
+    belajarPathsData = await res.json();
+    return belajarPathsData;
+  } catch (e) {
+    console.error('[belajar] paths fetch error:', e);
+    return { situation: [], topic: [] };
+  }
+}
+
+function renderBelajarContent() {
+  renderBelajarProgress();
+  renderBelajarKurrikulumTab();
+  renderBelajarTemaTab();
+}
+
+function renderBelajarProgress() {
+  const el = document.getElementById('belajar-progress');
+  const progress = JSON.parse(localStorage.getItem('tq-curriculum-progress') || '{}');
+
+  // Find active curriculum (one with started_at but not all paths completed)
+  let active = null;
+  for (const [currId, data] of Object.entries(progress)) {
+    if (data.started_at && (!data.paths_completed || data.paths_completed.length < (data.total_paths || 999))) {
+      active = { id: currId, ...data };
+      break;
+    }
+  }
+
+  if (!active) {
+    el.style.display = 'none';
+    return;
+  }
+
+  // Get curriculum details from cache or show minimal
+  fetchBelajarCurricula().then(curricula => {
+    const curr = curricula.find(c => c.id === active.id);
+    if (!curr) { el.style.display = 'none'; return; }
+
+    const pathIdx = active.current_path_index || 0;
+    const lessonIdx = active.current_lesson || 0;
+    const totalPaths = curr.paths?.length || 5;
+    const totalLessons = totalPaths * 5;
+    const completedLessons = (active.paths_completed?.length || 0) * 5 + lessonIdx;
+    const pct = Math.round((completedLessons / totalLessons) * 100);
+
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div class="belajar-progress-top">
+        <div class="belajar-progress-left">
+          <span class="belajar-progress-emoji">${escapeHtml(curr.emoji || '')}</span>
+          <div>
+            <div class="belajar-progress-title">${escapeHtml(curr.title)}</div>
+            <div class="belajar-progress-sub">Tema ${pathIdx + 1} \u00B7 Pelajaran ${lessonIdx + 1} dari 5</div>
+          </div>
+        </div>
+        <button class="belajar-progress-btn" data-action="belajarResume" data-curr="${escapeHtml(active.id)}">\u25B6 Lanjut</button>
+      </div>
+      <div class="belajar-progress-bar"><div class="belajar-progress-fill" style="width:${pct}%"></div></div>`;
+  });
+}
+
+async function renderBelajarKurrikulumTab() {
+  const panel = document.getElementById('belajar-tab-kurikulum');
+  panel.innerHTML = '<div class="belajar-tab-intro">Nuri sudah menyusun perjalanan belajar untukmu \u2014 tinggal pilih dan mulai.</div>';
+
+  const curricula = await fetchBelajarCurricula();
+
+  let html = '';
+  for (const c of curricula) {
+    const meta = (c.paths?.length || 0) + ' tema \u00B7 ' + (c.total_lessons || 0) + ' pelajaran';
+    html += `
+      <div class="belajar-curriculum-card" data-action="belajarCurriculum" data-id="${escapeHtml(c.id)}">
+        <div class="belajar-curriculum-emoji">${escapeHtml(c.emoji || '\uD83D\uDCDA')}</div>
+        <div class="belajar-curriculum-info">
+          <div class="belajar-curriculum-title">${escapeHtml(c.title)}</div>
+          <div class="belajar-curriculum-tagline">${escapeHtml(c.tagline || '')}</div>
+          <div class="belajar-curriculum-meta">${meta}</div>
+        </div>
+        <span class="belajar-curriculum-chevron">\u203A</span>
+      </div>`;
+  }
+  panel.innerHTML += html;
+}
+
+async function renderBelajarTemaTab() {
+  const panel = document.getElementById('belajar-tab-tema');
+
+  // Fetch all paths for title/emoji lookup
+  const paths = await fetchBelajarPaths();
+  const allPaths = [...(paths.situation || []), ...(paths.topic || [])];
+  const pathMap = {};
+  for (const p of allPaths) pathMap[p.id] = p;
+
+  let html = '<div class="belajar-tab-intro">Pilih topik yang menarik hatimu \u2014 setiap tema terdiri dari 5 pelajaran mendalam.</div>';
+
+  // Search input
+  html += `<div class="belajar-search-wrap"><span class="belajar-search-icon">\uD83D\uDD0D</span><input type="text" class="belajar-search-input" id="belajar-search" placeholder="Cari tema..." /></div>`;
+
+  // Groups
+  html += '<div id="belajar-groups">';
+  BELAJAR_TEMA_GROUPS.forEach((group, gi) => {
+    const pathItems = group.pathIds.map(pid => pathMap[pid]).filter(Boolean);
+    html += `
+      <div class="belajar-group" data-group="${gi}">
+        <div class="belajar-group-header" data-action="belajarToggleGroup" data-group="${gi}">
+          <div class="belajar-group-left">
+            <span class="belajar-group-emoji">${group.emoji}</span>
+            <div>
+              <div class="belajar-group-title">${escapeHtml(group.title)}</div>
+              <div class="belajar-group-count">${pathItems.length} tema</div>
+            </div>
+          </div>
+          <span class="belajar-group-chevron" id="belajar-chev-${gi}">\u25BE</span>
+        </div>
+        <div class="belajar-group-paths" id="belajar-paths-${gi}">`;
+
+    for (const p of pathItems) {
+      html += `
+          <div class="belajar-path-row" data-action="belajarPath" data-id="${escapeHtml(p.id)}">
+            <span class="belajar-path-emoji">${escapeHtml(p.emoji || '')}</span>
+            <div class="belajar-path-info">
+              <div class="belajar-path-title">${escapeHtml(p.title)}</div>
+              <div class="belajar-path-meta">${p.lesson_count || 5} pelajaran</div>
+            </div>
+            <span class="belajar-path-chevron">\u203A</span>
+          </div>`;
+    }
+
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  // Search results container (hidden by default)
+  html += '<div id="belajar-search-results" class="belajar-search-results" style="display:none"></div>';
+
+  panel.innerHTML = html;
+
+  // Wire search
+  const searchInput = document.getElementById('belajar-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      const groups = document.getElementById('belajar-groups');
+      const results = document.getElementById('belajar-search-results');
+
+      if (!q) {
+        groups.style.display = 'block';
+        results.style.display = 'none';
+        return;
+      }
+
+      groups.style.display = 'none';
+      results.style.display = 'block';
+
+      const matches = allPaths.filter(p => p.title.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
+      if (!matches.length) {
+        results.innerHTML = '<div class="belajar-search-empty">\uD83D\uDD0D Tidak ada tema yang cocok</div>';
+        return;
+      }
+
+      results.innerHTML = matches.map(p => `
+        <div class="belajar-path-row" data-action="belajarPath" data-id="${escapeHtml(p.id)}">
+          <span class="belajar-path-emoji">${escapeHtml(p.emoji || '')}</span>
+          <div class="belajar-path-info">
+            <div class="belajar-path-title">${escapeHtml(p.title)}</div>
+            <div class="belajar-path-meta">${p.lesson_count || 5} pelajaran</div>
+          </div>
+          <span class="belajar-path-chevron">\u203A</span>
+        </div>`).join('');
+    });
+  }
+}
+
+function belajarToggleGroup(groupIdx) {
+  if (belajarExpandedGroup === groupIdx) {
+    // Collapse current
+    const paths = document.getElementById('belajar-paths-' + groupIdx);
+    const chev = document.getElementById('belajar-chev-' + groupIdx);
+    const header = paths?.previousElementSibling;
+    if (paths) paths.classList.remove('open');
+    if (chev) chev.classList.remove('open');
+    if (header) header.classList.remove('open');
+    belajarExpandedGroup = null;
+  } else {
+    // Collapse previous
+    if (belajarExpandedGroup !== null) {
+      const oldPaths = document.getElementById('belajar-paths-' + belajarExpandedGroup);
+      const oldChev = document.getElementById('belajar-chev-' + belajarExpandedGroup);
+      const oldHeader = oldPaths?.previousElementSibling;
+      if (oldPaths) oldPaths.classList.remove('open');
+      if (oldChev) oldChev.classList.remove('open');
+      if (oldHeader) oldHeader.classList.remove('open');
+    }
+    // Expand new
+    const paths = document.getElementById('belajar-paths-' + groupIdx);
+    const chev = document.getElementById('belajar-chev-' + groupIdx);
+    const header = paths?.previousElementSibling;
+    if (paths) paths.classList.add('open');
+    if (chev) chev.classList.add('open');
+    if (header) header.classList.add('open');
+    belajarExpandedGroup = groupIdx;
+  }
+}
+
+function belajarSwitchTab(tabId) {
+  belajarActiveTab = tabId;
+  document.querySelectorAll('.belajar-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.btab === tabId);
+  });
+  document.getElementById('belajar-tab-kurikulum').style.display = tabId === 'kurikulum' ? 'block' : 'none';
+  document.getElementById('belajar-tab-tema').style.display = tabId === 'tema' ? 'block' : 'none';
+  belajarExpandedGroup = null;
+}
+
+// ── Belajar Event Delegation ──
+
+document.addEventListener('click', function(e) {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.dataset.action;
+
+  // Onboarding actions
+  if (action === 'obQ1') { renderObQuestion1(); return; }
+  if (action === 'obQ1Answer') {
+    const ans = target.dataset.answer;
+    _obQ1Answer = ans;
+    if (ans === 'masalah') { renderObQuestion2(); }
+    else { renderObResult(ans); }
+    return;
+  }
+  if (action === 'obQ2Answer') {
+    renderObResult(target.dataset.answer);
+    return;
+  }
+  if (action === 'obBackToQ1') { renderObQuestion1(); return; }
+  if (action === 'obSkip') { finishOnboarding(); return; }
+  if (action === 'obStartCurriculum') {
+    localStorage.setItem('tq-belajar-onboarded', 'true');
+    // TODO: Phase 4 will handle starting a curriculum lesson
+    showBelajarMain();
+    return;
+  }
+
+  // Belajar main actions
+  if (action === 'belajarToggleGroup') {
+    belajarToggleGroup(parseInt(target.dataset.group, 10));
+    return;
+  }
+  if (action === 'belajarPath') {
+    // TODO: Phase 4 will navigate to path-preview-view
+    console.log('[belajar] open path:', target.dataset.id);
+    return;
+  }
+  if (action === 'belajarCurriculum') {
+    // TODO: Phase 4 will navigate to curriculum first path
+    console.log('[belajar] open curriculum:', target.dataset.id);
+    return;
+  }
+  if (action === 'belajarResume') {
+    // TODO: Phase 4 will resume curriculum
+    console.log('[belajar] resume curriculum:', target.dataset.curr);
+    return;
+  }
+});
+
+// Tab switching
+document.querySelectorAll('.belajar-tab').forEach(tab => {
+  tab.addEventListener('click', () => belajarSwitchTab(tab.dataset.btab));
+});
+
+// Back button
+document.getElementById('belajar-back-btn')?.addEventListener('click', () => switchView('landing-view'));
+
+// Landing card click
+document.getElementById('belajarLandingCard')?.addEventListener('click', openBelajarView);
+
+// Nuri entry at bottom of belajar-view
+document.getElementById('belajarNuriEntry')?.addEventListener('click', () => {
+  startNuriSession();
+});
+
 // ── Nuri — Chat Functions ─────────────────────────────────────────────────────
 
 function startNuriSession() {
@@ -5770,8 +6292,7 @@ document.getElementById('nuriInput')?.addEventListener('keydown', function(e) {
 
 // Nuri event listeners
 document.getElementById('nuriSendBtn')?.addEventListener('click', sendNuriMessage);
-document.getElementById('nuriStartBtn')?.addEventListener('click', startNuriSession);
-document.getElementById('nuriLandingCard')?.addEventListener('click', startNuriSession);
+// nuriStartBtn and nuriLandingCard removed — Nuri entry now via belajar-view
 document.getElementById('nuriBackBtn')?.addEventListener('click', () => switchView('landing-view'));
 
 // ── Push Permission Triggers ──────────────────────────────────────────────────

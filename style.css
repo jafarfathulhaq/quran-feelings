@@ -5196,82 +5196,905 @@ body.about-locked { overflow: hidden; }
 
 /* ── Landing page section ──────────────────────────────────────────────────── */
 
-.nuri-section {
+/* ── Belajar landing section ──────────────────────────────────────────────── */
+
+.belajar-landing-section {
   margin-top: 28px;
   padding: 0 16px;
 }
 
-.nuri-section-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-}
-
-.nuri-card {
-  background: linear-gradient(135deg, #1A3A4A 0%, #0F2D3A 100%);
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.belajar-landing-card {
+  background: white;
+  border: 1.5px solid rgba(42, 124, 111, 0.2);
+  border-radius: 18px;
+  padding: 20px 18px;
+  position: relative;
+  overflow: hidden;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.nuri-card:active {
+.belajar-landing-card:active {
   transform: scale(0.98);
 }
 
-.nuri-avatar {
-  width: 52px;
-  height: 52px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 14px;
+.belajar-landing-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--teal-dark), rgba(42, 124, 111, 0.4));
+}
+
+.belajar-landing-title {
+  font-size: 1.06rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.belajar-landing-desc {
+  font-size: 0.81rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.belajar-landing-cta {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--teal-dark);
+}
+
+/* ── Belajar view ────────────────────────────────────────────────────────── */
+
+#belajar-view.active {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.belajar-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header */
+.belajar-header {
+  padding: 14px 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.nuri-avatar-icon {
-  filter: drop-shadow(0 0 8px rgba(58, 158, 143, 0.7));
+.belajar-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.nuri-card-text {
+.belajar-header-info {
+  text-align: right;
+}
+
+.belajar-header-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.belajar-header-subtitle {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+}
+
+.belajar-header-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--teal-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.81rem;
+  font-weight: 700;
+}
+
+/* Active curriculum progress card */
+.belajar-progress {
+  margin: 12px 14px 0;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0A0F1E, #0D3B6E);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.belajar-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.belajar-progress-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.belajar-progress-emoji {
+  font-size: 1rem;
+}
+
+.belajar-progress-title {
+  font-size: 0.81rem;
+  font-weight: 600;
+  color: white;
+}
+
+.belajar-progress-sub {
+  font-size: 0.69rem;
+  color: rgba(255,255,255,0.4);
+  margin-top: 1px;
+}
+
+.belajar-progress-btn {
+  background: var(--gold);
+  border: none;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+}
+
+.belajar-progress-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+
+.belajar-progress-fill {
+  height: 3px;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Tabs */
+.belajar-tabs-wrap {
+  margin: 14px 14px 0;
+  flex-shrink: 0;
+}
+
+.belajar-tabs {
+  display: flex;
+  background: #F2F2F7;
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.belajar-tab {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.belajar-tab.active {
+  background: white;
+  color: var(--text-dark);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Tab content */
+.belajar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.belajar-tab-panel {
+  padding: 4px 14px;
+}
+
+.belajar-tab-intro {
+  font-size: 0.81rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+  margin-bottom: 14px;
+  padding: 0 2px;
+}
+
+/* Curriculum cards */
+.belajar-curriculum-card {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.belajar-curriculum-card:active {
+  transform: scale(0.98);
+}
+
+.belajar-curriculum-emoji {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #EDF7F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.38rem;
+  flex-shrink: 0;
+}
+
+.belajar-curriculum-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.belajar-curriculum-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  line-height: 1.3;
+}
+
+.belajar-curriculum-tagline {
+  font-size: 0.75rem;
+  color: var(--text-mid);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.belajar-curriculum-meta {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.belajar-curriculum-chevron {
+  color: #ccc;
+  font-size: 1rem;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* Topic search */
+.belajar-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F5F5F5;
+  border-radius: 12px;
+  padding: 11px 14px;
+  margin-bottom: 14px;
+}
+
+.belajar-search-icon {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.belajar-search-input {
+  border: none;
+  background: transparent;
+  font-size: 0.81rem;
+  color: var(--text-dark);
+  outline: none;
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.belajar-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Topic groups (accordion) */
+.belajar-group {
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.belajar-group-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: white;
+  transition: background 0.2s;
+}
+
+.belajar-group-header.open {
+  background: #FAFAFA;
+}
+
+.belajar-group-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.belajar-group-emoji {
+  font-size: 1.13rem;
+}
+
+.belajar-group-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.belajar-group-count {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+}
+
+.belajar-group-chevron {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  transition: transform 0.3s;
+}
+
+.belajar-group-chevron.open {
+  transform: rotate(180deg);
+}
+
+.belajar-group-paths {
+  border-top: 1px solid var(--border);
+  display: none;
+}
+
+.belajar-group-paths.open {
+  display: block;
+}
+
+.belajar-path-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 46px;
+  cursor: pointer;
+  background: white;
+  transition: background 0.15s;
+}
+
+.belajar-path-row:not(:last-child) {
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.belajar-path-row:active {
+  background: #F8F8F8;
+}
+
+.belajar-path-emoji {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.belajar-path-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.belajar-path-title {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+}
+
+.belajar-path-meta {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+}
+
+.belajar-path-chevron {
+  color: #ddd;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* Search results (flat list) */
+.belajar-search-results {
+  padding: 4px 0;
+}
+
+.belajar-search-empty {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--text-muted);
+  font-size: 0.81rem;
+}
+
+/* Nuri entry (sticky bottom) */
+.belajar-nuri-entry {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.belajar-nuri-entry-inner {
+  background: #F9F9F9;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.belajar-nuri-entry-inner:active {
+  background: #F0F0F0;
+}
+
+.belajar-nuri-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--teal-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.belajar-nuri-entry-text {
   flex: 1;
 }
 
-.nuri-card-title {
-  font-family: 'Lora', serif;
-  font-size: 1.05rem;
+.belajar-nuri-entry-title {
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
+  color: var(--text-dark);
 }
 
-.nuri-card-desc {
-  font-size: 0.74rem;
-  color: rgba(255,255,255,0.6);
-  line-height: 1.45;
+.belajar-nuri-entry-sub {
+  font-size: 0.69rem;
+  color: var(--text-muted);
 }
 
-.nuri-card-cta {
-  background: var(--teal);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 0.78rem;
+.belajar-nuri-chevron {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ── Belajar onboarding ──────────────────────────────────────────────────── */
+
+.belajar-ob {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Welcome screen */
+.belajar-ob-welcome {
+  flex: 1;
+  background: linear-gradient(180deg, #0A0F1E 0%, #0F2044 60%, #0D3B6E 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 28px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.belajar-ob-welcome.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.belajar-ob-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal-dark), #3A9C8E);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
   font-weight: 700;
-  font-family: 'DM Sans', sans-serif;
+  color: white;
+  margin-bottom: 24px;
+  box-shadow: 0 0 0 6px rgba(42,124,111,0.13), 0 0 0 12px rgba(42,124,111,0.07);
+}
+
+.belajar-ob-pretitle {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.belajar-ob-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.belajar-ob-greeting {
+  font-size: 0.94rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.7;
+  max-width: 300px;
+  margin-bottom: 40px;
+}
+
+.belajar-ob-verse-ar {
+  font-family: 'Amiri', serif;
+  font-size: 1.13rem;
+  color: rgba(196, 151, 59, 0.53);
+  direction: rtl;
+  margin-bottom: 6px;
+}
+
+.belajar-ob-verse-tr {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.3);
+  font-style: italic;
+  margin-bottom: 48px;
+}
+
+.belajar-ob-start-btn {
+  background: var(--gold);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 0;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
-  margin-top: 14px;
   width: 100%;
+  max-width: 280px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.belajar-ob-hint {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.25);
+  margin-top: 16px;
+}
+
+/* Question screens */
+.belajar-ob-question {
+  flex: 1;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.belajar-ob-question.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.belajar-ob-accent {
+  height: 4px;
+  background: linear-gradient(90deg, var(--teal-dark), rgba(42,124,111,0.27));
+  flex-shrink: 0;
+}
+
+.belajar-ob-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+}
+
+.belajar-ob-steps {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.belajar-ob-step {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.belajar-ob-step.filled {
+  background: var(--teal-dark);
+}
+
+.belajar-ob-nuri-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.belajar-ob-nuri-mini {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--teal-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.belajar-ob-nuri-says {
+  font-size: 0.81rem;
+  color: var(--text-mid);
+}
+
+.belajar-ob-q-text {
+  font-size: 1.38rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.35;
+  margin-bottom: 28px;
+}
+
+.belajar-ob-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.belajar-ob-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: white;
+}
+
+.belajar-ob-option:active,
+.belajar-ob-option:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+}
+
+.belajar-ob-option-emoji {
+  font-size: 1.75rem;
+}
+
+.belajar-ob-option-label {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.belajar-ob-option-desc {
+  font-size: 0.81rem;
+  color: var(--text-mid);
+  margin-top: 2px;
+}
+
+.belajar-ob-footer {
+  padding: 0 24px 24px;
+  text-align: center;
+}
+
+.belajar-ob-skip {
+  font-size: 0.81rem;
+  color: var(--teal-dark);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.belajar-ob-back {
+  font-size: 0.81rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Result screen */
+.belajar-ob-result {
+  flex: 1;
+  background: linear-gradient(180deg, #0A0F1E 0%, #0F2044 60%, #0D3B6E 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 28px 24px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.belajar-ob-result.visible {
+  opacity: 1;
+}
+
+.belajar-ob-loading-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal-dark), #3A9C8E);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.38rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 20px;
+  animation: belajarPulse 1.5s infinite;
+}
+
+.belajar-ob-loading-text {
+  font-size: 0.94rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.belajar-ob-rec-intro {
+  font-size: 0.81rem;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 16px;
+}
+
+.belajar-ob-rec-primary {
+  background: white;
+  border-radius: 20px;
+  padding: 24px 20px;
+  width: 100%;
+  margin-bottom: 10px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  animation: belajarFadeInScale 0.5s ease 0.2s both;
+}
+
+.belajar-ob-rec-emoji {
+  font-size: 2.25rem;
+  margin-bottom: 10px;
+}
+
+.belajar-ob-rec-title {
+  font-size: 1.13rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.belajar-ob-rec-tagline {
+  font-size: 0.81rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.belajar-ob-rec-meta {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.belajar-ob-rec-btn {
+  background: var(--teal-dark);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 13px 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.belajar-ob-rec-secondary {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 14px 18px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  animation: belajarFadeUp 0.5s ease 0.35s both;
+}
+
+.belajar-ob-rec-secondary:active {
+  background: rgba(255,255,255,0.12);
+}
+
+.belajar-ob-sec-emoji {
+  font-size: 1.5rem;
+}
+
+.belajar-ob-sec-info {
+  flex: 1;
+  text-align: left;
+}
+
+.belajar-ob-sec-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+}
+
+.belajar-ob-sec-meta {
+  font-size: 0.69rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 2px;
+}
+
+.belajar-ob-sec-chevron {
+  color: rgba(255,255,255,0.3);
+  font-size: 0.875rem;
+}
+
+.belajar-ob-browse {
+  font-size: 0.81rem;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  animation: belajarFadeUp 0.5s ease 0.5s both;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+@keyframes belajarPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.8; }
+}
+
+@keyframes belajarFadeInScale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes belajarFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Nuri chat view ────────────────────────────────────────────────────────── */

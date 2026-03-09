@@ -175,19 +175,14 @@
         </button>
       </nav>
 
-      <!-- Nuri section -->
-      <div class="nuri-section" id="nuri-landing">
-        <div class="nuri-section-label">✨ Kenalan sama Nuri</div>
-        <div class="nuri-card" id="nuriLandingCard">
-          <div class="nuri-avatar">
-            <span class="nuri-avatar-icon">📖</span>
-          </div>
-          <div class="nuri-card-text">
-            <div class="nuri-card-title">Belajar Bareng Nuri</div>
-            <div class="nuri-card-desc">Tanya apapun soal Al-Qur'an. Ngobrol, bukan belajar.</div>
-          </div>
+      <!-- Belajar Al-Qur'an section -->
+      <div class="belajar-landing-section" id="belajar-landing">
+        <div class="belajar-landing-card" id="belajarLandingCard">
+          <div class="belajar-landing-accent"></div>
+          <div class="belajar-landing-title">📚 Belajar Al-Qur'an bersama Nuri</div>
+          <div class="belajar-landing-desc">Pelajari Al-Qur'an dengan panduan langkah demi langkah.</div>
+          <div class="belajar-landing-cta">Mulai Belajar →</div>
         </div>
-        <button class="nuri-card-cta" id="nuriStartBtn">Mulai Ngobrol →</button>
       </div>
 
       <hr class="landing-section-divider" />
@@ -542,6 +537,62 @@
         <p class="verse-disclaimer">Ayat dipilih berdasarkan tema refleksi. Ini bukan pengganti doa atau nasihat ulama.</p>
       </div>
 
+    </section>
+
+    <!-- ── Belajar View ────────────────────────────── -->
+    <section id="belajar-view" class="view">
+
+      <!-- Onboarding overlay (first-time only, managed by JS) -->
+      <div id="belajar-onboarding" class="belajar-ob" style="display:none"></div>
+
+      <!-- Main belajar content -->
+      <div id="belajar-main" class="belajar-main" style="display:none">
+        <!-- Header -->
+        <div class="belajar-header">
+          <button class="back-btn-light" id="belajar-back-btn" aria-label="Kembali ke beranda">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Kembali
+          </button>
+          <div class="belajar-header-right">
+            <div class="belajar-header-info">
+              <div class="belajar-header-title">Belajar Al-Qur'an</div>
+              <div class="belajar-header-subtitle">bersama Nuri</div>
+            </div>
+            <div class="belajar-header-avatar">N</div>
+          </div>
+        </div>
+
+        <!-- Active curriculum progress card -->
+        <div id="belajar-progress" class="belajar-progress" style="display:none"></div>
+
+        <!-- iOS-style segmented tabs -->
+        <div class="belajar-tabs-wrap">
+          <div class="belajar-tabs">
+            <button class="belajar-tab active" data-btab="kurikulum">Pilihan Nuri</button>
+            <button class="belajar-tab" data-btab="tema">Pilih Sendiri</button>
+          </div>
+        </div>
+
+        <!-- Tab content (scrollable) -->
+        <div class="belajar-content">
+          <div id="belajar-tab-kurikulum" class="belajar-tab-panel"></div>
+          <div id="belajar-tab-tema" class="belajar-tab-panel" style="display:none"></div>
+        </div>
+
+        <!-- Nuri entry (sticky bottom) -->
+        <div class="belajar-nuri-entry">
+          <div class="belajar-nuri-entry-inner" id="belajarNuriEntry">
+            <div class="belajar-nuri-avatar">N</div>
+            <div class="belajar-nuri-entry-text">
+              <div class="belajar-nuri-entry-title">Ada pertanyaan tentang Al-Qur'an?</div>
+              <div class="belajar-nuri-entry-sub">Tanya Nuri</div>
+            </div>
+            <span class="belajar-nuri-chevron">›</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ── Nuri View (Belajar Bareng Nuri) ────────── -->
