@@ -5207,7 +5207,7 @@ body.about-locked { overflow: hidden; }
   background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 28px 28px 22px 36px;
+  padding: 28px 28px 24px 40px;
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
@@ -5216,12 +5216,12 @@ body.about-locked { overflow: hidden; }
 .belajar-landing-card:active { transform: scale(0.98); }
 
 .belajar-landing-accent {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
   background: linear-gradient(180deg, var(--teal-dark), var(--gold));
 }
-.belajar-landing-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
-.belajar-landing-desc { font-size: 13px; color: var(--text-mid); line-height: 1.45; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #D8DEE6; }
-.belajar-landing-cta { font-size: 13px; font-weight: 600; color: var(--teal-dark); }
+.belajar-landing-title { font-size: 17px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+.belajar-landing-desc { font-size: 14px; color: var(--text-mid); line-height: 1.5; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid #CFD6DE; }
+.belajar-landing-cta { font-size: 14px; font-weight: 600; color: var(--teal-dark); }
 
 /* ── Belajar view ────────────────────────────────────────────────────────── */
 
