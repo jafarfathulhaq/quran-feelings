@@ -5207,7 +5207,7 @@ body.about-locked { overflow: hidden; }
   background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 22px 20px 22px 28px;
+  padding: 28px 24px 28px 28px;
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
