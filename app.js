@@ -5890,6 +5890,94 @@ function belajarSwitchTab(tabId) {
   belajarExpandedGroup = null;
 }
 
+// ── Lesson Bottom Sheet (Tafsir / Asbabun Nuzul) ──
+
+let lcSheetOpenTab = null;
+
+function openLessonSheet(verse, type) {
+  if (!verse) return;
+  const overlay = document.getElementById('lc-sheet-overlay');
+  const sheet = document.getElementById('lc-sheet');
+  const headerEl = document.getElementById('lc-sheet-header');
+  const bodyEl = document.getElementById('lc-sheet-body');
+  if (!overlay || !sheet) return;
+
+  const ref = `QS. ${escapeHtml(verse.surah_name)}: ${verse.ayah_number}`;
+  const typeLabel = type === 'asbabun' ? 'Asbabun Nuzul' : 'Tafsir Lengkap';
+
+  headerEl.innerHTML = `
+    <div class="lc-sheet-header-info">
+      <div class="lc-sheet-ref">${ref}</div>
+      <div class="lc-sheet-type">${typeLabel}</div>
+    </div>
+    <button class="lc-sheet-close" data-action="lcCloseSheet">\u2715</button>`;
+
+  if (type === 'tafsir') {
+    lcSheetOpenTab = 'kemenag';
+    const tabs = [
+      { key: 'kemenag', name: 'Kemenag', text: verse.tafsir_kemenag },
+      { key: 'ibnu', name: 'Ibnu Katsir', text: verse.tafsir_ibnu_kathir_id },
+      { key: 'shihab', name: 'Quraish Shihab', text: verse.tafsir_quraish_shihab }
+    ].filter(t => t.text);
+
+    bodyEl.innerHTML = `
+      <div class="lc-sheet-intro">Pelajari ayat ini dari para ulama dan mufassir terpercaya.</div>
+      ${tabs.map(t => `
+        <div class="lc-sheet-tab" data-tab-key="${t.key}">
+          <div class="lc-sheet-tab-header${t.key === 'kemenag' ? ' open' : ''}" data-action="lcSheetTab" data-key="${t.key}">
+            <span class="lc-sheet-tab-name">${escapeHtml(t.name)}</span>
+            <span class="lc-sheet-tab-chevron">\u25BE</span>
+          </div>
+          <div class="lc-sheet-tab-content${t.key === 'kemenag' ? ' open' : ''}">
+            <div class="lc-sheet-tab-text">${escapeHtml(t.text)}</div>
+          </div>
+        </div>
+      `).join('')}`;
+  } else {
+    lcSheetOpenTab = null;
+    const text = verse.asbabun_nuzul_id || '';
+    const paragraphs = text.split(/\n\n|\n/).filter(Boolean);
+    bodyEl.innerHTML = `
+      <div class="lc-sheet-asbabun">
+        ${paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('')}
+        <div class="lc-sheet-asbabun-source">Sumber: Asbab Al-Nuzul, Al-Wahidi</div>
+      </div>`;
+  }
+
+  overlay.classList.add('visible');
+  sheet.classList.add('visible');
+}
+
+function closeLessonSheet() {
+  const overlay = document.getElementById('lc-sheet-overlay');
+  const sheet = document.getElementById('lc-sheet');
+  if (overlay) overlay.classList.remove('visible');
+  if (sheet) sheet.classList.remove('visible');
+}
+
+function toggleLcSheetTab(key) {
+  const body = document.getElementById('lc-sheet-body');
+  if (!body) return;
+  const isClosing = lcSheetOpenTab === key;
+  lcSheetOpenTab = isClosing ? null : key;
+
+  body.querySelectorAll('.lc-sheet-tab').forEach(tab => {
+    const tabKey = tab.dataset.tabKey;
+    const header = tab.querySelector('.lc-sheet-tab-header');
+    const content = tab.querySelector('.lc-sheet-tab-content');
+    if (tabKey === key && !isClosing) {
+      header.classList.add('open');
+      content.classList.add('open');
+    } else {
+      header.classList.remove('open');
+      content.classList.remove('open');
+    }
+  });
+}
+
+// Close sheet on overlay tap
+document.getElementById('lc-sheet-overlay')?.addEventListener('click', closeLessonSheet);
+
 // ── Belajar Event Delegation ──
 
 document.addEventListener('click', function(e) {
@@ -5946,8 +6034,10 @@ document.addEventListener('click', function(e) {
   if (action === 'lcPrev') { lcPrev(); return; }
   if (action === 'lcToggleVerseBar') { lcToggleVerseBar(); return; }
   if (action === 'lcPlayAudio') { lcPlayAudio(target.dataset.src, target); return; }
-  if (action === 'lcOpenTafsir') { if (lcData?.verse) openTafsirOverlay(lcData.verse); return; }
-  if (action === 'lcOpenAsbabun') { if (lcData?.verse) openTafsirOverlay(lcData.verse); return; }
+  if (action === 'lcOpenTafsir') { if (lcData?.verse) openLessonSheet(lcData.verse, 'tafsir'); return; }
+  if (action === 'lcOpenAsbabun') { if (lcData?.verse) openLessonSheet(lcData.verse, 'asbabun'); return; }
+  if (action === 'lcCloseSheet') { closeLessonSheet(); return; }
+  if (action === 'lcSheetTab') { toggleLcSheetTab(target.dataset.key); return; }
   if (action === 'lcNuriBridge') { lcNuriBridge(target.dataset.from); return; }
   if (action === 'lcNextLesson') { lcNextLesson(); return; }
   if (action === 'lcFinishPath') { switchView('path-preview-view'); return; }

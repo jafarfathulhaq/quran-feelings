@@ -4,3 +4,6 @@
 .vercel/
 .vercel
 node_modules/
+scripts/batch_output/
+scripts/output/
+supabase/.temp/
