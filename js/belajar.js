@@ -1096,13 +1096,19 @@ function renderBottomNav() {
 
   let html = '';
 
+  if (isVerse) {
+    // Verse card: only the gold CTA, no nav row
+    html += `<button class="lc-gold-btn" data-action="lcNext">Pahami Ayat Ini \u2192</button>`;
+    return html;
+  }
+
   html += '<div class="lc-nav-row">';
   html += lcCardIdx > 0
     ? `<button class="lc-nav-prev" data-action="lcPrev">\u2190 Sebelumnya</button>`
     : '<span class="lc-nav-prev" style="visibility:hidden">\u2190 Sebelumnya</span>';
-  html += `<span class="lc-nav-counter"${isVerse ? ' style="visibility:hidden"' : ''}>${lcCardIdx + 1} / ${total}</span>`;
+  html += `<span class="lc-nav-counter">${lcCardIdx + 1} / ${total}</span>`;
 
-  if (!isVerse && lcCardIdx < total - 1) {
+  if (lcCardIdx < total - 1) {
     const next = lcCards[lcCardIdx + 1];
     const label = next.id === 'konteks' ? 'Lihat Konteks' : next.id === 'katakunci' ? 'Kata Kunci' :
       next.id === 'doa' ? 'Doa Terkait' : next.id === 'renungan' ? 'Renungkan' :
@@ -1113,11 +1119,6 @@ function renderBottomNav() {
   }
 
   html += '</div>';
-
-  if (isVerse) {
-    html += `<button class="lc-gold-btn" data-action="lcNext">Pahami Ayat Ini \u2192</button>`;
-  }
-
   return html;
 }
 
