@@ -881,10 +881,15 @@ function renderLcCard() {
   wrap.style.transform = 'none';
   wrap.innerHTML = renderCardContent();
 
-  // Bottom nav
+  // Bottom nav — hidden on verse card (button is inline)
   const bottom = document.getElementById('lc-bottom');
-  bottom.className = `lc-bottom ${isVerse ? 'lc-bottom-dark' : ''}`;
-  bottom.innerHTML = renderBottomNav();
+  if (isVerse) {
+    bottom.style.display = 'none';
+  } else {
+    bottom.style.display = '';
+    bottom.className = 'lc-bottom';
+    bottom.innerHTML = renderBottomNav();
+  }
 
   // Lesson dots colors
   updateLessonDotColors(isVerse);
@@ -958,6 +963,7 @@ function buildCardVerse(verse, anim) {
     <div class="lc-verse-divider"></div>
     <div class="lc-verse-translation">${escapeHtml(verse.text_indonesian)}</div>
     <button class="lc-audio-btn" data-action="lcPlayAudio" data-src="verse">\u25B6 Dengarkan Ayat</button>
+    <button class="lc-gold-btn lc-gold-inline" data-action="lcNext">Pahami Ayat Ini \u2192</button>
   </div>`;
 }
 
@@ -1095,12 +1101,6 @@ function renderBottomNav() {
   const total = lcCards.length;
 
   let html = '';
-
-  if (isVerse) {
-    // Verse card: only the gold CTA, no nav row
-    html += `<button class="lc-gold-btn" data-action="lcNext">Pahami Ayat Ini \u2192</button>`;
-    return html;
-  }
 
   html += '<div class="lc-nav-row">';
   html += lcCardIdx > 0

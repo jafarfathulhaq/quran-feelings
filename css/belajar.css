@@ -1074,6 +1074,11 @@
 .lc-verse-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(196,151,59,0.33), transparent); margin: 0 50px 20px; }
 .lc-verse-translation { font-size: 15px; font-style: italic; color: rgba(255,255,255,0.8); line-height: 1.7; max-width: 330px; margin: 0 auto 28px; }
 
+/* Gold CTA inline in verse card */
+.lc-gold-inline {
+  margin-top: auto; border-radius: 16px; padding: 13px 0;
+}
+
 /* ── Cards 2+: white card wrapper ── */
 .lc-card-outer { height: 100%; padding: 6px 14px 10px; }
 .lc-card-white {
