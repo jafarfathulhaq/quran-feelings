@@ -8,9 +8,6 @@
     },
     "api/nuri.js": {
       "maxDuration": 30
-    },
-    "api/learning-paths/lesson/[lessonId]/generate.js": {
-      "maxDuration": 30
     }
   },
   "crons": [
