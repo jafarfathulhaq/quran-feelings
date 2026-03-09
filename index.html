@@ -123,7 +123,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="dns-prefetch" href="https://cdn.islamic.network" />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/panduan.css" />
+  <link rel="stylesheet" href="css/jelajahi.css" />
+  <link rel="stylesheet" href="css/hero.css" />
+  <link rel="stylesheet" href="css/curhat.css" />
+  <link rel="stylesheet" href="css/verse-cards.css" />
+  <link rel="stylesheet" href="css/tafsir.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/share.css" />
+  <link rel="stylesheet" href="css/ajarkan.css" />
+  <link rel="stylesheet" href="css/belajar.css" />
+  <link rel="stylesheet" href="css/nuri.css" />
   <!-- Vercel Web Analytics — privacy-friendly, no cookies, no fingerprinting -->
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -904,6 +915,20 @@
   <!-- Toast notification -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js" defer></script>
+  <!-- JS split into feature modules (plain scripts, no ES modules) -->
+  <!-- Load order matters: data → core → verse-card → tafsir → share → features → init -->
+  <script src="js/data.js" defer></script>
+  <script src="js/core.js" defer></script>
+  <script src="js/verse-card.js" defer></script>
+  <script src="js/tafsir.js" defer></script>
+  <script src="js/share.js" defer></script>
+  <script src="js/curhat.js" defer></script>
+  <script src="js/panduan.js" defer></script>
+  <script src="js/jelajahi.js" defer></script>
+  <script src="js/ajarkan.js" defer></script>
+  <script src="js/daily-card.js" defer></script>
+  <script src="js/belajar.js" defer></script>
+  <script src="js/nuri.js" defer></script>
+  <script src="js/init.js" defer></script>
 </body>
 </html>

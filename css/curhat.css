@@ -1,0 +1,278 @@
+/* ── Home Content (Emotion Grid + VotD) ──────────────── */
+.home-content {
+  padding: 0 20px 48px;
+}
+
+/* ── Divider ──────────────────────────────────────────── */
+.search-divider {
+  text-align: center;
+  margin: 32px 0 24px;
+  position: relative;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.search-divider::before,
+.search-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 90px);
+  height: 1px;
+  background: var(--border);
+}
+
+.search-divider::before { left: 0; }
+.search-divider::after  { right: 0; }
+
+/* ── Emotion Carousel ─────────────────────────────────── */
+.emotion-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Break out of home-content's 20px side padding for full-bleed */
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  padding: 8px 20px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: 16px;
+  cursor: grab;
+}
+.emotion-grid::-webkit-scrollbar { display: none; }
+.emotion-grid.is-dragging { cursor: grabbing; scroll-behavior: auto; }
+
+/* ── Emotion Card ─────────────────────────────────────── */
+.emotion-card {
+  flex-shrink: 0;
+  width: 92px;
+  min-height: 114px;
+  scroll-snap-align: start;
+  background: #EEF3FB;
+  border: 1.5px solid #C8D8F0;
+  border-radius: var(--radius);
+  padding: 14px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+  will-change: transform, opacity;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+/* Accent bar on top */
+.emotion-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: #6B8DD6;
+  border-radius: 2px 2px 0 0;
+}
+
+.emotion-card:hover {
+  box-shadow: 0 8px 24px rgba(10,15,30,0.13);
+  border-color: #6B8DD6;
+}
+.emotion-card:active { opacity: 0.75 !important; }
+
+.ec-emoji  { font-size: 26px; line-height: 1; }
+.ec-label  { font-weight: 700; font-size: 11.5px; color: var(--text-dark); }
+.ec-desc   { font-size: 9.5px; color: var(--text-muted); line-height: 1.4; }
+
+/* ════════════════════════════════════════════════════════
+   VERSES VIEW — Results Header + Cards
+════════════════════════════════════════════════════════ */
+
+/* ── Results Header (dark gradient) ──────────────────── */
+.results-header {
+  background: linear-gradient(160deg,
+    #0A0F1E 0%,
+    #0F2044 55%,
+    #0A5C7A 100%
+  );
+  padding: 20px 20px 48px;
+  position: relative;
+  overflow: hidden;
+  margin: 12px 16px 0;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(10,15,30,0.20);
+}
+
+.results-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.10);
+  pointer-events: none;
+}
+
+/* Wave bottom of results header — replaced by card border-radius */
+.results-wave {
+  display: none;
+}
+
+/* ── Results Content ──────────────────────────────────── */
+.results-content {
+  padding: 0 16px 60px;
+  margin-top: 16px;
+}
+
+/* ── Back Button ──────────────────────────────────────── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: var(--radius-sm);
+  color: rgba(255,255,255,0.65);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 7px 16px;
+  margin-bottom: 20px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  background: rgba(255,255,255,0.06);
+}
+
+.back-btn:hover {
+  color: white;
+  border-color: rgba(255,255,255,0.38);
+  background: rgba(255,255,255,0.12);
+}
+
+/* ── Chat Thread ──────────────────────────────────────── */
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Base bubble */
+.chat-bubble {
+  max-width: 88%;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.75;
+  word-break: break-word;
+  animation: bubblePop 0.25s ease both;
+}
+
+@keyframes bubblePop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* User bubble — glassmorphism on dark */
+.chat-bubble--user {
+  align-self: flex-end;
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px 4px 14px 14px;
+  color: rgba(255,255,255,0.90);
+  font-style: italic;
+}
+
+/* App bubble — glassmorphism with gold hint */
+.chat-bubble--app {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(201,168,76,0.22);
+  border-radius: 4px 14px 14px 14px;
+  color: rgba(255,255,255,0.80);
+}
+
+/* Loading step indicator */
+.chat-bubble--typing {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.ls-step-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: 0.01em;
+}
+
+.ls-step-text.ls-fade {
+  animation: lsSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes lsSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ls-step-wrap {
+  display: inline-block;
+  animation: lsBounce 1.0s ease-in-out infinite;
+}
+
+@keyframes lsBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+/* Blinking cursor during typewriter */
+.chat-bubble--typing-active .cb-text::after {
+  content: '|';
+  animation: cursorBlink 0.65s step-end infinite;
+  color: var(--gold);
+  font-weight: 300;
+  margin-left: 1px;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+/* Back/action button inside a chat bubble */
+.cb-back-btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 7px 15px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 100px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cb-back-btn:hover {
+  background: rgba(255,255,255,0.20);
+  border-color: rgba(255,255,255,0.40);
+  color: white;
+}
+
+/* ════════════════════════════════════════════════════════
+   VERSE CARDS — Split dark/light design
+════════════════════════════════════════════════════════ */
+

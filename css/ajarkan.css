@@ -1,0 +1,1096 @@
+
+/* ════════════════════════════════════════════════════════
+   AJARKAN ANAKKU — Mode 4
+════════════════════════════════════════════════════════ */
+
+/* ── Color Variables ────────────────────────────────── */
+:root {
+  --ak-blue:        #4A7FB5;
+  --ak-blue-dark:   #3A6A9A;
+  --ak-blue-light:  #A8C8E8;
+  --ak-blue-bg:     #EFF5FB;
+  --ak-blue-card:   #FAFCFF;
+  --ak-blue-border: #D4E2F0;
+  --ak-blue-accent: #5B8EC4;
+  --ak-blue-muted-bg: #F0F4F8;
+}
+
+/* ── Landing Card Icon ──────────────────────────────── */
+.landing-card-icon.ajarkan {
+  background: rgba(74, 127, 181, 0.08);
+}
+
+.landing-card:nth-child(4) {
+  animation: fadeInUp 0.5s ease-out 0.5s both;
+}
+
+/* ── Hero Gradient ──────────────────────────────────── */
+.hero-ajarkan {
+  background: linear-gradient(160deg,
+    #0A1628 0%,
+    #142A4D 30%,
+    #1E3F6E 55%,
+    #2A5B8C 75%,
+    #4A7FB5 100%
+  );
+}
+.hero-ajarkan .hero-ornament {
+  color: rgba(168, 200, 232, 0.55);
+}
+.hero-ajarkan .hero-title span {
+  background: linear-gradient(90deg, var(--ak-blue-light), #D4E8FC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Age Instruction Text ──────────────────────────── */
+.ak-age-instruction {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 16px 0 0;
+  padding: 0 16px;
+  animation: akInstructionFade 2s ease-in-out infinite alternate;
+}
+@keyframes akInstructionFade {
+  0%, 40% { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+
+/* ── Age Selector (Segmented Toggle) ──────────────── */
+.ak-age-selector {
+  display: flex;
+  padding: 10px 16px 0;
+  justify-content: center;
+}
+
+.ak-age-toggle {
+  display: flex;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ak-blue-bg);
+  max-width: 340px;
+  width: 100%;
+}
+
+.ak-age-seg {
+  flex: 1;
+  padding: 10px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--ak-blue-dark);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.ak-age-seg:first-child {
+  border-right: 1px solid var(--ak-blue-border);
+}
+.ak-age-seg:hover {
+  background: rgba(74, 127, 181, 0.08);
+}
+.ak-age-seg.active {
+  background: var(--ak-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Gated content (hidden until age selected) ─────── */
+.ak-hidden {
+  display: none;
+}
+.ak-gated-reveal {
+  animation: akGatedReveal 0.4s ease both;
+}
+@keyframes akGatedReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Age warning (no age selected) ──────────────────── */
+.ak-age-warning {
+  text-align: center;
+  font-size: 12px;
+  color: #C0392B;
+  font-weight: 500;
+  padding: 8px 16px 0;
+  animation: fadeUp 0.3s ease both;
+}
+
+/* ── Input Card Override ────────────────────────────── */
+.ak-input-card {
+  margin: 12px 20px 0;
+}
+
+/* ── Category Filter Input ──────────────────────────── */
+.ak-filter-wrap {
+  padding: 0 0 10px;
+}
+.ak-filter-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-dark);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ak-filter-input:focus {
+  border-color: var(--ak-blue);
+}
+.ak-filter-input::placeholder {
+  color: var(--text-soft);
+}
+
+/* ── Category Grid ──────────────────────────────────── */
+.ak-category-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 40px;
+}
+
+.ak-category-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 14px;
+  background: var(--ak-blue-bg);
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.ak-category-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--ak-blue), var(--ak-blue-light));
+  border-radius: 4px 0 0 4px;
+}
+.ak-category-card:hover {
+  background: #E3EDF6;
+  box-shadow: 0 4px 14px rgba(74,127,181,0.12);
+  transform: translateY(-1px);
+}
+.ak-category-card:active {
+  transform: scale(0.97);
+  box-shadow: none;
+}
+
+.ak-category-emoji {
+  font-size: 30px;
+  flex-shrink: 0;
+}
+.ak-category-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ak-category-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.ak-category-count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Filtered Question List ─────────────────────────── */
+.ak-filtered-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 40px;
+}
+.ak-filtered-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ak-filtered-item:hover {
+  border-color: var(--ak-blue-border);
+  background: var(--ak-blue-bg);
+  color: var(--ak-blue-dark);
+}
+.ak-filtered-cat {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ak-blue-dark);
+  white-space: nowrap;
+  background: var(--ak-blue-bg);
+  border: 1px solid var(--ak-blue-border);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+/* ── Result Card Base ───────────────────────────────── */
+.ak-card {
+  background: var(--ak-blue-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--ak-blue-border);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(30,60,90,0.06);
+}
+.ak-card::before {
+  content: '';
+  display: block;
+  height: 5px;
+  background: linear-gradient(90deg, var(--ak-blue-accent), var(--ak-blue-light));
+}
+.ak-card-body {
+  padding: 20px;
+}
+
+/* ── Section Label ──────────────────────────────────── */
+.ak-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ak-section-label .ak-sl-icon {
+  font-size: 14px;
+}
+
+/* ── Inline Salin (Copy) ────────────────────────────── */
+.ak-inline-salin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--ak-blue-bg);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: 6px;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 6px;
+  transition: all 0.2s;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-inline-salin:hover {
+  background: #DDE9F3;
+}
+.ak-inline-salin.copied {
+  background: var(--ak-blue);
+  border-color: var(--ak-blue);
+}
+.ak-inline-salin.copied .ak-salin-icon {
+  visibility: hidden;
+}
+.ak-inline-salin.copied::after {
+  content: '\2713';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ak-salin-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+.ak-salin-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-dark);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.ak-salin-tooltip.show {
+  opacity: 1;
+}
+.ak-salin-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--text-dark);
+}
+
+/* ── Expand Rows ────────────────────────────────────── */
+.ak-expand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--ak-blue-muted-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-expand-row:hover {
+  background: #DDE9F3;
+}
+.ak-expand-row-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.ak-expand-row-label {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.ak-expand-row-chevron {
+  font-size: 10px;
+  color: var(--ak-blue);
+  transition: transform 0.3s;
+}
+.ak-expand-row.open .ak-expand-row-chevron {
+  transform: rotate(180deg);
+}
+
+.ak-expand-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  background: var(--ak-blue-muted-bg);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.ak-expand-content.open {
+  max-height: 500px;
+  padding: 14px;
+}
+.ak-expand-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-mid);
+}
+
+/* ── Card 0: Penjelasan ─────────────────────────────── */
+.ak-intro-question {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.ak-explanation-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-mid);
+}
+.ak-fade-in {
+  animation: akFadeIn 0.3s ease both;
+}
+@keyframes akFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ak-explanation-wrap {
+  position: relative;
+}
+.ak-verse-teaser {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Verse Mini Card Row (tappable, Card 0) ───────── */
+.ak-vmc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-vmc-row:hover {
+  background: #E3EDF6;
+}
+.ak-vmc-row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.ak-vmc-row-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ak-blue);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ak-vmc-row-chevron {
+  display: inline-block;
+  font-size: 10px;
+  transition: transform 0.3s;
+}
+.ak-vmc-row.ak-vmc-open .ak-vmc-row-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Verse Mini Cards (Card 0 references) ─────────── */
+.ak-verse-mini-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(226,232,240,0.8);
+  box-shadow: 0 2px 8px rgba(10,15,30,0.06);
+  transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+  max-height: 800px;
+  opacity: 1;
+  margin-bottom: 8px;
+}
+.ak-verse-mini-card.ak-vmc-collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+  border: none;
+  box-shadow: none;
+}
+.ak-vmc-relevance {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-mid);
+  line-height: 1.6;
+  border-bottom: 1px solid var(--ak-blue-border);
+}
+.ak-vmc-pin {
+  flex-shrink: 0;
+  font-size: 13px;
+  margin-top: 1px;
+}
+.ak-vmc-arabic-section {
+  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 70%, #0D3B6E 100%);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.ak-vmc-arabic-section::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #D4A853, #E8C97A, transparent);
+}
+.ak-vmc-ref {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.3px;
+  margin-bottom: 10px;
+}
+.ak-vmc-arabic {
+  font-family: 'Scheherazade New', 'Amiri', serif;
+  font-size: 22px;
+  line-height: 2;
+  color: #fff;
+  text-align: right;
+  direction: rtl;
+  margin: 0;
+}
+.ak-vmc-content {
+  padding: 14px 16px;
+  background: var(--card-bg);
+}
+.ak-vmc-translation {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-mid);
+  margin: 0 0 12px;
+  font-style: italic;
+}
+
+/* ── Expanded Category Header ─────────────────────────── */
+.ak-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--ak-blue) 0%, var(--ak-blue-dark) 100%);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.ak-expanded-header::after {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+.ak-expanded-emoji {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+.ak-expanded-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ak-expanded-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.ak-expanded-desc {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.7);
+  margin: 0;
+}
+
+/* ── Questions List Container ──────────────────────────── */
+.ak-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Subcategory headers (expanded category, tappable) ── */
+.ak-subcategory-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ak-blue-dark);
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--ak-blue);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-subcategory-header:first-child {
+  margin-top: 0;
+}
+.ak-subcategory-header:hover {
+  background: #E3EDF6;
+}
+.ak-subcategory-header:active {
+  background: var(--ak-blue-light);
+}
+.ak-sub-name {
+  flex: 1;
+}
+.ak-sub-meta {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ak-sub-chevron {
+  font-size: 9px;
+  transition: transform 0.25s ease;
+  color: var(--ak-blue);
+}
+.ak-subcategory-header.ak-sub-expanded .ak-sub-chevron {
+  transform: rotate(180deg);
+}
+.ak-sub-questions-wrap {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+  max-height: 2000px;
+  opacity: 1;
+}
+.ak-sub-questions-wrap.ak-sub-collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ── Question Rows (ajarkan blue theme) ───────────── */
+.ak-question-row {
+  width: 100%;
+  text-align: left;
+  padding: 13px 16px;
+  padding-left: 20px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1.55;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.ak-question-row:hover {
+  border-color: var(--ak-blue-border);
+  background: var(--ak-blue-bg);
+  color: var(--ak-blue-dark);
+}
+.ak-question-row:hover svg {
+  color: var(--ak-blue);
+}
+.ak-question-row:active {
+  transform: scale(0.98);
+}
+
+/* ── Empty State ──────────────────────────────────── */
+.ak-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+.ak-empty-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+.ak-empty-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-mid);
+  margin: 0 0 4px;
+}
+.ak-empty-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ak-verse-teaser-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+/* ── Swipe CTA (big) ────────────────────────────────── */
+.ak-swipe-cta {
+  margin: 10px 0 0;
+  padding: 16px 18px;
+  background: var(--ak-blue-card);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 12px rgba(30,60,90,0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  animation: akPulse 3s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-swipe-cta:hover {
+  transform: translateX(3px);
+}
+@keyframes akPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74,127,181,0), 0 2px 12px rgba(30,60,90,0.06); }
+  50% { box-shadow: 0 0 0 4px rgba(74,127,181,0.08), 0 2px 12px rgba(30,60,90,0.06); }
+}
+.ak-swipe-cta-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.ak-swipe-cta-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ak-swipe-cta-arrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ak-blue);
+  white-space: nowrap;
+  animation: akBounce 1.2s ease-in-out infinite;
+}
+@keyframes akBounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+/* ── Mini CTA ───────────────────────────────────────── */
+.ak-mini-cta {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px dashed var(--ak-blue-border);
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-mini-cta-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ak-mini-cta-text {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-mid);
+}
+.ak-mini-cta-arrow {
+  color: var(--ak-blue);
+  animation: akBounce 1.2s ease-in-out infinite;
+}
+
+/* Hide swipe/mini CTA on desktop — arrow buttons are visible */
+@media (min-width: 601px) {
+  .ak-swipe-cta, .ak-mini-cta { display: none; }
+}
+
+/* ── Card 1: Ngobrol Toggle ─────────────────────────── */
+.ak-ngobrol-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+.ak-ngobrol-toggle {
+  display: flex;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ak-blue-bg);
+  margin-bottom: 16px;
+}
+.ak-ngobrol-seg {
+  flex: 1;
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--ak-blue-dark);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-ngobrol-seg:first-child {
+  border-right: 1px solid var(--ak-blue-border);
+}
+.ak-ngobrol-seg:hover {
+  background: rgba(74, 127, 181, 0.08);
+}
+.ak-ngobrol-seg.active {
+  background: var(--ak-blue);
+  color: #fff;
+  font-weight: 600;
+}
+.ak-ngobrol-panel {
+  background: var(--ak-blue-bg);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  animation: akGatedReveal 0.3s ease both;
+}
+.ak-ngobrol-hidden {
+  display: none;
+}
+
+.ak-approach-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 14px;
+}
+.ak-approach-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 4px;
+  font-weight: 400;
+}
+.ak-pembuka-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+.ak-panduan-text {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Card 2: Aktivitas ──────────────────────────────── */
+.ak-activity-box {
+  background: linear-gradient(135deg, var(--ak-blue-bg) 0%, #E8EFF8 50%, #F0F4FA 100%);
+  border: 1px solid var(--ak-blue-border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.ak-activity-box::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--ak-blue), var(--ak-blue-light));
+  border-radius: 4px 0 0 4px;
+}
+.ak-activity-text {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--text-dark);
+}
+.ak-activity-text .ak-when {
+  font-weight: 600;
+  color: var(--ak-blue-dark);
+}
+
+/* ── Verse Cards (ajarkan mode) ─────────────────────── */
+.ak-verse-relevance {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.ak-verse-relevance-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.ak-verse-relevance-text {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-mid);
+  line-height: 1.65;
+}
+
+.ak-verse-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ak-blue-bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.ak-verse-row:hover {
+  background: #DDE9F3;
+}
+.ak-verse-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ak-verse-toggle {
+  font-size: 13px;
+  color: var(--ak-blue);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ak-verse-chevron {
+  display: inline-block;
+  transition: transform 0.3s;
+  font-size: 11px;
+}
+.ak-verse-toggle.open .ak-verse-chevron {
+  transform: rotate(180deg);
+}
+
+.ak-verse-dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  background: var(--ak-blue-muted-bg);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.ak-verse-dropdown.open {
+  max-height: 500px;
+  padding: 16px 14px;
+}
+
+.ak-verse-arabic {
+  font-family: 'Amiri', serif;
+  font-size: 22px;
+  line-height: 2;
+  direction: rtl;
+  text-align: right;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ak-verse-translation {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-mid);
+  font-style: italic;
+}
+
+.ak-verse-refs {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+/* ── Action Row (reuse pattern from mockup) ──────── */
+.ak-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.ak-action-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: white;
+  border: 1.5px solid var(--ak-blue-border);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-action-btn:hover {
+  border-color: var(--ak-blue-light);
+  background: var(--ak-blue-bg);
+}
+.ak-action-btn:active {
+  transform: scale(0.97);
+}
+.ak-action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Age Badge Strip (result view) ──────────────────── */
+.ak-age-badge {
+  background: linear-gradient(135deg, rgba(74,127,181,0.08), rgba(74,127,181,0.15));
+  border: 1px solid var(--ak-blue-border);
+  color: var(--ak-blue-dark);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+.ak-age-badge::before {
+  content: '\1F319';
+  font-size: 13px;
+}
+.ak-age-badge:hover {
+  background: linear-gradient(135deg, rgba(74,127,181,0.12), rgba(74,127,181,0.2));
+}
+.ak-age-badge::after {
+  content: '\21C4  Ganti kategori umur';
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+/* ── Cross-ref approach label ───────────────────────── */
+.ak-xref-approach {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ak-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.ak-xref-pembuka {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.ak-xref-panduan {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+/* ── Typewriter cursor ──────────────────────────────── */
+.ak-typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--ak-blue);
+  margin-left: 2px;
+  animation: blink 0.8s infinite;
+  vertical-align: text-bottom;
+}
+

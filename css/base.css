@@ -1,0 +1,245 @@
+/* ── Reset & Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* New night-sky palette */
+  --night-1:    #0A0F1E;
+  --night-2:    #0F1E3C;
+  --night-3:    #0F2044;
+  --indigo:     #0D3B6E;
+  --teal-dark:  #0A5C7A;
+  --teal:       #0D7A7A;
+  --teal-light: #E6F3F1;
+  --gold:       #C9A84C;
+  --gold-light: #E8C96A;
+  --bg:         #F0F4F8;
+  --card-bg:    #FFFFFF;
+  --text-dark:  #0A0F1E;
+  --text-mid:   #2D3748;
+  --text-muted: #64748B;
+  --text-soft:  #A0AEC0;
+  --border:     #E2E8F0;
+  --shadow-card: 0 4px 20px rgba(10,15,30,0.08), 0 1px 4px rgba(10,15,30,0.05);
+  --radius:     20px;
+  --radius-sm:  14px;
+
+  /* Landing polish */
+  --bg-landing:     #F8F8FA;
+  --shadow-rest:    0 1px 3px rgba(0,0,0,0.04), 0 4px 14px rgba(0,0,0,0.06);
+  --shadow-hover:   0 2px 8px rgba(0,0,0,0.06), 0 8px 28px rgba(0,0,0,0.10);
+  --shadow-pressed: 0 1px 2px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+  --radius-lg:      18px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text-dark);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.7;
+}
+
+/* ── App wrapper ──────────────────────────────────────── */
+.app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* ── Views ────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; animation: fadeUp 0.4s ease both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════
+   LANDING VIEW — Apple-Minimal Stacked Cards
+════════════════════════════════════════════════════════ */
+
+#landing-view {
+  background: var(--bg-landing);
+}
+
+.landing-header {
+  text-align: center;
+  padding: 48px 1rem 0;
+  animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+.landing-headline {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--teal-dark);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.landing-headline .highlight {
+  color: var(--teal-dark);
+}
+
+.landing-divider {
+  width: 36px;
+  height: 2px;
+  background: var(--teal-dark);
+  margin: 14px auto 0;
+  border: none;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+/* ── Stacked Card Container ─────────────────────────── */
+.landing-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 20px 0;
+}
+
+/* ── Card — borderless, shadow-depth ────────────────── */
+.landing-card {
+  background: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-rest);
+  padding: 28px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.landing-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.landing-card:active {
+  box-shadow: var(--shadow-pressed);
+  transform: scale(0.98);
+}
+
+/* Staggered entrance */
+.landing-card:nth-child(1) {
+  animation: fadeInUp 0.5s ease-out 0.2s both;
+}
+.landing-card:nth-child(2) {
+  animation: fadeInUp 0.5s ease-out 0.3s both;
+}
+.landing-card:nth-child(3) {
+  animation: fadeInUp 0.5s ease-out 0.4s both;
+}
+
+/* ── Emoji Icon Circle ──────────────────────────────── */
+.landing-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.landing-card-icon.curhat {
+  background: rgba(42, 124, 111, 0.08);
+}
+
+.landing-card-icon.panduan {
+  background: rgba(196, 152, 59, 0.08);
+}
+
+.landing-card-icon.jelajahi {
+  background: rgba(120, 100, 70, 0.08);
+}
+
+/* ── Card Text ──────────────────────────────────────── */
+.landing-card-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-card-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+  display: block;
+}
+
+.landing-card-desc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 3px;
+}
+
+/* ── Section Divider (between cards and VOTD) ────────── */
+.landing-section-divider {
+  border: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 14px 20px;
+}
+
+/* ── Nowrap (prevents "Al-" orphaning on narrow screens) ── */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* ── Verse of the Day ───────────────────────────────── */
+.landing-votd {
+  padding: 0 20px 12px;
+  animation: fadeInUp 0.5s ease-out 0.5s both;
+}
+
+/* ── Entrance Animation ─────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Mode Back Button (light background variant) ─────── */
+.mode-back-wrap {
+  padding: 16px 16px 0;
+}
+
+.back-btn-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 7px 16px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.back-btn-light:hover {
+  color: var(--text-dark);
+  border-color: var(--text-muted);
+  background: rgba(0,0,0,0.03);
+}
+

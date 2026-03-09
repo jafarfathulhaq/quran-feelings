@@ -1,0 +1,396 @@
+/* ── Jelajahi Preset Grid (2-column) ─────────────────── */
+/* ── Surah Browser (categorized accordion) ─────────── */
+.surah-browser { padding-bottom: 40px; }
+
+/* Shared surah row children */
+.sb-num {
+  width: 32px;
+  height: 32px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sb-name {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+.sb-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+/* Juz accordion groups */
+.juz-group { margin-bottom: 8px; }
+
+.juz-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(0,0,0,0.02);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.juz-group-header:active { background: rgba(0,0,0,0.05); }
+
+.juz-group-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.juz-group-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+.juz-group-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.juz-group-arrow {
+  font-size: 1rem;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+.juz-group.expanded .juz-group-arrow {
+  transform: rotate(90deg);
+}
+
+/* Accordion content */
+.juz-group-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding: 0 4px;
+}
+.juz-group.expanded .juz-group-content {
+  max-height: 2000px;
+  padding-top: 6px;
+  padding-bottom: 4px;
+}
+
+/* Surah rows inside accordion */
+.sb-accordion-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  border: none;
+}
+.sb-accordion-row:active { background: rgba(0,0,0,0.04); }
+.sb-accordion-row:last-child { margin-bottom: 0; }
+
+/* ── Multi-Result Selection ─────────────────────────── */
+.jelajahi-multi { padding: 16px 20px 40px; }
+.jelajahi-multi.hidden { display: none; }
+
+.multi-result-heading {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.multi-result-subheading {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.multi-result-card {
+  width: 100%;
+  text-align: left;
+  padding: 16px 18px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.multi-result-card:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+}
+.multi-result-card:active { transform: scale(0.98); }
+
+.multi-card-body { flex: 1; min-width: 0; }
+
+.multi-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.multi-card-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.multi-card-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.multi-card-reason {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* ── Juz Surah List ──────────────────────────────────── */
+.juz-surah-list {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.juz-surah-list.hidden { display: none; }
+.juz-surah-list.slide-up   { animation: slideUpFadeIn  0.3s ease both; }
+.juz-surah-list.slide-down { animation: slideDownFadeOut 0.25s ease both; }
+
+.juz-surah-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px 20px 60px;
+}
+
+.juz-surah-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.juz-surah-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.juz-surah-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.juz-surah-row {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.juz-surah-row:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+}
+
+.juz-surah-row:active {
+  transform: scale(0.98);
+}
+
+.juz-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.juz-row-num,
+.juz-surah-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(10,92,122,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal-dark);
+  flex-shrink: 0;
+}
+
+.juz-row-name,
+.juz-surah-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+  flex: 1;
+}
+
+.juz-row-ayat,
+.juz-surah-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ── Reading Progress Bar (for long surahs) ──────────── */
+.reading-progress {
+  height: 5px;
+  background: var(--border);
+  margin: 12px 20px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.reading-progress-fill {
+  height: 100%;
+  background: var(--teal-dark);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+/* ── Jelajahi Intro Card (static surah info) ─────────── */
+.jelajahi-intro {
+  background: linear-gradient(160deg, #0A0F1E 0%, #16213E 55%, #0A5C7A 100%);
+  border-radius: 24px;
+  padding: 32px 24px;
+  margin-top: 8px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(10,15,30,0.20);
+  min-height: 35vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: fadeInUp 0.4s ease-out both;
+  position: relative;
+  overflow: hidden;
+}
+
+.jelajahi-intro::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.10);
+  pointer-events: none;
+}
+
+.ji-emoji,
+.jelajahi-intro-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.ji-name,
+.jelajahi-intro-surah {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.ji-arabic-name {
+  font-family: 'Amiri', serif;
+  font-size: 1.5rem;
+  color: rgba(255,255,255,0.7);
+  margin: 4px 0 0;
+}
+
+.ji-meta,
+.jelajahi-intro-meta {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ji-bismillah {
+  font-family: 'Amiri', serif;
+  font-size: 1.3rem;
+  color: rgba(201,168,76,0.85);
+  margin: 12px 0 0;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+.ji-hint,
+.jelajahi-intro-hint { display: none; /* legacy, replaced by .swipe-hint-pill */ }
+
+/* ── Jelajahi Loading State ─────────────────────────── */
+.jelajahi-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 16px;
+  padding: 32px 20px;
+}
+
+.jl-icon {
+  font-size: 2.5rem;
+  animation: hintPulse 2s ease-in-out infinite;
+}
+.jelajahi-loading .ls-step-text {
+  color: var(--text-mid);
+}
+
+/* ── Per-verse Relevance (panduan mode) ──────────────── */
+.vc-relevance {
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-mid);
+  background: #EDF7F6;
+  border-left: 3px solid var(--teal-dark);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 13px;
+  margin-bottom: 14px;
+}
+
+/* ════════════════════════════════════════════════════════
+   SELECTION VIEW — Hero + Input + Emotions
+════════════════════════════════════════════════════════ */
+

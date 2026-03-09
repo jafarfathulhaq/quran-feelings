@@ -1,0 +1,213 @@
+/* ── Panduan Card (teal accent) ──────────────────────── */
+.panduan-grid .emotion-card {
+  background: #EDF7F6;
+  border-color: #B8DDD9;
+}
+
+.panduan-grid .emotion-card::before {
+  background: var(--teal-dark);
+}
+
+.panduan-grid .emotion-card:hover {
+  border-color: var(--teal-dark);
+}
+
+/* ── Panduan Expanded View (sub-questions) ─────────── */
+.panduan-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.panduan-expanded.hidden { display: none; }
+.panduan-expanded.slide-up   { animation: slideUpFadeIn  0.3s ease both; }
+.panduan-expanded.slide-down { animation: slideDownFadeOut 0.25s ease both; }
+
+@keyframes slideUpFadeIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDownFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(40px); }
+}
+
+.panduan-expanded-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px 20px 60px;
+}
+
+.panduan-expanded-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 7px 16px;
+  margin-bottom: 24px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.panduan-expanded-back:hover {
+  color: var(--text-dark);
+  border-color: var(--text-muted);
+  background: rgba(0,0,0,0.03);
+}
+
+.panduan-expanded-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.panduan-expanded-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 10px;
+}
+.panduan-expanded-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.panduan-expanded-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.sub-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sub-question-row {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1.55;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sub-question-row:hover {
+  border-color: var(--teal-dark);
+  background: #EDF7F6;
+  color: var(--teal-dark);
+}
+.sub-question-row:active {
+  transform: scale(0.98);
+}
+.sub-question-arrow {
+  flex-shrink: 0;
+  color: var(--text-soft);
+  transition: color 0.15s;
+}
+.sub-question-row:hover .sub-question-arrow {
+  color: var(--teal-dark);
+}
+
+.tulis-sendiri-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.tulis-sendiri-row {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tulis-sendiri-row:hover {
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+  background: #EDF7F6;
+}
+
+.tulis-sendiri-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tulis-sendiri-form textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 14px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text-dark);
+  background: #F8FAFC;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  resize: vertical;
+  line-height: 1.75;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tulis-sendiri-form textarea:focus {
+  border-color: var(--teal-dark);
+  box-shadow: 0 0 0 3px rgba(10,92,122,0.10);
+}
+.tulis-sendiri-form textarea::placeholder { color: var(--text-soft); }
+.tulis-sendiri-submit {
+  align-self: flex-end;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, var(--night-3), var(--teal-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  box-shadow: 0 4px 16px rgba(10,92,122,0.30);
+}
+.tulis-sendiri-submit:hover { opacity: 0.88; }
+.tulis-sendiri-submit:disabled { opacity: 0.5; cursor: default; }
+
+/* ════════════════════════════════════════════════════════
+   JELAJAHI VIEW — Quran Explorer
+════════════════════════════════════════════════════════ */
+
+/* Hero gradient variant for Jelajahi */
+.hero-jelajahi {
+  background: linear-gradient(160deg,
+    #0A0F1E 0%,
+    #1A1A2E 30%,
+    #16213E 55%,
+    #0F3460 75%,
+    #0A5C7A 100%
+  );
+}
+

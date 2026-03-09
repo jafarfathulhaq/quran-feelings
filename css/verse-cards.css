@@ -1,0 +1,547 @@
+/* ── Verses Grid (legacy, kept for error states) ─────── */
+.verses-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* ── Verses Header (light sticky) ────────────────────── */
+.verses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 10px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+
+.verse-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verse-counter-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+  min-width: 72px;
+  text-align: center;
+}
+
+.verse-counter-arrow {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.verse-counter-arrow:hover {
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+  background: rgba(10,92,122,0.05);
+}
+.verse-counter-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Verses Carousel ─────────────────────────────────── */
+.verses-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* scroll-behavior: smooth removed — conflicts with JS scrollTo + snap */
+}
+.verses-carousel::-webkit-scrollbar { display: none; }
+
+.verse-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  overflow-y: auto;
+  padding: 0 16px 20px;
+  min-height: 0;
+}
+
+/* Intro slide — dark-gradient chat-bubble style */
+.intro-chat {
+  background: linear-gradient(160deg, #0A0F1E 0%, #0F2044 55%, #0A5C7A 100%);
+  border-radius: 24px;
+  padding: 24px 20px 28px;
+  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(10,15,30,0.20);
+  display: flex;
+  flex-direction: column;
+  min-height: 45vh;
+}
+.intro-chat::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.10);
+  pointer-events: none;
+}
+.intro-chat .chat-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.intro-swipe-hint { display: none; /* legacy, replaced by .swipe-hint-pill */ }
+
+/* Swipe hint pill — teal pill with bouncing arrow */
+.swipe-hint-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: var(--teal-dark);
+  color: #fff;
+  border-radius: 24px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  animation: hintPillIn 0.4s ease-out;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.swipe-hint-pill.hint-faded {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+.ji-hint-pill { margin-top: 16px; }
+.swipe-hint-arrow {
+  display: inline-block;
+  animation: hintArrowBounce 1s ease-in-out infinite;
+}
+@keyframes hintPillIn {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes hintArrowBounce {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(5px); }
+}
+
+/* Verse cards inside carousel — no entrance animation */
+.verse-slide .verse-card {
+  opacity: 1;
+  transform: none;
+}
+.verse-slide .verse-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Verses Dots (pagination) ────────────────────────── */
+.verses-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 4px;
+}
+
+.verse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.18);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.verse-dot.active {
+  background: var(--gold);
+  transform: scale(1.3);
+}
+
+/* Loading state inside carousel */
+.verse-slide-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 18px;
+}
+
+/* ── Verse Card ───────────────────────────────────────── */
+.verse-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(226,232,240,0.8);
+  display: flex;
+  flex-direction: column;
+  /* Visibility transition */
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.4s ease, transform 0.4s ease,
+              box-shadow 0.18s, border-color 0.18s;
+  min-width: 0;
+}
+
+.verse-card.card-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.verse-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(10,15,30,0.13);
+}
+
+/* ── Dark Arabic Section ──────────────────────────────── */
+.vc-arabic-section {
+  background: linear-gradient(135deg, #0A0F1E 0%, #0F2044 70%, #0D3B6E 100%);
+  padding: 20px 20px 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gold vertical accent bar on the left */
+.vc-arabic-section::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold), var(--gold-light), transparent);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Decorative ring */
+.vc-arabic-section::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.12);
+  pointer-events: none;
+}
+
+.vc-ref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.vc-ref-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vc-ref-label::before {
+  content: '';
+  display: block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+.vc-surah-number {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(201,168,76,0.75);
+  flex-shrink: 0;
+}
+
+.vc-arabic-text {
+  font-family: 'Amiri', serif;
+  font-size: 24px;
+  line-height: 2.1;
+  direction: rtl;
+  text-align: right;
+  color: rgba(255,255,255,0.95);
+}
+
+/* ── Light Content Section ────────────────────────────── */
+.vc-content {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.vc-translation {
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--text-mid);
+  font-style: italic;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  flex: 1;
+}
+
+/* ── Per-verse Resonance ──────────────────────────────── */
+.vc-resonance {
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-mid);
+  background: #F0F7FF;
+  border-left: 3px solid var(--teal-dark);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 13px;
+  margin-bottom: 14px;
+}
+
+/* ── Tafsir Toggle Button ─────────────────────────────── */
+.vc-tafsir-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 13px;
+  background: #F8FAFC;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, border-radius 0.15s;
+  gap: 8px;
+  text-align: left;
+}
+
+.vc-tafsir-btn:hover {
+  background: rgba(10,92,122,0.05);
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+}
+
+.vc-tafsir-btn.open {
+  background: rgba(10,92,122,0.06);
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-bottom: 0;
+}
+
+.vc-tafsir-btn-arrow {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ── Tafsir Unified Panel ─────────────────────────────── */
+.vc-tafsir-panel {
+  margin-bottom: 14px;
+  border: 1.5px solid var(--teal-dark);
+  border-top: none;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  overflow: hidden;
+}
+.vc-tafsir-panel.hidden { display: none; }
+
+/* ── Tab Bar ──────────────────────────────────────────── */
+.vc-tafsir-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,92,122,0.03);
+}
+.vc-tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.vc-tab-btn.active {
+  color: var(--teal-dark);
+  border-bottom-color: var(--teal-dark);
+  background: rgba(10,92,122,0.06);
+}
+.vc-tab-btn:hover:not(.active) {
+  background: rgba(10,92,122,0.03);
+  color: var(--text-mid);
+}
+
+/* ── Tab Content ──────────────────────────────────────── */
+.vc-tab-content {
+  padding: 14px 14px 12px;
+}
+.vc-tab-content.hidden { display: none; }
+
+.vc-tafsir-text {
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: var(--text-mid);
+  white-space: pre-wrap;
+  margin-bottom: 10px;
+}
+.vc-tafsir-note {
+  font-size: 10.5px;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--teal-dark);
+  margin-top: 10px;
+}
+
+/* ── Ibnu Kathir Markdown Styles ──────────────────────── */
+.vc-tafsir-md h2 {
+  font-size: 12.5px; font-weight: 700; color: var(--text-dark); margin: 14px 0 5px;
+}
+.vc-tafsir-md h3 {
+  font-size: 11.5px; font-weight: 700; color: var(--night-2); margin: 12px 0 4px;
+}
+.vc-tafsir-md p {
+  font-size: 12.5px; line-height: 1.85; color: var(--text-mid); margin-bottom: 6px;
+}
+.vc-tafsir-md blockquote {
+  border-left: 3px solid var(--teal-dark);
+  background: rgba(10,92,122,0.04);
+  border-radius: 0 4px 4px 0;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+.vc-tafsir-md blockquote p { color: var(--text-mid); font-style: italic; margin-bottom: 0; }
+.vc-tafsir-md strong { font-weight: 700; color: var(--text-dark); }
+.vc-tafsir-md em     { font-style: italic; }
+
+/* ── Baca Selengkapnya expand ─────────────────────────── */
+.vc-tafsir-text-wrap {
+  position: relative;
+  max-height: 116px;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.vc-tafsir-text-wrap.expanded { max-height: 9999px; }
+.vc-tafsir-text-wrap:not(.expanded)::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(transparent, #ffffff);
+  pointer-events: none;
+}
+.vc-read-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--teal-dark);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.vc-read-more-btn:hover { color: var(--night-2); }
+
+/* ── Asbabun Nuzul Panel ────────────────────────────────── */
+.vc-asbab-toggle {
+  margin-top: 0;
+}
+.vc-asbab-panel {
+  margin-bottom: 14px;
+  border: 1.5px solid var(--teal-dark);
+  border-top: none;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  overflow: hidden;
+}
+.vc-asbab-panel.hidden { display: none; }
+.vc-asbab-body {
+  padding: 14px 14px 12px;
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/*  TAFSIR CTA — Subtle inline link                      */
+/* ═══════════════════════════════════════════════════════ */
+
+.tafsir-cta-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  background: rgba(10, 92, 122, 0.04);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tafsir-cta-link:active { transform: scale(0.985); background: rgba(10, 92, 122, 0.08); }
+.tafsir-cta-icon { font-size: 0.8125rem; line-height: 1; }
+.tafsir-cta-text { flex: 1; font-size: 0.8125rem; font-weight: 600; color: var(--teal-dark); }
+.tafsir-cta-link svg { width: 14px; height: 14px; color: var(--teal-dark); flex-shrink: 0; transition: transform 0.2s ease; }
+.tafsir-cta-link:hover svg { transform: translateX(2px); }
+
+
+/* ═══════════════════════════════════════════════════════ */
+/*  TAFSIR SUMMARY — Full-Screen Overlay                 */
+/* ═══════════════════════════════════════════════════════ */
+
+.tafsir-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;                       /* allow vertical scroll when full tafsir is open */
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.tafsir-overlay.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+body.tafsir-locked { overflow: hidden; }
+
+

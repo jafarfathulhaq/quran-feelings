@@ -13,7 +13,7 @@
 ## Tech stack
 | Layer | Tech |
 |---|---|
-| Frontend | Vanilla HTML / CSS / JS (`index.html`, `style.css`, `app.js`) |
+| Frontend | Vanilla HTML / CSS / JS (`index.html`, `css/*.css`, `js/*.js`) — no build step |
 | Backend | Vercel Serverless Functions (`api/*.js`, Node 20) |
 | Database | Supabase (PostgreSQL + pgvector) |
 | AI | OpenAI — `gpt-4o-mini` (verse selection, HyDE, decompose, jelajahi intent parser), `text-embedding-3-large` (1536 dims) |
@@ -26,8 +26,33 @@
 ```
 index.html          — single-page shell (9 views: landing-view, selection-view, panduan-view, jelajahi-view, ajarkan-view, verses-view, nuri-view, journal-view, paths-list-view + path-preview-view + lesson-view + path-complete-view)
 package.json        — dependencies: web-push, @supabase/supabase-js, openai
-style.css           — all styles, no framework
-app.js              — all frontend JS, no framework, no build
+css/                — split CSS files (12 files, no framework, no build)
+  base.css          — :root variables, reset, views, landing cards, entrance animation
+  panduan.css       — panduan card, expanded view
+  jelajahi.css      — surah browser, juz list, intro card, progress bar
+  hero.css          — hero header gradient, floating input, search textarea
+  curhat.css        — emotion grid, results header, chat thread
+  verse-cards.css   — verse carousel, verse card, dark Arabic, tafsir panel
+  tafsir.css        — tafsir overlay, summary card, accordion
+  components.css    — verse action row, A2HS, about/FAQ, daily card, VOTD
+  share.css         — share sheet, image themes, text share toggles
+  ajarkan.css       — ajarkan categories, age toggle, result cards
+  belajar.css       — belajar tabs, path preview, lesson view, bottom sheet
+  nuri.css          — nuri chat bubbles, typing indicator, quick replies
+js/                 — split JS files (13 files, no framework, no build, plain <script defer>)
+  data.js           — all data constants (SURAH_META, categories, icons, config)
+  core.js           — shared utils (escapeHtml, switchView, logEvent, fetchAyat, audio)
+  verse-card.js     — buildVerseCard, carousel, swipe hints, pagination
+  tafsir.js         — tafsir overlay, about/FAQ overlay
+  share.js          — share sheet, image generation, text share
+  curhat.js         — emotion cards, curhat search
+  panduan.js        — panduan cards, sub-question drill-down
+  jelajahi.js       — surah browser, juz overlay, jelajahi search/rendering
+  ajarkan.js        — ajarkan categories, filter, result cards, age toggle
+  daily-card.js     — daily rotating card, VOTD
+  belajar.js        — belajar tabs, paths, lessons, onboarding, bottom sheet
+  nuri.js           — nuri chat, message send/receive, quick replies
+  init.js           — DOMContentLoaded bootstrap, event listeners, SW registration
 api/
   get-ayat.js       — main AI pipeline (rate-limit → HyDE → embed → vector search → GPT select), mode-aware (curhat/panduan/jelajahi/ajarkan)
   nuri.js           — Nuri chat API (rate-limit → GPT-4o-mini JSON → verse lookup/semantic fallback → tafsir grounding → placeholder replacement). Also handles guided learning state.
@@ -131,7 +156,7 @@ GROUP BY event_type ORDER BY count DESC;
 
 ---
 
-## Frontend architecture (`app.js`)
+## Frontend architecture (`js/*.js`)
 
 ### Views & navigation
 - **Seven views**: `landing-view` → `selection-view` (curhat) / `panduan-view` (panduan) / `jelajahi-view` (jelajahi) / `ajarkan-view` (ajarkan) → `verses-view` (results). `nuri-view` (chat mode). `switchView(id)` swaps the `.active` class.
@@ -289,7 +314,8 @@ Each verse card has three elements below the translation + resonance text:
 - Ajarkan cards: blue accent — `--ak-blue` family (`#4A7FB5`), 4px gradient accent bar (`::before`), `--ak-blue-bg` (#EFF5FB), `--ak-blue-border` (#D4E2F0)
 - Jelajahi intro card: dark gradient bg (`#0A0F1E` → `#0A5C7A`), gold Bismillah (`.ji-bismillah`)
 - Reading progress bar: `var(--border)` track, `var(--teal-dark)` fill, 4px height
-- No CSS framework, no preprocessor
+- No CSS framework, no preprocessor, no build step — split into 12 files in `css/` folder
+- JS split into 13 files in `js/` folder — loaded via `<script defer>` in order (data → core → features → init)
 
 ---
 
@@ -328,7 +354,7 @@ API error responses never expose raw OpenAI/Supabase error details. Internal err
 ---
 
 ## Common gotchas
-- **No build step** — edit files directly, push to deploy. No `npm run build`.
+- **No build step** — edit files directly, push to deploy. No `npm run build`. CSS in `css/`, JS in `js/`, loaded via plain `<link>` and `<script defer>` tags in `index.html`.
 - **Vercel cold starts** — `get-ayat.js` and `nuri.js` both have `maxDuration: 30s`. The AI pipeline takes 3–8 s warm. Nuri follow-up exchanges may hit cold-start 500s (FUNCTION_INVOCATION_FAILED) — frontend auto-retries once silently.
 - **In-memory cache/rate-limit reset on deploy** — each new deploy spins a fresh container.
 - **SUPABASE_ANON_KEY** is the Legacy anon key (from Supabase Dashboard → Settings → API → Legacy Keys). Not the service key.
