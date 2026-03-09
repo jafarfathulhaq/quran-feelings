@@ -908,7 +908,7 @@ function updateLessonDotColors(isVerse) {
     const isActive = i + 1 === orderNum;
     dot.style.background = isActive
       ? (isVerse ? '#C4973B' : '#2A7C6F')
-      : (isVerse ? 'rgba(255,255,255,0.15)' : '#ddd');
+      : (isVerse ? 'rgba(255,255,255,0.35)' : '#ddd');
   });
 }
 
@@ -1095,9 +1095,6 @@ function renderBottomNav() {
   const total = lcCards.length;
 
   let html = '';
-  if (isVerse) {
-    html += `<button class="lc-gold-btn" data-action="lcNext">Pahami Ayat Ini \u2192</button>`;
-  }
 
   html += '<div class="lc-nav-row">';
   html += lcCardIdx > 0
@@ -1116,6 +1113,11 @@ function renderBottomNav() {
   }
 
   html += '</div>';
+
+  if (isVerse) {
+    html += `<button class="lc-gold-btn" data-action="lcNext">Pahami Ayat Ini \u2192</button>`;
+  }
+
   return html;
 }
 

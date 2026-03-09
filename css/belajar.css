@@ -1001,7 +1001,7 @@
   padding: 12px 16px; flex-shrink: 0; transition: all 0.3s;
   background: white; border-bottom: 1px solid var(--border);
 }
-.lc-header.lc-header-dark { background: transparent; border-bottom: none; }
+.lc-header.lc-header-dark { background: rgba(10,15,30,0.95); border-bottom: 1px solid rgba(255,255,255,0.08); }
 .lc-back { background: none; border: none; font-size: 20px; color: var(--text-mid); cursor: pointer; padding: 0; }
 .lc-header-dark .lc-back { color: rgba(255,255,255,0.5); }
 .lc-header-info { flex: 1; min-width: 0; }
@@ -1046,7 +1046,7 @@
 .lc-bottom.lc-bottom-dark { background: #0A0F1E; padding-top: 10px; }
 .lc-gold-btn {
   width: 100%; background: #C4973B; color: white; border: none; border-radius: 14px;
-  padding: 12px 0; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 8px; font-family: inherit;
+  padding: 12px 0; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit;
 }
 .lc-nav-row { display: flex; justify-content: space-between; align-items: center; }
 .lc-nav-prev { font-size: 13px; background: none; border: none; font-weight: 500; cursor: pointer; color: var(--text-muted); padding: 6px 0; font-family: inherit; }
