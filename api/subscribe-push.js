@@ -7,6 +7,19 @@ const supabase = createClient(
 
 const allowedOrigin = 'https://temuquran.com';
 
+// Rate limit: 10 subscriptions per IP per hour
+const rlMap = new Map();
+const RL_MAX = 10;
+const RL_WINDOW = 60 * 60 * 1000;
+function checkRL(ip) {
+  const now = Date.now();
+  const e = rlMap.get(ip) || { count: 0, resetAt: now + RL_WINDOW };
+  if (now > e.resetAt) { e.count = 0; e.resetAt = now + RL_WINDOW; }
+  e.count++;
+  rlMap.set(ip, e);
+  return e.count <= RL_MAX;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
@@ -19,6 +32,11 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+  if (!checkRL(ip)) {
+    return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
   }
 
   const { subscription, notifyHour, tzOffset } = req.body;

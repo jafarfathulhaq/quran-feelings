@@ -97,16 +97,29 @@ function appendUserMessage(text) {
 // escapeHtml() — defined in core.js (was duplicated here in the monolithic file)
 
 function formatNuriMessage(text) {
-  // Detect verse block patterns injected by the backend.
-  // Sanitize content inside markers to prevent XSS from DB data.
-  return text
-    .replace(/\{ARABIC\}([\s\S]*?)\{\/ARABIC\}/g, (_, arabic) =>
-      '<span class="nuri-verse-arabic">' + escapeHtml(arabic.trim()) + '</span>')
-    .replace(/\{TRANSLATION\}([\s\S]*?)\{\/TRANSLATION\}/g, (_, tr) =>
-      '<span class="nuri-verse-translation">"' + escapeHtml(tr.trim()) + '"</span>')
-    .replace(/\{REF\}([\s\S]*?)\{\/REF\}/g, (_, ref) =>
-      '<span class="nuri-verse-ref">\u2014 ' + escapeHtml(ref.trim()) + '</span>')
-    .replace(/\n/g, '<br>');
+  // Extract verse blocks first, escape all prose, then re-insert verse HTML.
+  const placeholders = [];
+  let safe = text
+    .replace(/\{ARABIC\}([\s\S]*?)\{\/ARABIC\}/g, (_, arabic) => {
+      const idx = placeholders.length;
+      placeholders.push('<span class="nuri-verse-arabic">' + escapeHtml(arabic.trim()) + '</span>');
+      return `\x00PH${idx}\x00`;
+    })
+    .replace(/\{TRANSLATION\}([\s\S]*?)\{\/TRANSLATION\}/g, (_, tr) => {
+      const idx = placeholders.length;
+      placeholders.push('<span class="nuri-verse-translation">"' + escapeHtml(tr.trim()) + '"</span>');
+      return `\x00PH${idx}\x00`;
+    })
+    .replace(/\{REF\}([\s\S]*?)\{\/REF\}/g, (_, ref) => {
+      const idx = placeholders.length;
+      placeholders.push('<span class="nuri-verse-ref">\u2014 ' + escapeHtml(ref.trim()) + '</span>');
+      return `\x00PH${idx}\x00`;
+    });
+  // Escape the prose text (everything outside verse blocks)
+  safe = escapeHtml(safe);
+  // Restore verse block HTML and convert newlines
+  safe = safe.replace(/\x00PH(\d+)\x00/g, (_, i) => placeholders[+i]);
+  return safe.replace(/\n/g, '<br>');
 }
 
 function showNuriTypingIndicator() {

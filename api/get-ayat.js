@@ -1521,6 +1521,6 @@ async function handleJelajahi(req, res, { feeling, presetIntent, refresh, ip }) 
 
   } catch (error) {
     console.error('Jelajahi DB error:', error.message);
-    return res.status(500).json({ error: error.message || 'Terjadi kesalahan. Silakan coba lagi.' });
+    return res.status(500).json({ error: 'Terjadi kesalahan. Silakan coba lagi.' });
   }
 }

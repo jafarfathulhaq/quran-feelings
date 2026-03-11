@@ -84,6 +84,19 @@ const VALID_EVENTS = new Set([
   'nuri_error',
 ]);
 
+// Rate limit: 120 events per IP per hour
+const rlMap = new Map();
+const RL_MAX = 120;
+const RL_WINDOW = 60 * 60 * 1000;
+function checkRL(ip) {
+  const now = Date.now();
+  const e = rlMap.get(ip) || { count: 0, resetAt: now + RL_WINDOW };
+  if (now > e.resetAt) { e.count = 0; e.resetAt = now + RL_WINDOW; }
+  e.count++;
+  rlMap.set(ip, e);
+  return e.count <= RL_MAX;
+}
+
 module.exports = async function handler(req, res) {
   const allowedOrigin = 'https://temuquran.com';
   const origin = req.headers.origin;
@@ -97,6 +110,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).end();
 
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+  if (!checkRL(ip)) return res.status(429).end();
+
   const { event_type, properties } = req.body || {};
 
   // Validate event type against allowlist
@@ -105,11 +121,19 @@ module.exports = async function handler(req, res) {
   }
 
   // Sanitise properties: only allow plain objects with primitive values
+  // Max 20 properties, 500 chars per string value, 100 chars per key
   const safeProps = {};
   if (properties && typeof properties === 'object' && !Array.isArray(properties)) {
+    let count = 0;
     for (const [k, v] of Object.entries(properties)) {
-      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      if (count >= 20) break;
+      if (typeof k !== 'string' || k.length > 100) continue;
+      if (typeof v === 'string') {
+        safeProps[k] = v.slice(0, 500);
+        count++;
+      } else if (typeof v === 'number' || typeof v === 'boolean') {
         safeProps[k] = v;
+        count++;
       }
     }
   }

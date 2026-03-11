@@ -202,6 +202,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid_request' });
   }
 
+  // Sanitize messages: only allow valid roles and limit content length
+  const ALLOWED_ROLES = new Set(['user', 'assistant']);
+  const MAX_MSG_LEN = 2000;
+  const sanitizedMessages = messages
+    .filter(m => m && ALLOWED_ROLES.has(m.role) && typeof m.content === 'string')
+    .map(m => ({ role: m.role, content: m.content.slice(0, MAX_MSG_LEN) }));
+
   try {
     // Build system prompt — append lesson context if coming from Renungan bridge
     let systemPrompt = NURI_SYSTEM_PROMPT;
@@ -221,7 +228,7 @@ Then discuss their answer warmly and connect it back to the verse.`;
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
-        ...messages,
+        ...sanitizedMessages,
       ],
     });
 
@@ -253,7 +260,7 @@ Then discuss their answer warmly and connect it back to the verse.`;
       let verse = await lookupVerse(ref.surah, ref.ayah);
       if (!verse) {
         // Semantic fallback using GPT's response + user message for better intent matching
-        const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+        const lastUserMsg = sanitizedMessages.filter(m => m.role === 'user').pop();
         const fallbackQuery = lastUserMsg
           ? `${lastUserMsg.content} ${nuri_response.substring(0, 100)}`
           : nuri_response.substring(0, 150);
@@ -264,7 +271,7 @@ Then discuss their answer warmly and connect it back to the verse.`;
 
     // If GPT asked for verses but none resolved, try one semantic fallback
     if (verseRefs.length > 0 && verses.length === 0) {
-      const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+      const lastUserMsg = sanitizedMessages.filter(m => m.role === 'user').pop();
       if (lastUserMsg) {
         const fallback = await semanticFallback(lastUserMsg.content);
         if (fallback) verses.push(fallback);
@@ -275,7 +282,7 @@ Then discuss their answer warmly and connect it back to the verse.`;
     // If GPT ignored the "always include a verse" rule, do a semantic lookup
     // and append the verse at the end of the response.
     if (verseRefs.length === 0 && verses.length === 0) {
-      const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+      const lastUserMsg = sanitizedMessages.filter(m => m.role === 'user').pop();
       if (lastUserMsg) {
         const safetyVerse = await semanticFallback(lastUserMsg.content);
         if (safetyVerse) {
@@ -318,7 +325,7 @@ Then discuss their answer warmly and connect it back to the verse.`;
         id: session_id,
         mode: mode || 'dewasa',
         conversation_mode: detectedMode || conversation_mode,
-        messages: [...messages, { role: 'assistant', content: historyText }],
+        messages: [...sanitizedMessages, { role: 'assistant', content: historyText }],
         exchange_count: (exchange_count || 0) + 1,
       });
     }

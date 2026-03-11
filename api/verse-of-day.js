@@ -28,7 +28,11 @@ module.exports = (req, res) => {
     res.setHeader('Cache-Control',
       `public, max-age=${secondsRemaining}, s-maxage=${secondsRemaining}, stale-while-revalidate=60`
     );
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (origin === 'https://temuquran.com') {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Vary', 'Origin');
 
     return res.status(200).json(verse);
   } catch (err) {
